@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import sys
-from re import match
+from re import match, search, IGNORECASE, sub
 from datetime import date
 from glob import glob
 
@@ -52,30 +52,61 @@ def match_dates(d1,d2):
             matched = True
     return matched
 
+def summarise_query_result(gigs,full):
+    for gig in gigs:
+        if full:
+            print_gig(gig)
+        else:
+            date = gig['date'].strftime('%d %B, %Y')
+            id = gig['id']
+            venue = gig['venue']
+            artist_list = [ s['artist'] for s in gig['sets'] ]
+            artists = " + ".join(artist_list)
+            print '  [{0:4s}] {1:20s} {2:30s} {3:50s}' \
+                . format( id, date, venue, artists)
+    return
+
 # Functions to build gig data:
+
+def process_song_name(line):
+    song = line
+    song = sub( r"\s*---.*$", '', song)
+    song = sub( r"\s*\*+\s*$", '', song)
+    song = sub( r"\s*\^+\s*$", '', song)
+    song = sub( r"\s*\~+\s*$", '', song)
+    song = ' '.join(w[0].upper() + w[1:] for w in song.split())
+    m_empty = match('^\s*$', line)
+    if m_empty:
+        return None
+    else:
+        return song
 
 def get_data_from_file(path):
     gigs = []
     current = {}
     level = 0
+    count = 0
     with open(path) as f:
         lines = f.read().splitlines()
     for line in lines:
         mopen = match('^\{\{\{ (.*)',line)
         mclose = match('^\}\}\}',line)
         mcomment = match('^\s*---',line)
-        if mcomment:
-            pass
-        elif mopen:
+        # if mcomment:
+        #     pass
+        if mopen:
             level += 1
             m1 = match('^(\d\d)\.(\d\d)\.(\d\d\d\d) \[(.*)\]$',mopen.group(1))
             if m1:
+                count += 1
                 year  = int(m1.group(3))
                 month = int(m1.group(2))
                 day   = int(m1.group(1))
-                current['date'] = date( year, month, day )
+                id    = ''.join(list(str(year))[2:4]) + '{0:02d}'.format(count)
+                current['id']    = id
+                current['date']  = date( year, month, day )
                 current['venue'] = m1.group(4)
-                current['sets'] = []
+                current['sets']  = []
             else:
                 this_set = {}
                 this_set['setlist'] = []
@@ -84,12 +115,14 @@ def get_data_from_file(path):
         elif mclose:
             level -= 1
             if level == 0:
-                if current['date'] < date.today():
+                if current['date'] <= date.today():
                     gigs.append(current)
                 current = {}
         elif level == 2:
             # Append song to last set of current gig:
-            current['sets'][-1]['setlist'].append(line)
+            song = process_song_name(line)
+            if song != None:
+                current['sets'][-1]['setlist'].append(song)
         else:
             pass
 
@@ -141,25 +174,30 @@ def extract_sets(gigs):
 def search_gigs(gigs,query):
     results = []
     for gig in gigs:
-        if match_dates(query['date'],gig['date']):
-            #print "Matched date."
+        if query['id'] == None:
+            date = gig['date'].strftime('%d %B, %Y')
+            if query['date'] != None and search(query['date'],date,IGNORECASE):
+                #print "Matched date."
+                results.append(gig)
+            elif query['venue'] != None and search(query['venue'],gig['venue'],IGNORECASE):
+                # gig['venue'] == query['venue']: 
+                #print "Matched venue."
+                results.append(gig)
+            else:
+                for s in gig['sets']:
+                    if query['artist'] != None and search(query['artist'],s['artist'],IGNORECASE):
+                        #print "Matched artist."
+                        # s['artist'] == query['artist']:
+                        results.append(gig)
+                    else:
+                        for song in s['setlist']:
+                            if query['song'] != None and search(query['song'],song,IGNORECASE):
+                                #print "Matched song."
+                                results.append(gig)
+                    #elif query['song'] in s['setlist']:
+        elif query['id'] == gig['id']:
             results.append(gig)
-        elif query['venue'] != None and match(query['venue'],gig['venue']):
-            # gig['venue'] == query['venue']: 
-            #print "Matched venue."
-            results.append(gig)
-        else:
-            for s in gig['sets']:
-                if query['artist'] != None and match(query['artist'],s['artist']):
-                    #print "Matched artist."
-                    # s['artist'] == query['artist']:
-                    results.append(gig)
-                else:
-                    for song in s['setlist']:
-                        if query['song'] != None and match(query['song'],song):
-                            #print "Matched song."
-                            results.append(gig)
-                #elif query['song'] in s['setlist']:
+            break
     return results
 
 # HTML Generation
@@ -220,15 +258,40 @@ def generate_html_files(gigs,head):
 
     return
 
+# Songs by artist
+
+def unique_songs_of_artist(gigs,artist):
+    raw_songs = []
+    for gig in gigs:
+        for s in gig['sets']:
+            if search(artist, s['artist'], IGNORECASE):
+                raw_songs += s['setlist']
+    songs = list(set(raw_songs))
+    count = [ raw_songs.count(s) for s in songs ]
+    zipped = zip( songs, count )
+    zipped.sort(key=lambda x: x[1])
+    zipped.reverse()
+    return zipped 
+
+def artist_stats(gigs,artist):
+    unique_songs = unique_songs_of_artist( gigs, artist )
+
+    for i in range(0,len(unique_songs)-1):
+        print '{0:3d} {1:30s}' \
+            . format( unique_songs[i][1], unique_songs[i][0] )
+
+
 # Main
 
 def print_help():
     print ( " Optional args:\n"
             " \n"
-            " -artists\n"
-            " -venue\n"
-            " -song\n"
-            " -date\n" )
+            " -a -artist\n"
+            " -v -venue\n"
+            " -s -song\n"
+            " -d -date\n"
+            " -i -id\n"
+            )
     return
 
 def process_args(args):
@@ -237,17 +300,28 @@ def process_args(args):
               'venue' : None,
               'artist': None,
               'song'  : None,
+              'id'    : None,
+              'stats' : False,   # whether to build song_stats 
               }
     empty = True
     for i in range(0, len(args)-1):
-        if args[i] == "-artist":
+        if args[i] == "-artist" or args[i] == "-a":
             query['artist'] = args[i+1]
             empty = False
-        elif args[i] == "-venue":
+        elif args[i] == "-venue" or args[i] == "-v":
             query['venue'] = args[i+1]
             empty = False
-        elif args[i] == "-song":
+        elif args[i] == "-song" or args[i] == "-s":
             query['song'] = args[i+1]
+            empty = False
+        elif args[i] == "-date" or args[i] == "-d":
+            query['date'] = args[i+1]
+            empty = False
+        elif args[i] == "-id" or args[i] == "-i":
+            query['id'] = args[i+1]
+            empty = False
+        elif args[i] == "-stats":
+            query['stats'] = True
             empty = False
 
     if empty:
@@ -260,7 +334,7 @@ def main():
     args = sys.argv[1:]
     query = process_args(args)
     if len(args) == 0:
-        print_summary(gigs,20)
+        print_summary(gigs,25)
     elif len(args) == 1 and args[0] == "-help":
         print_help()
     elif len(args) == 1 and args[0] == "-html":
@@ -268,13 +342,14 @@ def main():
     elif query:
         results = search_gigs(gigs,query)
         print "%d matching events." % len(results)
-        print results
+        # print results
+        summarise_query_result(results,query['id'] != None)
     else:
         print "Unprocessed option"
 
+    if query and query['stats'] and query['artist'] != None:
+        artist_stats( gigs, query['artist'] )
 
-    #for gig in search_gigs(gigs,query):
-        #print_gig(gig)
 
     #extract_sets(gigs)
 
