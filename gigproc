@@ -1,0 +1,282 @@
+#!/usr/bin/python
+import sys
+from re import match
+from datetime import date
+from glob import glob
+
+display_max = 300
+
+# Utilities
+
+def print_summary(gigs,n):
+    artists = unique_artists(gigs)
+    venues = unique_venues(gigs)
+    years = unique_years(gigs)
+    n_gigs = str(len(gigs))
+    n_venues = " " + str(len(venues))
+    n_artists = str(len(artists))
+    n_years = " " + str(len(years))
+    #today = date.today().strftime('%d %B %Y')
+
+    print ( ""
+     "\n          /---------------------\ "
+     "\n          |                     | "
+     "\n          |     %s years       | "
+     "\n          |     %s gigs        | "
+     "\n          |     %s venues      | "
+     "\n          |     %s artists     | "
+     "\n          |                     | "
+     "\n          \---------------------/ "
+     "\n"
+     ) % ( n_years, n_gigs, n_venues, n_artists )
+
+    for i in range(0,n-1):
+        print '{0:3d} {1:30s} {2:3d} {3:30s}' \
+            . format( artists[i][1], artists[i][0], venues[i][1], venues[i][0])
+
+    print ""
+
+def print_gig(gig):
+    print "======================================"
+    print gig['date'].strftime('    Date: %d %B, %Y')
+    print "   Venue: " + gig['venue']
+    for s in gig['sets']:
+        print "  Artist: " + s['artist']
+        for song in s['setlist']:
+            print "          > " + song
+
+def match_dates(d1,d2):
+    matched = False
+    if d1 != None and d2 != None:
+        if d1.year == d2.year and d1.month == d2.month and d1.day == d2.day:
+            matched = True
+    return matched
+
+# Functions to build gig data:
+
+def get_data_from_file(path):
+    gigs = []
+    current = {}
+    level = 0
+    with open(path) as f:
+        lines = f.read().splitlines()
+    for line in lines:
+        mopen = match('^\{\{\{ (.*)',line)
+        mclose = match('^\}\}\}',line)
+        mcomment = match('^\s*---',line)
+        if mcomment:
+            pass
+        elif mopen:
+            level += 1
+            m1 = match('^(\d\d)\.(\d\d)\.(\d\d\d\d) \[(.*)\]$',mopen.group(1))
+            if m1:
+                year  = int(m1.group(3))
+                month = int(m1.group(2))
+                day   = int(m1.group(1))
+                current['date'] = date( year, month, day )
+                current['venue'] = m1.group(4)
+                current['sets'] = []
+            else:
+                this_set = {}
+                this_set['setlist'] = []
+                this_set['artist'] = mopen.group(1)
+                current['sets'].append(this_set)
+        elif mclose:
+            level -= 1
+            if level == 0:
+                if current['date'] < date.today():
+                    gigs.append(current)
+                current = {}
+        elif level == 2:
+            # Append song to last set of current gig:
+            current['sets'][-1]['setlist'].append(line)
+        else:
+            pass
+
+    return gigs
+
+def build_gig_data(top):
+    gigs = []
+    for f in glob(top + '/*.gigs'):
+        #print f
+        gigs += get_data_from_file(f)
+    return gigs
+
+# Queries on gig data:
+
+def unique_artists(gigs):
+    raw_artists = []
+    for gig in gigs:
+        raw_artists += [ s['artist'] for s in gig['sets'] ]
+    artists = list(set(raw_artists))
+    count = [ raw_artists.count(a) for a in artists ]
+    zipped = zip( artists, count )
+    zipped.sort(key=lambda x: x[1])
+    zipped.reverse()
+    return zipped
+
+def unique_venues(gigs):
+    raw_venues = ([ g["venue"] for g in gigs])
+    venues = list(set(raw_venues))
+    count = [ raw_venues.count(v) for v in venues ]
+    zipped = zip( venues, count )
+    zipped.sort(key=lambda x: x[1])
+    zipped.reverse()
+    return zipped
+
+def unique_years(gigs):
+    raw_years = [ g["date"].year for g in gigs ]
+    years = list(set(raw_years))
+    years.sort()
+    count = [ raw_years.count(y) for y in years ]
+    zipped = zip( years, count )
+    zipped.sort(key=lambda x: x[1])
+    zipped.reverse()
+    return zipped
+
+def extract_sets(gigs):
+    for gig in gigs:
+        print gig['date']
+
+def search_gigs(gigs,query):
+    results = []
+    for gig in gigs:
+        if match_dates(query['date'],gig['date']):
+            #print "Matched date."
+            results.append(gig)
+        elif query['venue'] != None and match(query['venue'],gig['venue']):
+            # gig['venue'] == query['venue']: 
+            #print "Matched venue."
+            results.append(gig)
+        else:
+            for s in gig['sets']:
+                if query['artist'] != None and match(query['artist'],s['artist']):
+                    #print "Matched artist."
+                    # s['artist'] == query['artist']:
+                    results.append(gig)
+                else:
+                    for song in s['setlist']:
+                        if query['song'] != None and match(query['song'],song):
+                            #print "Matched song."
+                            results.append(gig)
+                #elif query['song'] in s['setlist']:
+    return results
+
+# HTML Generation
+
+def generate_html_setlist(gig):
+    lines = [ '<html>', '<head>',
+              '<link rel="stylesheet" type="text/css" href="../style.css">',
+              '<head>'
+              '<body class=setlist style="background-image:url(\'' 
+                    + 'bhi13.jpg' + '\'); image-width:40%;">',
+              '<div class=sl_tit>',
+              gig['sets'][0]['artist'] + ' <br> ' + gig['venue'] 
+                    + ' <br> ' + gig['date'].strftime('%A, %d %B, %Y'),
+              '</div>', '<ol>']
+    for song in gig['sets'][0]['setlist']:
+        if not song.strip():
+            lines.append('<br> <br>')
+        else:
+            lines.append( '<li> ' + song )
+    lines += [ '</ol>', '</body>', '</html>', ]
+    return lines
+
+def generate_html_list(liszt):
+    # Used to generate venue/artist lists.
+    lines = [ '<html>', '<head>',
+              '<link rel="stylesheet" type="text/css" href="../style.css">',
+              '</head>', '<body>', '<ul>']
+    for (x,c) in liszt:
+        element = '<li> <div class=white>' + str(c) + '</div>'
+        if c > 1:
+            element += '<div class=times>&times;' + str(c) + '</div></li>'
+        lines.append(element)
+    lines.append( [ '</ul>', '</body>', '</html>' ] )
+    return lines
+
+def generate_html_files(gigs,head):
+    for gig in gigs:
+        fname = head + gig['date'].strftime('%y%m%d') + '.html'
+        lines = generate_html_setlist(gig)
+        with open(fname,'w') as f:
+            for line in lines:
+                f.write("%s\n" % line)
+
+    with open(head+'venues.html','w') as f:
+        for line in generate_html_list(unique_venues(gigs)):
+            f.write("%s\n" % line)
+
+    with open(head+'artists.html','w') as f:
+        for line in generate_html_list(unique_artists(gigs)):
+            f.write("%s\n" % line)
+
+    for (y,c) in unique_years(gigs):
+        print "Gigs in %d:" % y
+        for gig in gigs:
+            if gig['date'].year == y:
+                print gig['sets'][0]['artist']
+                # Need to order by date
+
+    return
+
+# Main
+
+def print_help():
+    print ( " Optional args:\n"
+            " \n"
+            " -artists\n"
+            " -venue\n"
+            " -song\n"
+            " -date\n" )
+    return
+
+def process_args(args):
+    # Converts user args to a search query
+    query = { 'date'  : None,
+              'venue' : None,
+              'artist': None,
+              'song'  : None,
+              }
+    empty = True
+    for i in range(0, len(args)-1):
+        if args[i] == "-artist":
+            query['artist'] = args[i+1]
+            empty = False
+        elif args[i] == "-venue":
+            query['venue'] = args[i+1]
+            empty = False
+        elif args[i] == "-song":
+            query['song'] = args[i+1]
+            empty = False
+
+    if empty:
+        query = None
+
+    return query
+
+def main():
+    gigs = build_gig_data(".")
+    args = sys.argv[1:]
+    query = process_args(args)
+    if len(args) == 0:
+        print_summary(gigs,20)
+    elif len(args) == 1 and args[0] == "-help":
+        print_help()
+    elif len(args) == 1 and args[0] == "-html":
+        generate_html_files(gigs,'./html/')
+    elif query:
+        results = search_gigs(gigs,query)
+        print "%d matching events." % len(results)
+        print results
+    else:
+        print "Unprocessed option"
+
+
+    #for gig in search_gigs(gigs,query):
+        #print_gig(gig)
+
+    #extract_sets(gigs)
+
+main()
+
