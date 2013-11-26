@@ -61,7 +61,12 @@ def summarise_query_result(gigs,full):
             id = gig['id']
             venue = gig['venue']
             artist_list = [ s['artist'] for s in gig['sets'] ]
-            artists = " + ".join(artist_list)
+            # artists = " + ".join(artist_list)
+            artists = artist_list[0]
+            if len(artist_list) > 1:
+                artists += ' + ' + artist_list[1]
+            if len(artist_list) > 2:
+                artists += ' + ... '
             print '  [{0:4s}] {1:20s} {2:30s} {3:50s}' \
                 . format( id, date, venue, artists)
     return
@@ -276,6 +281,8 @@ def unique_songs_of_artist(gigs,artist):
 def artist_stats(gigs,artist):
     unique_songs = unique_songs_of_artist( gigs, artist )
 
+    print "Profiling %d unique songs by %s:" % (len(unique_songs), artist)
+
     for i in range(0,len(unique_songs)-1):
         print '{0:3d} {1:30s}' \
             . format( unique_songs[i][1], unique_songs[i][0] )
@@ -347,11 +354,8 @@ def main():
     else:
         print "Unprocessed option"
 
-    if query and query['stats'] and query['artist'] != None:
+    if query and query['stats'] and query['artist']:
         artist_stats( gigs, query['artist'] )
-
-
-    #extract_sets(gigs)
 
 main()
 
