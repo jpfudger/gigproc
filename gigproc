@@ -1,10 +1,12 @@
 #!/usr/bin/python
 import sys
-from re import match, search, IGNORECASE, sub
+import os
+from re import match, search, IGNORECASE, sub, findall
 from datetime import date
 from glob import glob
 
 display_max = 300
+root = '/home/jpf/gigproc/'
 
 # Utilities
 
@@ -53,12 +55,12 @@ def match_dates(d1,d2):
     return matched
 
 def summarise_query_result(gigs,full):
+    gigs.sort(key=lambda x: x['id'])
     for gig in gigs:
         if full:
             print_gig(gig)
         else:
             date = gig['date'].strftime('%d %B, %Y')
-            id = gig['id']
             venue = gig['venue']
             artist_list = [ s['artist'] for s in gig['sets'] ]
             # artists = " + ".join(artist_list)
@@ -67,24 +69,32 @@ def summarise_query_result(gigs,full):
                 artists += ' + ' + artist_list[1]
             if len(artist_list) > 2:
                 artists += ' + ... '
-            print '  [{0:4s}] {1:20s} {2:30s} {3:50s}' \
-                . format( id, date, venue, artists)
+            ident = '[' + gig['id'] + ']'
+            sys.stdout.write(' {0:6s} {1:20s} {2:30s} {3:50s}' . format( ident, date, venue, artists))
     return
 
 # Functions to build gig data:
 
 def process_song_name(line):
-    song = line
+    splits = line.split('---')
+    medley = match( '^\s+', line )  # if the line is indented, it's part of a medley
+    song = splits[0]
     song = sub( r"\s*---.*$", '', song)
     song = sub( r"\s*\*+\s*$", '', song)
     song = sub( r"\s*\^+\s*$", '', song)
     song = sub( r"\s*\~+\s*$", '', song)
     song = ' '.join(w[0].upper() + w[1:] for w in song.split())
-    m_empty = match('^\s*$', line)
+    m_empty = match('^\s*$', song)
+
     if m_empty:
-        return None
+        return None, None
     else:
-        return song
+        flags = []
+        if len(splits) > 1 and match( '.*{.*', splits[1] ):
+            flags = findall( '{([0-9A-Za-z ]+)}', splits[1])
+        if medley:
+            flags.append( 'medley' )
+        return song, flags
 
 def get_data_from_file(path):
     gigs = []
@@ -97,8 +107,6 @@ def get_data_from_file(path):
         mopen = match('^\{\{\{ (.*)',line)
         mclose = match('^\}\}\}',line)
         mcomment = match('^\s*---',line)
-        # if mcomment:
-        #     pass
         if mopen:
             level += 1
             m1 = match('^(\d\d)\.(\d\d)\.(\d\d\d\d) \[(.*)\]$',mopen.group(1))
@@ -107,14 +115,15 @@ def get_data_from_file(path):
                 year  = int(m1.group(3))
                 month = int(m1.group(2))
                 day   = int(m1.group(1))
-                id    = ''.join(list(str(year))[2:4]) + '{0:02d}'.format(count)
-                current['id']    = id
+                ident = ''.join(list(str(year))[2:4]) + '{0:02d}'.format(count)
+                current['id']    = ident
                 current['date']  = date( year, month, day )
                 current['venue'] = m1.group(4)
                 current['sets']  = []
             else:
                 this_set = {}
                 this_set['setlist'] = []
+                this_set['flags'] = []
                 this_set['artist'] = mopen.group(1)
                 current['sets'].append(this_set)
         elif mclose:
@@ -125,9 +134,10 @@ def get_data_from_file(path):
                 current = {}
         elif level == 2:
             # Append song to last set of current gig:
-            song = process_song_name(line)
+            song, flags = process_song_name(line)
             if song != None:
                 current['sets'][-1]['setlist'].append(song)
+                current['sets'][-1]['flags'].append(flags)
         else:
             pass
 
@@ -269,24 +279,70 @@ def unique_songs_of_artist(gigs,artist):
     raw_songs = []
     for gig in gigs:
         for s in gig['sets']:
+            # look for song in artist's main set:
             if search(artist, s['artist'], IGNORECASE):
-                raw_songs += s['setlist']
-    songs = list(set(raw_songs))
-    count = [ raw_songs.count(s) for s in songs ]
-    zipped = zip( songs, count )
-    zipped.sort(key=lambda x: x[1])
-    zipped.reverse()
-    return zipped 
+                for song in s['setlist']:
+                    got = False
+                    for got_song in raw_songs:
+                        if got_song['song'] == song:
+                            got_song['events'].append(gig['id'])
+                            got = True
+                    if not got:
+                        raw_songs.append( { 'song': song, 'events': [ gig['id'] ] } )
+            else:
+                # look for song in other sets for which the artist is flagged:
+                for song, flags in zip( s['setlist'], s['flags'] ):
+                    flagged = False
+                    for flag in flags:
+                        if search( artist, flag, IGNORECASE ):
+                            flagged = True
+                    if flagged:
+                        got = False
+                        for got_song in raw_songs:
+                            if got_song['song'] == song:
+                                got_song['events'].append(gig['id'])
+                                got = True
+                        if not got:
+                            raw_songs.append( { 'song': song, 'events': [ gig['id'] ] } )
+
+    raw_songs.sort(key=lambda x: len(x['events']))
+    raw_songs.reverse()
+    return raw_songs
+
+    #count = [ raw_songs.count(s) for s in songs ]
+    #zipped = zip( songs, count )
+    #zipped.sort(key=lambda x: x[1])
+    #zipped.reverse()
+    #return zipped 
 
 def artist_stats(gigs,artist):
     unique_songs = unique_songs_of_artist( gigs, artist )
 
-    print "Profiling %d unique songs by %s:" % (len(unique_songs), artist)
+    raw_events = []
+    for song in unique_songs:
+        raw_events += song['events']
 
-    for i in range(0,len(unique_songs)-1):
-        print '{0:3d} {1:30s}' \
-            . format( unique_songs[i][1], unique_songs[i][0] )
+    events = list(set(raw_events))
+    events.sort()
 
+    print "\n\nProfiling %d unique songs from %d events by %s:\n"  \
+        % (len(unique_songs), len(events), artist)
+
+    for i in range(0,4):
+        string = ""
+        for event in events:
+            string += event[i]
+        print '%59s' % string
+
+    for song in unique_songs:
+        event_string = ""
+        for event in events:
+            if event in song['events']:
+                event_string += 'X'
+            else:
+                event_string += '-'
+        print '{0:3d} {1:50s} {2:30s}' \
+            . format( len(song['events']), song['song'], event_string )
 
 # Main
 
@@ -311,7 +367,7 @@ def process_args(args):
               'stats' : False,   # whether to build song_stats 
               }
     empty = True
-    for i in range(0, len(args)-1):
+    for i in range(0, len(args)):
         if args[i] == "-artist" or args[i] == "-a":
             query['artist'] = args[i+1]
             empty = False
@@ -337,7 +393,9 @@ def process_args(args):
     return query
 
 def main():
-    gigs = build_gig_data(".")
+    cwd = os.getcwd()
+    os.chdir(root)
+    gigs = build_gig_data(root)
     args = sys.argv[1:]
     query = process_args(args)
     if len(args) == 0:
@@ -348,7 +406,7 @@ def main():
         generate_html_files(gigs,'./html/')
     elif query:
         results = search_gigs(gigs,query)
-        print "%d matching events." % len(results)
+        print "%d matching events.\n" % len(results)
         # print results
         summarise_query_result(results,query['id'] != None)
     else:
@@ -356,6 +414,10 @@ def main():
 
     if query and query['stats'] and query['artist']:
         artist_stats( gigs, query['artist'] )
+
+    print "\n"
+
+    os.chdir(cwd)
 
 main()
 
