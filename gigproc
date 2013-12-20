@@ -70,7 +70,7 @@ def summarise_query_result(gigs,full):
             if len(artist_list) > 2:
                 artists += ' + ... '
             ident = '[' + gig['id'] + ']'
-            sys.stdout.write(' {0:6s} {1:20s} {2:30s} {3:50s}' . format( ident, date, venue, artists))
+            sys.stdout.write('\n {0:8s} {1:20s} {2:30s} {3:50s}' . format( ident, date, venue, artists))
     return
 
 # Functions to build gig data:
@@ -101,16 +101,21 @@ def get_data_from_file(path):
     current = {}
     level = 0
     count = 0
+    commented = False
     with open(path) as f:
         lines = f.read().splitlines()
     for line in lines:
         mopen = match('^\{\{\{ (.*)',line)
         mclose = match('^\}\}\}',line)
-        mcomment = match('^\s*---',line)
+        mc = match('^\{\{\{\s*---',line)
+        if mc:
+            commented = True
         if mopen:
             level += 1
             m1 = match('^(\d\d)\.(\d\d)\.(\d\d\d\d) \[(.*)\]$',mopen.group(1))
-            if m1:
+            if commented:
+                pass
+            elif m1:
                 count += 1
                 year  = int(m1.group(3))
                 month = int(m1.group(2))
@@ -128,7 +133,7 @@ def get_data_from_file(path):
                 current['sets'].append(this_set)
         elif mclose:
             level -= 1
-            if level == 0:
+            if level == 0 and not commented:
                 if current['date'] <= date.today():
                     gigs.append(current)
                 current = {}
@@ -159,7 +164,7 @@ def unique_artists(gigs):
     artists = list(set(raw_artists))
     count = [ raw_artists.count(a) for a in artists ]
     zipped = zip( artists, count )
-    zipped.sort(key=lambda x: x[1])
+    zipped.sort(key=lambda x: ( -x[1], x[0] ), reverse=True )
     zipped.reverse()
     return zipped
 
@@ -168,7 +173,7 @@ def unique_venues(gigs):
     venues = list(set(raw_venues))
     count = [ raw_venues.count(v) for v in venues ]
     zipped = zip( venues, count )
-    zipped.sort(key=lambda x: x[1])
+    zipped.sort(key=lambda x: ( -x[1], x[0] ), reverse=True )
     zipped.reverse()
     return zipped
 
@@ -305,7 +310,7 @@ def unique_songs_of_artist(gigs,artist):
                         if not got:
                             raw_songs.append( { 'song': song, 'events': [ gig['id'] ] } )
 
-    raw_songs.sort(key=lambda x: len(x['events']))
+    raw_songs.sort(key=lambda x: ( -len(x['events']), x['song'] ), reverse=True )
     raw_songs.reverse()
     return raw_songs
 
@@ -325,14 +330,8 @@ def artist_stats(gigs,artist):
     events = list(set(raw_events))
     events.sort()
 
-    print "\n\nProfiling %d unique songs from %d events by %s:\n"  \
+    print "\n\n Profiling %d unique songs from %d events by %s:\n"  \
         % (len(unique_songs), len(events), artist)
-
-    for i in range(0,4):
-        string = ""
-        for event in events:
-            string += event[i]
-        print '%59s' % string
 
     for song in unique_songs:
         event_string = ""
@@ -366,6 +365,7 @@ def process_args(args):
               'id'    : None,
               'stats' : False,   # whether to build song_stats 
               }
+    n_songs = 25
     empty = True
     for i in range(0, len(args)):
         if args[i] == "-artist" or args[i] == "-a":
@@ -386,27 +386,29 @@ def process_args(args):
         elif args[i] == "-stats":
             query['stats'] = True
             empty = False
+        elif args[i] == "-max" or args[i] == "-m":
+            n_songs = int(args[i+1])
 
     if empty:
         query = None
 
-    return query
+    return query, n_songs
 
 def main():
     cwd = os.getcwd()
     os.chdir(root)
     gigs = build_gig_data(root)
     args = sys.argv[1:]
-    query = process_args(args)
-    if len(args) == 0:
-        print_summary(gigs,25)
+    query, n_songs = process_args(args)
+    if not query:
+        print_summary(gigs,n_songs)
     elif len(args) == 1 and args[0] == "-help":
         print_help()
     elif len(args) == 1 and args[0] == "-html":
         generate_html_files(gigs,'./html/')
     elif query:
         results = search_gigs(gigs,query)
-        print "%d matching events.\n" % len(results)
+        print "\n %d matching events." % len(results)
         # print results
         summarise_query_result(results,query['id'] != None)
     else:
