@@ -1,425 +1,1198 @@
 #!/usr/bin/python
-import sys
-import os
+import sys, os, glob
 from re import match, search, IGNORECASE, sub, findall
-from datetime import date
-from glob import glob
+from datetime import datetime
 
-display_max = 300
-root = '/home/jpf/gigproc/'
-
-# Utilities
-
-def print_summary(gigs,n):
-    artists = unique_artists(gigs)
-    venues = unique_venues(gigs)
-    years = unique_years(gigs)
-    n_gigs = str(len(gigs))
-    n_venues = " " + str(len(venues))
-    n_artists = str(len(artists))
-    n_years = " " + str(len(years))
-    #today = date.today().strftime('%d %B %Y')
-
-    print ( ""
-     "\n          /---------------------\ "
-     "\n          |                     | "
-     "\n          |     %s years       | "
-     "\n          |     %s gigs        | "
-     "\n          |     %s venues      | "
-     "\n          |     %s artists     | "
-     "\n          |                     | "
-     "\n          \---------------------/ "
-     "\n"
-     ) % ( n_years, n_gigs, n_venues, n_artists )
-
-    for i in range(0,n-1):
-        print '{0:3d} {1:30s} {2:3d} {3:30s}' \
-            . format( artists[i][1], artists[i][0], venues[i][1], venues[i][0])
-
-    print ""
-
-def print_gig(gig):
-    print "======================================"
-    print gig['date'].strftime('    Date: %d %B, %Y')
-    print "   Venue: " + gig['venue']
-    for s in gig['sets']:
-        print "  Artist: " + s['artist']
-        for song in s['setlist']:
-            print "          > " + song
-
-def match_dates(d1,d2):
-    matched = False
-    if d1 != None and d2 != None:
-        if d1.year == d2.year and d1.month == d2.month and d1.day == d2.day:
-            matched = True
-    return matched
-
-def summarise_query_result(gigs,full):
-    gigs.sort(key=lambda x: x['id'])
-    for gig in gigs:
-        if full:
-            print_gig(gig)
+class g_html():
+    def __init__(self, gig_data, head):
+        self.gig_data = gig_data
+        self.head = head
+        self.years = [ str(y) for (y,c) in self.gig_data.unique_years(True) ]
+        self.years.sort()
+        self.generate_html_files()
+    # HTML Generation
+    def alpha_name(self, artist ):
+        alpha = artist
+        splitz = split(alpha)
+        if splitz[0] == 'The':
+            alpha = ' '.join(splitz[1:])
+        elif len(splitz) == 2:
+            alpha = splitz[1] + ', ' + splitz[0]
+        return alpha
+    def find_playlist_link(self, artist, d ):
+        alpha = alpha_name(artist)
+        letter = alpha[0]
+        date = d.strftime("%Y.%m.%d")
+        path = '~/Music/' + letter + '/' + alpha + '/Bootlegs/' + date
+        return path
+    def id_of_artist(self,artist):
+        counter = 0
+        for (a,c) in self.gig_data.get_unique_artists():
+            counter += 1
+            if artist == a:
+                break
+        return str(counter).zfill(3)
+    def id_of_venue(self,venue):
+        counter = 0
+        for (v,c) in self.gig_data.get_unique_venues():
+            counter += 1
+            if venue == v:
+                break
+        return str(counter).zfill(3)
+    def gig_prev(self,gigs,gig):
+        g_prev = None
+        for g in gigs:
+            if gig.index == g.index:
+                break
+            g_prev = g
+        return g_prev
+    def gig_next(self,gigs,gig):
+        g_next = None
+        set_next = False
+        for g in gigs:
+            if set_next:
+                g_next = g
+                break
+            if gig.index == g.index:
+                set_next = True;
+        if g_next != None and g_next.future:
+            g_next = None
+        return g_next
+    def footnote_symbol(self,n):
+        #return '<sup>' + str(n) + '</sup>'
+        #return '[' + str(n) + ']'
+        #symbols = [ '^', '*', '#', '~', '@', '?', '?', '?', '?', '?']
+        symbols = [ '&deg;', '&sup1;', '&sup2;', '&sup3;', '*' ]
+        return symbols[ n % len(symbols) ]
+    def make_flag_note(self, ftype, force_title = None, force_symbol = None ):
+        if ftype == 'solo':
+            return '<div class=flag title="Solo performance">&sect;</div>'
+        elif ftype == 'improv':
+            return '<div class=flag title="Improvisation">&#8225;</div>' # double dagger
+        elif ftype == 'debut':
+            return '<div class=flag title="Live debut">@</div>'
+        elif ftype == 'first_time':
+            return ''
+            # disabled as buggy and not very helpful...
+            #return '<div class=flag title="First time I\'ve seen it!">!</div>'
+        elif ftype == 'guest':
+            return '<div class=flag title="' + force_title + '">' + force_symbol + '</div>'
         else:
-            date = gig['date'].strftime('%d %B, %Y')
-            venue = gig['venue']
-            artist_list = [ s['artist'] for s in gig['sets'] ]
-            # artists = " + ".join(artist_list)
-            artists = artist_list[0]
-            if len(artist_list) > 1:
-                artists += ' + ' + artist_list[1]
-            if len(artist_list) > 2:
-                artists += ' + ... '
-            ident = '[' + gig['id'] + ']'
-            sys.stdout.write('\n {0:8s} {1:20s} {2:30s} {3:50s}' . format( ident, date, venue, artists))
-    return
+            return ''
+    def gig_setlist_string(self,gig,gigs,linkback = True, liszt = None, suffix = None ):
+        # linkback means whether to add artist/venue links
+        ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
+        day = int(gig.date.strftime("%d"))
 
-# Functions to build gig data:
+        gig_artists = [ s.artist for s in gig.sets ]
 
-def process_song_name(line):
-    splits = line.split('---')
-    medley = match( '^\s+', line )  # if the line is indented, it's part of a medley
-    song = splits[0]
-    song = sub( r"\s*---.*$", '', song)
-    song = sub( r"\s*\*+\s*$", '', song)
-    song = sub( r"\s*\^+\s*$", '', song)
-    song = sub( r"\s*\~+\s*$", '', song)
-    song = ' '.join(w[0].upper() + w[1:] for w in song.split())
-    m_empty = match('^\s*$', song)
+        # list of all guesting artists (so we know whether we need footnotes):
+        gig_guests = []
+        for g in gig.sets:
+            for s in g.songs:
+                gig_guests += s.guests
+        gig_guests = list(set(gig_guests))
 
-    if m_empty:
-        return None, None
-    else:
-        flags = []
-        if len(splits) > 1 and match( '.*{.*', splits[1] ):
-            flags = findall( '{([0-9A-Za-z ]+)}', splits[1])
-        if medley:
-            flags.append( 'medley' )
-        return song, flags
+        link_prev = ''
+        link_next = ''
 
-def get_data_from_file(path):
-    gigs = []
-    current = {}
-    level = 0
-    count = 0
-    commented = False
-    with open(path) as f:
-        lines = f.read().splitlines()
-    for line in lines:
-        mopen = match('^\{\{\{ (.*)',line)
-        mclose = match('^\}\}\}',line)
-        mc = match('^\{\{\{\s*---',line)
-        if mc:
-            commented = True
-        if mopen:
-            level += 1
-            m1 = match('^(\d\d)\.(\d\d)\.(\d\d\d\d) \[(.*)\]$',mopen.group(1))
-            if commented:
-                pass
-            elif m1:
-                count += 1
-                year  = int(m1.group(3))
-                month = int(m1.group(2))
-                day   = int(m1.group(1))
-                ident = ''.join(list(str(year))[2:4]) + '{0:02d}'.format(count)
-                current['id']    = ident
-                current['date']  = date( year, month, day )
-                current['venue'] = m1.group(4)
-                current['sets']  = []
+        if linkback:
+            # compute next/previous links
+            if liszt == None:
+                g_prev = self.gig_prev(gigs,gig)
+                g_next = self.gig_next(gigs,gig)
             else:
-                this_set = {}
-                this_set['setlist'] = []
-                this_set['flags'] = []
-                this_set['artist'] = mopen.group(1)
-                current['sets'].append(this_set)
-        elif mclose:
-            level -= 1
-            if level == 0 and not commented:
-                if current['date'] <= date.today():
-                    gigs.append(current)
-                current = {}
-        elif level == 2:
-            # Append song to last set of current gig:
-            song, flags = process_song_name(line)
-            if song != None:
-                current['sets'][-1]['setlist'].append(song)
-                current['sets'][-1]['flags'].append(flags)
-        else:
-            pass
+                g_prev = self.gig_prev(liszt,gig)
+                g_next = self.gig_next(liszt,gig)
 
-    return gigs
+            fname_prev = '""'
+            fname_next = '""'
 
-def build_gig_data(top):
-    gigs = []
-    for f in glob(top + '/*.gigs'):
-        #print f
-        gigs += get_data_from_file(f)
-    return gigs
+            if g_prev != None:
+                fname_prev = g_prev.date.strftime("%Y_%m_%d")
+                if suffix != None:
+                    fname_prev += suffix
+            if g_next != None:
+                fname_next = g_next.date.strftime("%Y_%m_%d")
+                if suffix != None:
+                    fname_next += suffix
+            
+            link_prev = '<a href=' + fname_prev + '.html>&lt;</a>'
+            link_next = '<a href=' + fname_next + '.html>&gt;</a>'
 
-# Queries on gig data:
+        vg_fname = ''
+        yg_fname = ''
+        if linkback:
+            vg_fname = gig.date.strftime("%Y_%m_%d") + '_v' + self.id_of_venue(gig.venue) + '.html'
+            yg_fname = gig.date.strftime("%Y_%m_%d") + '.html'
+        vlink = '<a href=' + vg_fname + '>' + gig.venue + '</a>'
+        ylink = '<a href=' + yg_fname + '>' + gig.date.strftime("%Y") + '</a>' 
+        setlist_string = '<div class=sl_title>\n' + vlink + '<br>' + \
+                    link_prev + link_next + ' ' + \
+                    ordinal(day) + gig.date.strftime(" %B, ") + ylink + '</div>' + '\n'
 
-def unique_artists(gigs):
-    raw_artists = []
-    for gig in gigs:
-        raw_artists += [ s['artist'] for s in gig['sets'] ]
-    artists = list(set(raw_artists))
-    count = [ raw_artists.count(a) for a in artists ]
-    zipped = zip( artists, count )
-    zipped.sort(key=lambda x: ( -x[1], x[0] ), reverse=True )
-    zipped.reverse()
-    return zipped
+        #artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
 
-def unique_venues(gigs):
-    raw_venues = ([ g["venue"] for g in gigs])
-    venues = list(set(raw_venues))
-    count = [ raw_venues.count(v) for v in venues ]
-    zipped = zip( venues, count )
-    zipped.sort(key=lambda x: ( -x[1], x[0] ), reverse=True )
-    zipped.reverse()
-    return zipped
+        for g in gig.sets:
+            ag_fname = ''
+            if linkback:
+                ag_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(g.artist) + '.html'
 
-def unique_years(gigs):
-    raw_years = [ g["date"].year for g in gigs ]
-    years = list(set(raw_years))
-    years.sort()
-    count = [ raw_years.count(y) for y in years ]
-    zipped = zip( years, count )
-    zipped.sort(key=lambda x: x[1])
-    zipped.reverse()
-    return zipped
+            alink = '<a href=' + ag_fname + '>' + g.artist + '</a>'
+            # not sure whether to label entire sets as solo:
+            # if g.solo:
+            #    alink += ' ' + self.make_flag_note('solo')
+            if g.guest_only:
+                alink = '(' + alink + ')'
+            setlist_string += '\n<br> ' + alink
 
-def extract_sets(gigs):
-    for gig in gigs:
-        print gig['date']
+            asymbol = self.footnote_symbol( gig_artists.index(g.artist) ) if g.artist in gig_guests else ''
 
-def search_gigs(gigs,query):
-    results = []
-    for gig in gigs:
-        if query['id'] == None:
-            date = gig['date'].strftime('%d %B, %Y')
-            if query['date'] != None and search(query['date'],date,IGNORECASE):
-                #print "Matched date."
-                results.append(gig)
-            elif query['venue'] != None and search(query['venue'],gig['venue'],IGNORECASE):
-                # gig['venue'] == query['venue']: 
-                #print "Matched venue."
-                results.append(gig)
+            if g.guest_only:
+                setlist_string += ' ' + self.make_flag_note( 'guest', "Only as a guest in another set", asymbol ) 
             else:
-                for s in gig['sets']:
-                    if query['artist'] != None and search(query['artist'],s['artist'],IGNORECASE):
-                        #print "Matched artist."
-                        # s['artist'] == query['artist']:
-                        results.append(gig)
+                setlist_string += ' ' + self.make_flag_note( 'guest', "+ Guested in another set", asymbol ) 
+
+            list_tag = 'ol' if g.ordered else 'ul'
+
+            if len(g.songs) > 0:
+                setlist_string += '\n<' + list_tag + '>'
+
+                #for (s,f) in zip(g['setlist'],g['songflags']):
+                for s in g.songs:
+                    sn = s.title if s.title else '???'
+                    if sn == '???' and s.quote != None:
+                        sn = '<div title=' + s.quote + '>' + sn + '</div>'
+                    if s.set_opener:
+                        setlist_string += '\n<br><br>'
+                    if s.medley:
+                        joiner = '' # could be '&gt; ' or '+ '
+                        setlist_string += '\n<br>' + joiner + sn
                     else:
-                        for song in s['setlist']:
-                            if query['song'] != None and search(query['song'],song,IGNORECASE):
-                                #print "Matched song."
-                                results.append(gig)
-                    #elif query['song'] in s['setlist']:
-        elif query['id'] == gig['id']:
-            results.append(gig)
-            break
-    return results
+                        setlist_string += '\n<li>' + sn + ' '
+                    if s.improv:
+                        setlist_string += self.make_flag_note('improv')
+                    if s.solo:
+                        setlist_string += self.make_flag_note('solo')
+                    if s.debut:
+                        setlist_string += self.make_flag_note('debut')
+                    if s.first_time:
+                        setlist_string += self.make_flag_note('first_time')
+                    #if s.cover:
+                        #setlist_string += '<div class=flag title="' + s.cover + ' cover">&curren;</div>'
 
-# HTML Generation
-
-def generate_html_setlist(gig):
-    lines = [ '<html>', '<head>',
-              '<link rel="stylesheet" type="text/css" href="../style.css">',
-              '<head>'
-              '<body class=setlist style="background-image:url(\'' 
-                    + 'bhi13.jpg' + '\'); image-width:40%;">',
-              '<div class=sl_tit>',
-              gig['sets'][0]['artist'] + ' <br> ' + gig['venue'] 
-                    + ' <br> ' + gig['date'].strftime('%A, %d %B, %Y'),
-              '</div>', '<ol>']
-    for song in gig['sets'][0]['setlist']:
-        if not song.strip():
-            lines.append('<br> <br>')
-        else:
-            lines.append( '<li> ' + song )
-    lines += [ '</ol>', '</body>', '</html>', ]
-    return lines
-
-def generate_html_list(liszt):
-    # Used to generate venue/artist lists.
-    lines = [ '<html>', '<head>',
-              '<link rel="stylesheet" type="text/css" href="../style.css">',
-              '</head>', '<body>', '<ul>']
-    for (x,c) in liszt:
-        element = '<li> <div class=white>' + str(c) + '</div>'
-        if c > 1:
-            element += '<div class=times>&times;' + str(c) + '</div></li>'
-        lines.append(element)
-    lines.append( [ '</ul>', '</body>', '</html>' ] )
-    return lines
-
-def generate_html_files(gigs,head):
-    for gig in gigs:
-        fname = head + gig['date'].strftime('%y%m%d') + '.html'
-        lines = generate_html_setlist(gig)
-        with open(fname,'w') as f:
-            for line in lines:
-                f.write("%s\n" % line)
-
-    with open(head+'venues.html','w') as f:
-        for line in generate_html_list(unique_venues(gigs)):
-            f.write("%s\n" % line)
-
-    with open(head+'artists.html','w') as f:
-        for line in generate_html_list(unique_artists(gigs)):
-            f.write("%s\n" % line)
-
-    for (y,c) in unique_years(gigs):
-        print "Gigs in %d:" % y
-        for gig in gigs:
-            if gig['date'].year == y:
-                print gig['sets'][0]['artist']
-                # Need to order by date
-
-    return
-
-# Songs by artist
-
-def unique_songs_of_artist(gigs,artist):
-    raw_songs = []
-    for gig in gigs:
-        for s in gig['sets']:
-            # look for song in artist's main set:
-            if search(artist, s['artist'], IGNORECASE):
-                for song in s['setlist']:
-                    got = False
-                    for got_song in raw_songs:
-                        if got_song['song'] == song:
-                            got_song['events'].append(gig['id'])
-                            got = True
-                    if not got:
-                        raw_songs.append( { 'song': song, 'events': [ gig['id'] ] } )
+                    for guest in s.guests:
+                        if guest in gig_artists:
+                            a_indx = gig_artists.index(guest)
+                            setlist_string += self.make_flag_note( 'guest', '+ ' + guest, 
+                                                                   self.footnote_symbol(a_indx) )
+                        
+                setlist_string += '\n</' + list_tag + '>'
             else:
-                # look for song in other sets for which the artist is flagged:
-                for song, flags in zip( s['setlist'], s['flags'] ):
-                    flagged = False
-                    for flag in flags:
-                        if search( artist, flag, IGNORECASE ):
-                            flagged = True
-                    if flagged:
+                setlist_string += '<br>'
+
+        return setlist_string
+    def make_file( self, filename, years_string, gigs_string, setlist_string, img = ""):
+        # writes lines to file
+        fname_html = self.head + filename + '.html'
+        #fname_img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
+        img_string = '' # '    <div id="img"><img src=./img/0000_00_00.jpg></div>' 
+        if os.path.isfile('./html/' + img):
+            img_string = '    <div id="img"><img src=./' + img + '></div>' 
+
+        giglist_id = 'col_giglist'
+        if setlist_string == '':
+            giglist_id = 'col_giglist_wide'
+
+        lines = [
+            '<html lang="en">',
+            '<head>',
+            '    <title>Concert Diary</title>',
+            '    <link rel="stylesheet" type="text/css" href="style.css">',
+            '    <link rel="shortcut icon" href="img/note.ico" type="image/x-icon">',
+            '</head>',
+            '<body>',
+            img_string,
+            '    <div id="body">',
+            '        <div id="header" class="cf"></div>',
+            '        <div id="main" class="cf">',
+            '            <div id="col_yearlist">',
+                             years_string,
+            '            </div>',
+            '            <div id="content">',
+            '                <div id="' + giglist_id + '">',
+                                 gigs_string,
+            '                </div>',
+            '                <div id="col_setlist">',
+                                 setlist_string,
+            '                </div>',
+            '            </div>',
+            '        </div>',
+            '        <div id="footer" class="cf"> </div>',
+            '    </div>',
+            '</body>',
+            '</html>',
+            ]
+        with open( fname_html, 'w') as the_file:
+            for l in lines:
+                the_file.write(l)
+    def make_stylesheet(self):
+        fname_html = self.head + 'style.css'
+        lines = [
+            'html,body {',
+            '    margin:0;',
+            '    padding:0;',
+            '    font-family: sans-serif;',
+            '    color:gray;/*#000;*/',
+            '    background:black;/*#fff;*/',
+            '    }',
+            #'pre {',
+            #'    font-size: 3ex;',
+            #'    }',
+            '#body {',
+            '    width:1300px;',
+            '    margin:0 auto;',
+            '    font-size: 1.6ex;',
+            '    font-family: sans-serif;',
+            '    color:gray;/*#000;*/',
+            '    background:black;/*#ddd;*/',
+            '    }',
+            '#img {',
+            '    position: absolute;',
+            '    top: 100;',
+            '    right: 100;',
+            '    width: 200;',
+            '    height: auto;',
+            '    z-index: 1;',
+            '    }',
+            '#header {',
+            '    padding:10px;',
+            '    background:black;/*#fdd;*/',
+            '    }',
+            'ul {',
+            '    list-style-type: square;',
+            '    }'
+            '#col_yearlist {',
+            '    position:fixed;',
+            '    float:left;',
+            '    width:150px;',
+            '    padding:10px;',
+            '    left:20px;',
+            '    background:black;/*#bfb;*/',
+            '    }',
+            '#content {',
+            '    position:relative;',
+            '    float:left;',
+            '    left:0px;',
+            '    /*width:1340px;*/',
+            '    color:gray;',
+            '    }',
+            '#col_giglist {',
+            '    position:relative;',
+            '    float:left;',
+            '    left:0px;',
+            '    width:600px;',
+            '    background:black;/*#ddf;*/',
+            '    }',
+            '#col_setlist {',
+            '    position:relative;',
+            '    float:left;',
+            '    left:200px;',
+            '    width:500px;',
+            '    padding:10px;',
+            '    background:black;/*#dff;*/',
+            '    color:gray;',
+            '    }',
+            '#footer {',
+            '    padding:10px;',
+            '    background:black;/*#ff9;*/',
+            '    }',
+            '/* Easy clearing of floats (see http://positioniseverything.net/easyclearing.html) */',
+            '.cf:after {',
+            '    display:block;',
+            '    clear:both;',
+            '    height:0;',
+            '    visibility:hidden;',
+            '    content:" ";',
+            '    font-size:0;',
+            '    }',
+            '/* Does not validate - use conditional comments for this bit if you want valid CSS */',
+            '.cf {*zoom:1;}',
+            '',
+            '.yr {',
+            '    width: 60px;',
+            '    left: 0;',
+            '    text-align: center;',
+            '    background-color: #153E7E;',
+            '    display: float;',
+            '    border: 1px #C9BE62 solid;',
+            '    padding: 8px;',
+            '    }',
+            'a:link, a:visited {',
+            '    text-decoration: none;',
+            '    color: #C9BE62;',
+            '    text-decoration: bold;',
+            '    }',
+            'a:hover {text-decoration: underline}',
+            'a.future:link {',
+            '    color: gray;',
+            '    text-decoration: none;',
+            '    font-style: italic;',
+            '    }',
+            'a.future:visited {',
+            '    color: gray;',
+            '    text-decoration: none;',
+            '    font-style: italic;',
+            '    }',
+            'a.future:hover {',
+            '    color: gray;',
+            '    text-decoration: none;',
+            '    font-style: italic;',
+            '    }',
+            'a.future:active {',
+            '    color: gray;',
+            '    text-decoration: none;',
+            '    font-style: italic; }',
+            'a.invis {',
+            '   color: black',
+            '   }',
+            '',
+            '.sl_title {',
+            '    width:60%;',
+            '    color: #C9BE62;',
+            '    background-color: #153E7E;',
+            '    padding: 10px;',
+            '    text-align: left;',
+            '    border: 1px #C9BE62 solid;',
+            '    }',
+            'table {',
+            '    font-size: 1.7ex;',
+            '    border-collapse: collapse',
+            '    }',
+            '.date {',
+            '    font-weight: bold;',
+            '    font-family: "Courier new", monospace;',
+            '    }',
+            'a.highlight {',
+            '    color: #990000;',
+            #'    color: #880000;',
+            '    font-weight: bold;',
+            '    }',
+            '.flag {',
+            '    display: inline;',
+            '    color: #153E7E;',
+            '    }',
+        ]
+        with open( fname_html, 'w') as the_file:
+            for l in lines:
+                the_file.write(l + '\n')
+    def sp(self,n):
+        # inserts a non-breaking space
+        return '&emsp;' * n
+    def row(self,entries, alignment = 'lll'):
+        string = '\n<tr>'
+        for entry in zip(entries,alignment):
+            align = ''
+            if entry[1] == 'r':
+                align = ' align=right'
+            elif entry[1] == 'c':
+                align = ' align=center'
+            string += '\n<td' + align + '>' + entry[0] + '</td>'
+        string += '</tr>'
+        return string
+    def order_collection_by_count(self,collection):
+        # accepts a list of 2-element lists : [ ( thing, [gigs] ) , ... ]
+        unique_counts = list(set([ len(x[1]) for x in collection ]))
+        ordered = []
+        for c in unique_counts:
+            members = []
+            for col in collection:
+                if len(col[1]) == c:
+                    members.append(col)
+            ordered.append( [ c, members ] )
+        ordered.sort( key=lambda x: x[0] )
+        return ordered
+    def build_gigs_string(self,gigs,y=None,link_suffix=None,file_title=None,force_artist=None,match_id=0):
+        gigs_string = "<br>"
+        if file_title:
+            gigs_string += file_title + ': <br> <br>'
+        gigs_string += '\n<table>'
+        i = 0
+        for gig in gigs:
+            if y == None or gig.date.year == y:
+                i += 1
+                # day = str(int(gig.date.strftime("%d"))) # removes leadings 0's
+                # if len(day) == 1:
+                #     # pad single digit with a space
+                #     day = '&nbsp;' + day
+
+                day = gig.date.strftime("%d")
+                date_str = '<div class=date>' + day + \
+                            gig.date.strftime(" %b %Y") + '</div>'
+
+                name_str = gig.sets[0].artist
+
+                if force_artist != None and force_artist != name_str:
+                    name_str = '<i>' + force_artist + '</i>'
+
+                if not gig.future:
+                    link = gig.date.strftime("%Y_%m_%d") 
+                    if link_suffix:
+                        link += '_' + link_suffix
+                    name_str2 = name_str
+                    name_str = '<a '
+                    if match_id == gig.index:
+                        name_str += 'class=highlight '
+                    name_str += 'href=' + link + '.html>' + name_str2 + '</a>'
+
+                if gig.future:
+                    gigs_string += self.row( [ '', name_str, date_str, gig.venue ], 'rlll' )
+                else:
+                    gigs_string += self.row( [ str(i) + '.' + self.sp(1), name_str, date_str, gig.venue ], 'rlll' )
+
+        gigs_string += self.row( [ self.sp(3), self.sp(13), self.sp(9), '' ] )
+        gigs_string += '\n</table>'
+        return gigs_string
+    def is_int(self,s):
+        try:
+            int(s)
+            return True
+        except TypeError:
+            return False
+        except ValueError:
+            return False
+    def is_highlight_year(self,h,y):
+        if h == None or y == None:
+            return False
+        elif str(h) == str(y):
+            return True
+    def make_years_string(self,highlight_year=None):
+        years_string = ''
+        for y in self.years:
+            if y == '':
+                years_string += '\n<br>'
+            else:
+                if y[-1] == '0':
+                    years_string += '\n<br>'
+                years_string += '\n<div class=yr> <a '
+                if self.is_highlight_year( highlight_year, y ):
+                    years_string += 'class=highlight '
+                years_string += 'href=' + str(y).lower() + '.html>' + str(y) + '</a> </div>'
+        return years_string
+    def make_artist_index_string(self,years_string_a):
+        all_artists = self.gig_data.get_unique_artists()
+
+        n_headliners = 0
+        for (a,c) in all_artists:
+            if self.gig_data.artist_is_support(a):
+                pass
+            else:
+                n_headliners += 1
+
+        artists_string = str(self.gig_data.n_past_gigs()) + ' events featuring ' + \
+                str(len(all_artists)) + \
+                ' artists [' + str(n_headliners) + ' headliners] ' + \
+                '(those in italic were never headliners): ' + \
+                '<br><br>\n<table>'
+
+        n_gigs_for_last_artist = 0
+        counter = 0
+
+        for (a,c) in all_artists:
+            counter += 1
+            afname = 'a' + str(counter).zfill(3)
+
+            all_agigs = self.gig_data.all_gigs_of_artist(a,True) # need to include future gigs here!
+            artist_string = self.build_gigs_string( all_agigs, None, afname, None, a )
+
+            breakdown = ''
+            if len(c) > 1:
+                breakdown += '\n<br> <hr> <pre>'
+                unique_songs = self.gig_data.unique_songs_of_artist(a + '$')
+
+                breakdown += 'Breakdown of %d songs across %d events (%.2f songs/event):<br> <br>' \
+                                % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
+
+                events = [ x for x in c ]
+                events.sort(key=lambda x: x.index)
+
+                for song in unique_songs:
+                    event_string = ""
+                    for event in events:
+                        if event in song['events']:
+                            event_string += 'X'
+                        else:
+                            event_string += '-'
+                    breakdown += '<br>{0:3d} {1:50s} {2:30s}' \
+                        . format( len(song['events']), song['title'], event_string )
+                breakdown += '\n</pre>'
+
+            self.make_file( afname, years_string_a, artist_string + breakdown, '' )
+
+            for gig in c:
+                suffix = '_a' + str(counter).zfill(3)
+                link = gig.date.strftime("%Y_%m_%d") + suffix
+                img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
+                artist_string_h = self.build_gigs_string( all_agigs, None, afname, None, a, gig.index )
+                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, True, c, suffix)
+                self.make_file( link, years_string_a, artist_string_h + breakdown, setlist_string, img )
+
+            link = '<a href=' + afname + '.html>' + a + '</a>'
+            if self.gig_data.artist_is_support(a):
+                link = '<i>' + link + '</i>'
+            if len(c) == n_gigs_for_last_artist:
+                artists_string += ', ' + link
+            else:
+                artists_string += '</td></tr>\n<tr><td align=right valign=top>' + str(len(c)) + \
+                    '.' + self.sp(1) + '</td><td>' + link
+
+            n_gigs_for_last_artist = len(c)
+
+        artists_string += '\n</table>'
+        
+        return artists_string
+    def make_venue_index_string(self,years_string_v):
+        all_venues = self.gig_data.get_unique_venues()
+        venues_string = str(self.gig_data.n_past_gigs()) + ' events at ' + \
+                str(len(all_venues)) + ' venues:<br><br>\n<table>'
+        n_gigs_for_last_venue = 0
+        counter = 0
+        for (v,c) in all_venues:
+            counter += 1
+            vfname = 'v' + str(counter).zfill(3)
+
+            all_vgigs = self.gig_data.all_gigs_of_venue(v,True) # need to include future gigs here!
+            venue_string = self.build_gigs_string( all_vgigs, None, vfname, v )
+            self.make_file( vfname, years_string_v, venue_string, '' )
+
+            for gig in c:
+                suffix = '_v' + str(counter).zfill(3)
+                link = gig.date.strftime("%Y_%m_%d") + suffix
+                img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
+                venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
+                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, True, c, suffix)
+                self.make_file( link, years_string_v, venue_string_h, setlist_string, img )
+
+            link = '<a href=' + vfname + '.html>' + v + '</a>'
+
+            if len(c) == n_gigs_for_last_venue:
+                venues_string += ', ' + link
+            else:
+                venues_string += '</td></tr>\n<tr><td align=right valign=top>' + str(len(c)) + \
+                    '.' + self.sp(1) + '</td><td>' + link
+            n_gigs_for_last_venue = len(c)
+
+        venues_string += '</table>'
+
+        cities = self.gig_data.unique_cities()
+        venues_string += '\n<br> <br> <hr>\n<br>' + str(len(cities)) + ' cities:<br><br>\n<table>'
+        ordered_cities = self.order_collection_by_count(cities)
+        ordered_cities.reverse()
+        for order in ordered_cities:
+            venues_string += '\n<tr><td align=right valign=top>' + str(order[0]) + '.' + self.sp(1) + \
+                    '</td><td>' + ', '.join([ x[0] for x in order[1]]) + '</td></tr>'
+        venues_string += '</table>'
+        return venues_string
+    def generate_html_files(self):
+        self.make_stylesheet()
+
+        self.years     = ['Artists', 'Venues', ''] + self.years
+        years_string   = self.make_years_string()
+        years_string_a = self.make_years_string("Artists")
+        years_string_v = self.make_years_string("Venues")
+        index_string   = ''
+        years_string_i = ''
+         
+        for (y,c) in self.gig_data.unique_years(True):
+            gigs_string = self.build_gigs_string(self.gig_data.gigs,y)
+            years_string_h = self.make_years_string(y)
+            if y == datetime.today().year:
+                # The index page should load the current year, with appropriate highlighting
+                index_string = gigs_string
+                years_string_i = years_string_h
+            self.make_file( str(y), years_string_h, gigs_string, '' )
+            for gig in self.gig_data.gigs:
+                if gig.date.year == y:
+                    setlist_string = self.gig_setlist_string(gig,self.gig_data.gigs)
+                    img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
+                    gigs_string_h = self.build_gigs_string( self.gig_data.gigs, y, 
+                                                            None, None, None, gig.index)
+                    self.make_file( gig.date.strftime("%Y_%m_%d"), 
+                               years_string_h, gigs_string_h, setlist_string, img)
+            
+        artists_string = self.make_artist_index_string(years_string_a)
+        venues_string = self.make_venue_index_string(years_string_v)
+
+        self.make_file( 'venues',    years_string_v,   venues_string,    '' )
+        self.make_file( 'artists',   years_string_a,   artists_string,   '' )
+        self.make_file( 'index',     years_string_i,   index_string,     '' )
+
+        return
+
+class g_gigs():
+    def __init__(self,root):
+        self.root = root
+        self.gigs = []
+
+        self.unique_artists = None
+        self.unique_venues = None
+        
+        self.build_gig_data()
+    def __str__(self):
+        # print summary of gig data
+        nmax      = 30
+        artists   = self.get_unique_artists()
+        venues    = self.get_unique_venues()
+        years     = self.unique_years()
+        n_gigs    = self.n_past_gigs()
+        n_venues  = " " + str(len(venues))
+        n_artists = str(len(artists))
+        n_years   = " " + str(len(years))
+
+        string = ( ""
+         "\n          /---------------------\ "
+         "\n          |                     | "
+         "\n          |     %s years       | "
+         "\n          |     %s gigs        | "
+         "\n          |     %s venues      | "
+         "\n          |     %s artists     | "
+         "\n          |                     | "
+         "\n          \---------------------/ "
+         "\n"
+         ) % ( n_years, n_gigs, n_venues, n_artists )
+
+        for i in range(0,nmax-1):
+            string += '\n {0:3d} {1:30s} {2:3d} {3:30s}' \
+                . format( len(artists[i][1]), artists[i][0], \
+                          len(venues[i][1]), venues[i][0])
+
+        string += '\n'
+
+        return string
+
+    # Functions to build gig data:
+    def process_song_line(self,line,this_set):
+        # This function builds a g_song and appends it to this_set.
+        # It also updates the set flags if necessary.
+
+        splits = line.split('---')
+        title = splits[0]
+        title = sub( r"\s*---.*$", '', title)
+        title = sub( r"\s*\*+\s*$", '', title)
+        title = sub( r"\s*\^+\s*$", '', title)
+        title = sub( r"\s*\~+\s*$", '', title)
+        title = ' '.join(w[0].upper() + w[1:] for w in title.split()) # capitalise each word
+        
+
+        if match('^\s*$', title):
+            # process set flags
+            title = None
+            if len(splits) > 1:
+                # set flags:
+                if 'unordered' in splits[1]:
+                    this_set.ordered = False
+                if 'solo' in splits[1]:
+                    this_set.solo = True
+        else:
+            # process song flags and append
+            if match( '\?+', title ):
+                title = None
+            song = g_song(title)
+            if match( '^\s+', line )  :
+                # if the line is indented, it's part of a medley
+                song.medley = True;
+            if len(splits) > 1:
+                # song flags:
+                if match( '.*{.*', splits[1] ):
+                    song.guests += findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                if match( '.*".*', splits[1] ):
+                    m = match( '.*(".*").*', splits[1])
+                    if m:
+                        song.quote = m.group(1)
+                if match( ".*<.*>.*", splits[1] ):
+                    m = match( '.*<(.*)>.*', splits[1] )
+                    if m:
+                        song.cover = m.group(1)
+                if 'solo' in splits[1]:
+                    song.solo = True
+                if 'debut' in splits[1]:
+                    song.debut = True
+                if 'improv' in splits[1]:
+                    song.improv = True
+            this_set.append_song(song)
+    def process_venue_name(self,name):
+        # This does nothing, but it would be nice to sort out underscores.
+        #new_name = sub( r'_', '&nbsp;', name)
+        return name
+    def process_artist_name(self,name):
+        # Just strips comments
+        new_name = name
+        m = match( '^(.*)\s*---', new_name )
+        if m:
+            new_name = m.group(1)
+        new_name = new_name.strip()
+        return new_name
+    def identify_first_times(self):
+        for (a,c) in self.get_unique_artists():
+            for song in self.unique_songs_of_artist(a):
+                first_id = min( [ x.index for x in song['events'] ] )
+                for g in self.gigs:
+                    if g.index == first_id:
+                        for s in g.sets:
+                            try:
+                                pos = s.songs.index(song['title'])
+                                if s.artist == a or a in s.songs[pos].guests:
+                                    s.songs[pos].first_time = True
+                                    break
+                            except ValueError:
+                                pass
+    def get_data_from_file(self,path):
+        level = 0
+        count = 0
+        commented = False
+        com_level = -1
+        last_blank = False
+        with open(path) as f:
+            lines = f.read().splitlines()
+        for line in lines:
+            mopen = match('^\{\{\{ (.*)',line)
+            mclose = match('^\}\}\}',line)
+            mblank = match('^\s*$',line)
+            mc = match('^\{\{\{\s*---',line)
+            if mc:
+                commented = True
+                if com_level == -1:
+                    com_level = level
+            if mblank:
+                last_blank = True
+            elif mopen:
+                level += 1
+                m1 = match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                if commented:
+                    pass
+                elif m1:
+                    count += 1
+                    d = datetime.strptime( m1.group(1), "%d.%m.%Y" )
+                    ident = d.strftime( "%y" ) + '{0:02d}'.format(count)
+                    v = self.process_venue_name( m1.group(2) )
+                    this_gig = g_gig( ident, d, v )
+                else:
+                    a = self.process_artist_name( mopen.group(1) )
+                    this_set = g_set(a)
+                    this_gig.append_set(this_set)
+            elif mclose:
+                last_blank = False
+                level -= 1
+                if level == 0 and not commented:
+                    this_gig.add_dummy_sets_for_guests()
+                    self.gigs.append(this_gig)
+                    this_gig = None
+                if commented and com_level == level:
+                    com_level = -1
+                    commented = False
+            elif level == 2:
+                self.process_song_line(line,this_set)
+                last_blank = False
+            else:
+                pass
+    def build_gig_data(self):
+        for f in glob.glob(self.root + '/*.gigs'):
+            self.get_data_from_file(f)
+        self.gigs.sort(key=lambda x: x.index)
+        self.identify_first_times()
+        
+    # Some utilities
+    def n_past_gigs(self):
+        n_gigs = 0
+        for g in self.gigs:
+            if not g.future:
+                n_gigs += 1
+        return n_gigs
+    def artist_stats(self,artist):
+        unique_songs = self.unique_songs_of_artist(artist)
+        
+        raw_events = []
+        for song in unique_songs:
+            raw_events += song['events']
+        
+        events = list(set(raw_events))
+        events.sort(key=lambda x: x.index) 
+        
+        print "\n\n Profiling %d unique songs from %d events by %s:\n"  \
+            % (len(unique_songs), len(events), artist)
+        
+        for song in unique_songs:
+            event_string = ""
+            for event in events:
+                if event in song['events']:
+                    event_string += 'X'
+                else:
+                    event_string += '-'
+            print '{0:3d} {1:50s} {2:30s}' \
+                . format( len(song['events']), song['title'], event_string )
+    def songs_performed_by_multiple_artists(self):
+        raw_songs = [] # list of { song, artists, gigs }
+        for g in self.gigs:
+            for s in g.sets:
+                for song in s.songs:
+                    if song.title:
+                        artists = [ s.artist ] # + song.guests
+                        try:
+                            i = [ x['title'] for x in raw_songs ].index(song.title)
+                            for a in artists:
+                                if a not in raw_songs[i]['artists']:
+                                    raw_songs[i]['artists'].append(a)
+                        except ValueError:
+                            # add new song
+                            new_song = { 'title': song.title, 'artists': artists }
+                            raw_songs.append(new_song)
+        raw_songs = [ x for x in raw_songs if len(x['artists']) > 1 ]
+        for song in raw_songs:
+            print song['title'].ljust(30) + ' ' + ', '.join(song['artists'])
+    def unique_songs_of_artist(self,artist):
+        raw_songs = []
+        for gig in self.gigs:
+            for s in gig.sets:
+                # look for song in artist's main set:
+                if search(artist, s.artist, IGNORECASE):
+                    for song in s.songs:
                         got = False
+                        if not song.title: # Untitled
+                            continue
                         for got_song in raw_songs:
-                            if got_song['song'] == song:
-                                got_song['events'].append(gig['id'])
+                            if got_song['title'] == song.title:
+                                got_song['events'].append(gig)
                                 got = True
                         if not got:
-                            raw_songs.append( { 'song': song, 'events': [ gig['id'] ] } )
+                            raw_songs.append( { 'title': song.title, 'events': [gig] } )
+                else:
+                    # look for song in other sets for which the artist is flagged:
 
-    raw_songs.sort(key=lambda x: ( -len(x['events']), x['song'] ), reverse=True )
-    raw_songs.reverse()
-    return raw_songs
+                    for song in s.songs:
+                        flagged = False
+                        for guest in song.guests:
+                            if search( artist, guest, IGNORECASE ):
+                                flagged = True
+                        if flagged:
+                            got = False
+                            for got_song in raw_songs:
+                                if got_song['title'] == song.title:
+                                    got_song['events'].append(gig)
+                                    got = True
+                            if not got:
+                                raw_songs.append( { 'title': song.title, 'events': [gig] } )
 
-    #count = [ raw_songs.count(s) for s in songs ]
-    #zipped = zip( songs, count )
-    #zipped.sort(key=lambda x: x[1])
-    #zipped.reverse()
-    #return zipped 
+        raw_songs.sort(key=lambda x: (-len(x['events']),x['title']), reverse=True)
+        raw_songs.reverse()
+        return raw_songs
 
-def artist_stats(gigs,artist):
-    unique_songs = unique_songs_of_artist( gigs, artist )
+    # Queries on gig data:
+    def all_gigs_of_artist(self,artist,inc_future=False):
+        artgigs = []
+        for gig in self.gigs:
+            if not gig.future or inc_future:
+                gig_artists = [ s.artist for s in gig.sets ]
+                if artist in gig_artists:
+                    artgigs.append(gig)
+        
+        artgigs.sort(key=lambda x: x.index)
+        
+        return artgigs
+    def all_gigs_of_venue(self,venue,inc_future=False):
+        vengigs = []
+        for gig in self.gigs:
+            if not gig.future or inc_future:
+                if venue in gig.venue:
+                    vengigs.append(gig)
+        
+        vengigs.sort(key=lambda x: x.index)
+        return vengigs
+    def get_unique_artists(self,inc_future=False):
+        if not self.unique_artists:
+            #def unique_artists(self,inc_future=False):
+            artists = []
+            artgigs = []
+            for gig in self.gigs:
+                if not gig.future or inc_future:
+                    gig_artists = [ s.artist for s in gig.sets ]
+                    for artist in gig_artists:
+                        try:
+                            i = artists.index(artist)
+                            artgigs[i].append(gig)
+                        except ValueError:
+                            artists.append(artist)
+                            artgigs.append([gig])
+            
+            for l in artgigs:
+                l.sort(key=lambda x: x.index)
+            
+            zipped = zip( artists, artgigs )
+            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
+            zipped.reverse()
+            self.unique_artists = zipped
+        return self.unique_artists
+    def get_unique_venues(self,inc_future=False):
+        if not self.unique_venues:
+            venues = []
+            vengigs = []
+            for gig in self.gigs:
+                if not gig.future or inc_future:
+                    venue = gig.venue
+                    try:
+                        i = venues.index(venue)
+                        vengigs[i].append(gig)
+                    except ValueError:
+                        venues.append(venue)
+                        vengigs.append([gig])
+            
+            for l in vengigs:
+                l.sort(key=lambda x: x.index)
+            
+            zipped = zip( venues, vengigs )
+            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
+            zipped.reverse()
+            self.unique_venues = zipped
+        return self.unique_venues
+    def unique_cities(self):
+        cities = []
+        city_gigs = []
+        for gig in self.gigs:
+            if not gig.future:
+                city = match('^(\w+).*',gig.venue).group(1)
+                try:
+                    pos = cities.index(city)
+                    city_gigs[pos].append(gig)
+                except ValueError:
+                    cities.append(city)
+                    city_gigs.append([gig])
+        
+        for l in city_gigs:
+            l.sort(key=lambda x: x.index)
+        
+        zipped = zip( cities, city_gigs )
+        zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
+        zipped.reverse()
+        return zipped
+    def unique_years(self,inc_future=False):
+        raw_years = []
+        for gig in self.gigs:
+            if not gig.future or inc_future:
+                raw_years += [ gig.date.year ]
+        years = list(set(raw_years))
+        years.sort()
+        count = [ raw_years.count(y) for y in years ]
+        zipped = zip( years, count )
+        zipped.sort(key=lambda x: x[1])
+        zipped.reverse()
+        return zipped
+    def artist_is_support(self,a):
+        support_only = True
+        for gig in self.gigs:
+            if gig.sets[0].artist == a:
+                support_only = False 
+                break
+        return support_only
 
-    raw_events = []
-    for song in unique_songs:
-        raw_events += song['events']
+class g_gig():
+    def __init__(self, ident, date, venue):
+        self.index  = ident
+        self.date   = date
+        self.venue  = venue
+        self.sets   = []
+        today = datetime.today()
+        self.future = date > today or date == today and today.hour < 20 
+    def __str__(self):
+        # print formatter
+        string =  " ======================================\n"
+        string += "\n    Date: " + self.date.strftime('%A %d %B, %Y')
+        string += "\n   Venue: " + self.venue
+        for s in self.sets:
+            string += "\n  Artist: " + s.artist
+            for song in s.songs:
+                string += "\n          > " + song.title
+        string += "\n"
+        return string
+    def append_set(self,s):
+        self.sets.append(s)
+    def add_dummy_sets_for_guests(self):
+        # Adds empty sets for song guests
+        # If guests appear in a songflag but not in a set of their own, we must
+        # add a dummy set (marked "guest_only") to ensure they are included in
+        # the artist statistics.
 
-    events = list(set(raw_events))
-    events.sort()
+        addarts = []
+        artists = [ x.artist for x in self.sets ]
 
-    print "\n\n Profiling %d unique songs from %d events by %s:\n"  \
-        % (len(unique_songs), len(events), artist)
+        for s in self.sets:
+            for song in s.songs:
+                for g in song.guests:
+                    if not g in artists and not g in addarts:
+                        addarts.insert(0,g)
 
-    for song in unique_songs:
-        event_string = ""
-        for event in events:
-            if event in song['events']:
-                event_string += 'X'
-            else:
-                event_string += '-'
-        print '{0:3d} {1:50s} {2:30s}' \
-            . format( len(song['events']), song['song'], event_string )
+        # The footnote numbering will be derived from the index in setlists array,
+        # so we always insert the guests at index 1 (immediately after the headliner),
+        # which is usually all we need...
 
-# Main
+        for a in addarts:
+            this_set = g_set(a)
+            this_set.guest_only = True
+            self.sets.insert(1,this_set)
+    def all_artists(self):
+        artists = [ x.artist for x in self.sets ]
+        # All guest artists should have a dummy set, so this is okay.
+        return artists
 
-def print_help():
-    print ( " Optional args:\n"
-            " \n"
-            " -a -artist\n"
-            " -v -venue\n"
-            " -s -song\n"
-            " -d -date\n"
-            " -i -id\n"
-            )
-    return
+class g_set():
+    def __init__(self, artist):
+        self.artist     = artist
+        self.songs      = []
+        # flags
+        self.ordered    = True
+        self.guest_only = False
+        self.solo       = False
+    def append_song(self, song):
+        self.songs.append(song)
 
-def process_args(args):
-    # Converts user args to a search query
-    query = { 'date'  : None,
-              'venue' : None,
-              'artist': None,
-              'song'  : None,
-              'id'    : None,
-              'stats' : False,   # whether to build song_stats 
-              }
-    n_songs = 25
-    empty = True
-    for i in range(0, len(args)):
-        if args[i] == "-artist" or args[i] == "-a":
-            query['artist'] = args[i+1]
-            empty = False
-        elif args[i] == "-venue" or args[i] == "-v":
-            query['venue'] = args[i+1]
-            empty = False
-        elif args[i] == "-song" or args[i] == "-s":
-            query['song'] = args[i+1]
-            empty = False
-        elif args[i] == "-date" or args[i] == "-d":
-            query['date'] = args[i+1]
-            empty = False
-        elif args[i] == "-id" or args[i] == "-i":
-            query['id'] = args[i+1]
-            empty = False
-        elif args[i] == "-stats":
-            query['stats'] = True
-            empty = False
-        elif args[i] == "-max" or args[i] == "-m":
-            n_songs = int(args[i+1])
+class g_song():
+    def __init__(self, title):
+        self.title       = title
+        # flags
+        self.medley      = False
+        self.guests      = []
+        self.solo        = False
+        self.first_time  = False
+        self.set_opener  = False
+        self.debut       = False
+        self.improv      = False
+        self.quote       = None
+        self.cover       = None
 
-    if empty:
-        query = None
-
-    return query, n_songs
-
-def main():
-    cwd = os.getcwd()
-    os.chdir(root)
-    gigs = build_gig_data(root)
+class g_query():
+    def __init__(self,gig_data,args):
+        self.gig_data   = gig_data
+        self.date     = None
+        self.venue    = None
+        self.artist   = None
+        self.song     = None
+        self.index    = None
+        self.stats    = False
+        self.empty    = True
+        self.results  = None
+        self.parse_query(args)
+        self.query_gigs()
+    def parse_query(self,args):
+        # Converts user args to a search query
+        for i in range(0, len(args)):
+            if args[i] == "-a":
+                self.artist = args[i+1]
+                self.empty = False
+            elif args[i] == "-v":
+                self.venue = args[i+1]
+                self.empty = False
+            elif args[i] == "-s":
+                self.song = args[i+1]
+                self.empty = False
+            elif args[i] == "-d":
+                self.date = args[i+1]
+                self.empty = False
+            elif args[i] == "-i":
+                self.index = args[i+1]
+                self.empty = False
+            elif args[i] == "-stats":
+                self.stats = True
+                self.empty = False
+    def query_gigs(self):
+        self.results = []
+        for gig in self.gig_data.gigs:
+            if not self.index:
+                match = True
+                if match and self.date:
+                    match = False
+                    if self.date.isdigit() and len(self.date) == 4:
+                        # it's a year
+                        if gig.date.year == int(self.date):
+                            match = True
+                    if self.date.isalpha():
+                        # it's a month
+                        if search( self.date, gig.date.strftime("%B"),IGNORECASE): 
+                            match = True
+                if match and self.venue and not search(self.venue,gig.venue,IGNORECASE):
+                    match = False
+                if match and self.artist:
+                    match = False
+                    artists = gig.all_artists()
+                    for a in artists:
+                        if search(self.artist,a,IGNORECASE):
+                            match = True
+                            break
+                if match and self.song:
+                    match = False
+                    titles = []
+                    for s in gig.sets:
+                        titles += [ x.title for x in s.songs if x.title ]
+                    for t in titles:
+                        if search(self.song,t,IGNORECASE):
+                            match = True
+                            break
+                if match:
+                    self.results.append(gig)
+            elif self.index and self.index == gig.index:
+                self.results.append(gig)
+                break
+    def print_results(self):
+        if self.stats and self.artist:
+            self.gig_data.artist_stats( self.artist )
+        elif len(self.results) == 1:
+            print(self.results[0])
+        else:
+            self.results.sort(key=lambda x: x.index)
+            print "\n %d matching events.\n" % len(self.results)
+            for gig in self.results:
+                date = gig.date.strftime('%d-%b-%Y')
+                venue = gig.venue
+                artist_list = [ s.artist for s in gig.sets ]
+                # artists = " + ".join(artist_list)
+                artists = artist_list[0]
+                if len(artist_list) > 1:
+                    artists += ' + ' + artist_list[1]
+                if len(artist_list) > 2:
+                    artists += ' + ... '
+                ident = '[' + gig.index + ']'
+                print ' {0:8s} {1:15s} {2:30s} {3:20s}' . format( ident, date, venue, artists)
+            print '\n'
+        
+if __name__ == "__main__":
     args = sys.argv[1:]
-    query, n_songs = process_args(args)
-    if not query:
-        print_summary(gigs,n_songs)
-    elif len(args) == 1 and args[0] == "-help":
-        print_help()
-    elif len(args) == 1 and args[0] == "-html":
-        generate_html_files(gigs,'./html/')
-    elif query:
-        results = search_gigs(gigs,query)
-        print "\n %d matching events." % len(results)
-        # print results
-        summarise_query_result(results,query['id'] != None)
-    else:
-        print "Unprocessed option"
+    first_arg = args[0] if len(args) == 1 else None
+    
+    if first_arg == "-h":
+        # print html data
+        print """\n Optional args:
+        
+        -a      artist
+        -v      venue
+        -s      song
+        -d      date
+        -i      index
+        -html   reuild html
+        """
+        sys.exit(0)
 
-    if query and query['stats'] and query['artist']:
-        artist_stats( gigs, query['artist'] )
+    gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
-    print "\n"
+    if first_arg == "-test":
+        gig_data.songs_performed_by_multiple_artists()
+        sys.exit(0)
 
-    os.chdir(cwd)
+    if first_arg == "-html":
+        html_generator = g_html(gig_data,'./html/')
+        sys.exit(0)
 
-main()
+    query = g_query(gig_data,args)
+
+    if not query.empty:
+        query.print_results()
+        sys.exit(0)
+
+    print(gig_data)
 
