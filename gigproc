@@ -7,7 +7,7 @@ class g_html():
     def __init__(self, gig_data, head):
         self.gig_data = gig_data
         self.head = head
-        self.years = [ str(y) for (y,c) in self.gig_data.unique_years(True) ]
+        self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(True) ]
         self.years.sort()
         self.generate_html_files()
     # HTML Generation
@@ -84,8 +84,6 @@ class g_html():
         ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
         day = int(gig.date.strftime("%d"))
 
-        gig_artists = [ s.artist for s in gig.sets ]
-
         # list of all guesting artists (so we know whether we need footnotes):
         gig_guests = []
         for g in gig.sets:
@@ -146,7 +144,7 @@ class g_html():
                 alink = '(' + alink + ')'
             setlist_string += '\n<br> ' + alink
 
-            asymbol = self.footnote_symbol( gig_artists.index(g.artist) ) if g.artist in gig_guests else ''
+            asymbol = self.footnote_symbol( gig.get_artists().index(g.artist) ) if g.artist in gig_guests else ''
 
             if g.guest_only:
                 setlist_string += ' ' + self.make_flag_note( 'guest', "Only as a guest in another set", asymbol ) 
@@ -182,8 +180,8 @@ class g_html():
                         #setlist_string += '<div class=flag title="' + s.cover + ' cover">&curren;</div>'
 
                     for guest in s.guests:
-                        if guest in gig_artists:
-                            a_indx = gig_artists.index(guest)
+                        if guest in gig.get_artists():
+                            a_indx = gig.get_artists().index(guest)
                             setlist_string += self.make_flag_note( 'guest', '+ ' + guest, 
                                                                    self.footnote_symbol(a_indx) )
                         
@@ -603,7 +601,7 @@ class g_html():
         index_string   = ''
         years_string_i = ''
          
-        for (y,c) in self.gig_data.unique_years(True):
+        for (y,c) in self.gig_data.get_unique_years(True):
             gigs_string = self.build_gigs_string(self.gig_data.gigs,y)
             years_string_h = self.make_years_string(y)
             if y == datetime.today().year:
@@ -634,8 +632,9 @@ class g_gigs():
         self.root = root
         self.gigs = []
 
-        self.unique_artists = None
-        self.unique_venues = None
+        self.unique_artists = None  # cached
+        self.unique_venues = None   # cached
+        self.unique_years = None    # cached
         
         self.build_gig_data()
     def __str__(self):
@@ -643,7 +642,7 @@ class g_gigs():
         nmax      = 30
         artists   = self.get_unique_artists()
         venues    = self.get_unique_venues()
-        years     = self.unique_years()
+        years     = self.get_unique_years()
         n_gigs    = self.n_past_gigs()
         n_venues  = " " + str(len(venues))
         n_artists = str(len(artists))
@@ -671,7 +670,7 @@ class g_gigs():
         return string
 
     # Functions to build gig data:
-    def process_song_line(self,line,this_set):
+    def process_song_line(self,line,this_set,opener):
         # This function builds a g_song and appends it to this_set.
         # It also updates the set flags if necessary.
 
@@ -698,6 +697,7 @@ class g_gigs():
             if match( '\?+', title ):
                 title = None
             song = g_song(title)
+            song.set_opener = opener
             if match( '^\s+', line )  :
                 # if the line is indented, it's part of a medley
                 song.medley = True;
@@ -791,7 +791,7 @@ class g_gigs():
                     com_level = -1
                     commented = False
             elif level == 2:
-                self.process_song_line(line,this_set)
+                self.process_song_line(line,this_set,last_blank)
                 last_blank = False
             else:
                 pass
@@ -891,8 +891,7 @@ class g_gigs():
         artgigs = []
         for gig in self.gigs:
             if not gig.future or inc_future:
-                gig_artists = [ s.artist for s in gig.sets ]
-                if artist in gig_artists:
+                if artist in gig.get_artists():
                     artgigs.append(gig)
         
         artgigs.sort(key=lambda x: x.index)
@@ -914,8 +913,7 @@ class g_gigs():
             artgigs = []
             for gig in self.gigs:
                 if not gig.future or inc_future:
-                    gig_artists = [ s.artist for s in gig.sets ]
-                    for artist in gig_artists:
+                    for artist in gig.get_artists():
                         try:
                             i = artists.index(artist)
                             artgigs[i].append(gig)
@@ -973,18 +971,20 @@ class g_gigs():
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
-    def unique_years(self,inc_future=False):
-        raw_years = []
-        for gig in self.gigs:
-            if not gig.future or inc_future:
-                raw_years += [ gig.date.year ]
-        years = list(set(raw_years))
-        years.sort()
-        count = [ raw_years.count(y) for y in years ]
-        zipped = zip( years, count )
-        zipped.sort(key=lambda x: x[1])
-        zipped.reverse()
-        return zipped
+    def get_unique_years(self,inc_future=False):
+        if not self.unique_years:
+            raw_years = []
+            for gig in self.gigs:
+                if not gig.future or inc_future:
+                    raw_years += [ gig.date.year ]
+            years = list(set(raw_years))
+            years.sort()
+            count = [ raw_years.count(y) for y in years ]
+            zipped = zip( years, count )
+            zipped.sort(key=lambda x: x[1])
+            zipped.reverse()
+            self.unique_years = zipped
+        return self.unique_years
     def artist_is_support(self,a):
         support_only = True
         for gig in self.gigs:
@@ -1001,9 +1001,10 @@ class g_gig():
         self.sets   = []
         today = datetime.today()
         self.future = date > today or date == today and today.hour < 20 
+        self.artists = None # cached
     def __str__(self):
         # print formatter
-        string =  " ======================================\n"
+        string = ""
         string += "\n    Date: " + self.date.strftime('%A %d %B, %Y')
         string += "\n   Venue: " + self.venue
         for s in self.sets:
@@ -1037,10 +1038,10 @@ class g_gig():
             this_set = g_set(a)
             this_set.guest_only = True
             self.sets.insert(1,this_set)
-    def all_artists(self):
-        artists = [ x.artist for x in self.sets ]
-        # All guest artists should have a dummy set, so this is okay.
-        return artists
+    def get_artists(self):
+        if not self.artists:
+            self.artists = [ x.artist for x in self.sets ]
+        return self.artists
 
 class g_set():
     def __init__(self, artist):
@@ -1104,7 +1105,9 @@ class g_query():
     def query_gigs(self):
         self.results = []
         for gig in self.gig_data.gigs:
-            if not self.index:
+            if gig.future:
+                pass
+            elif not self.index:
                 match = True
                 if match and self.date:
                     match = False
@@ -1120,7 +1123,7 @@ class g_query():
                     match = False
                 if match and self.artist:
                     match = False
-                    artists = gig.all_artists()
+                    artists = gig.get_artists()
                     for a in artists:
                         if search(self.artist,a,IGNORECASE):
                             match = True
