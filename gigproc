@@ -62,7 +62,7 @@ class g_html():
         #return '<sup>' + str(n) + '</sup>'
         #return '[' + str(n) + ']'
         #symbols = [ '^', '*', '#', '~', '@', '?', '?', '?', '?', '?']
-        symbols = [ '&deg;', '&sup1;', '&sup2;', '&sup3;', '*' ]
+        symbols = [ '&deg', '&sup1;', '&sup2;', '&sup3;', '*', '&dagger;' ]
         return symbols[ n % len(symbols) ]
     def make_flag_note(self, ftype, force_title = None, force_symbol = None ):
         if ftype == 'solo':
@@ -79,10 +79,10 @@ class g_html():
             return '<div class=flag title="' + force_title + '">' + force_symbol + '</div>'
         else:
             return ''
-    def gig_setlist_string(self,gig,gigs,liszt = None, suffix = None ):
+    def gig_setlist_string(self,gig,gigs,linkback = True, liszt = None, suffix = None ):
+        # linkback means whether to add artist/venue links
         ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
         day = int(gig.date.strftime("%d"))
-        setlist_string = ''
 
         # list of all guesting artists (so we know whether we need footnotes):
         gig_guests = []
@@ -91,8 +91,10 @@ class g_html():
                 gig_guests += s.guests
         gig_guests = list(set(gig_guests))
 
-        add_next_previous = True
-        if add_next_previous:
+        link_prev = ''
+        link_next = ''
+
+        if linkback:
             # compute next/previous links
             if liszt == None:
                 g_prev = self.gig_prev(gigs,gig)
@@ -116,20 +118,26 @@ class g_html():
             link_prev = '<a href=' + fname_prev + '.html>&lt;</a>'
             link_next = '<a href=' + fname_next + '.html>&gt;</a>'
 
-            setlist_string += '<div id=navigator>' + link_prev + link_next + '</div>'
-
-        vg_fname = gig.date.strftime("%Y_%m_%d") + '_v' + self.id_of_venue(gig.venue) + '.html'
-        yg_fname = gig.date.strftime("%Y_%m_%d") + '.html'
-
+        vg_fname = ''
+        yg_fname = ''
+        if linkback:
+            vg_fname = gig.date.strftime("%Y_%m_%d") + '_v' + self.id_of_venue(gig.venue) + '.html'
+            yg_fname = gig.date.strftime("%Y_%m_%d") + '.html'
         vlink = '<a href=' + vg_fname + '>' + gig.venue + '</a>'
         ylink = '<a href=' + yg_fname + '>' + gig.date.strftime("%Y") + '</a>' 
-        setlist_string += '<div class=sl_title>\n' + vlink + '<br>' + \
-                    ordinal(day) + gig.date.strftime(" %B, ") + ylink + '</div>\n'
+        setlist_string = '<div class=sl_title>\n' + vlink + '<br>' + \
+                    link_prev + link_next + ' ' + \
+                    ordinal(day) + gig.date.strftime(" %B, ") + ylink + '</div>' + '\n'
 
-        #artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
+        # artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
 
         for g in gig.sets:
-            ag_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(g.artist) + '.html'
+            if g.band_only:
+                # if it's a dummy set for a band member, don't display it
+                continue
+            ag_fname = ''
+            if linkback:
+                ag_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(g.artist) + '.html'
 
             alink = '<a href=' + ag_fname + '>' + g.artist + '</a>'
             # not sure whether to label entire sets as solo:
@@ -139,6 +147,15 @@ class g_html():
                 alink = '(' + alink + ')'
             setlist_string += '\n<br> ' + alink
 
+            band_string = ''
+            if g.band:
+                band_links = []
+                for b in g.band:
+                    bg_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(b) + '.html'
+                    blink = '<a href=' + bg_fname + '>' + b + '</a>'
+                    band_links.append(blink)
+                band_string = '\n' + self.sp(3) + '<i>(Band included ' + ', '.join(band_links) + ')</i> <br>'
+            
             asymbol = self.footnote_symbol( gig.get_artists().index(g.artist) ) if g.artist in gig_guests else ''
 
             if g.guest_only:
@@ -171,18 +188,20 @@ class g_html():
                         setlist_string += self.make_flag_note('debut')
                     if s.first_time:
                         setlist_string += self.make_flag_note('first_time')
-                    #if s.cover:
-                        #setlist_string += '<div class=flag title="' + s.cover + ' cover">&curren;</div>'
-
+                    # if s.cover:
+                    #     setlist_string += '<div class=flag title="' + s.cover + \
+                    #                       ' cover">&curren;</div>'
                     for guest in s.guests:
                         if guest in gig.get_artists():
                             a_indx = gig.get_artists().index(guest)
-                            setlist_string += self.make_flag_note( 'guest', '+ ' + guest, 
+                            setlist_string += ' ' + self.make_flag_note( 'guest', '+ ' + guest, 
                                                                    self.footnote_symbol(a_indx) )
                         
                 setlist_string += '\n</' + list_tag + '>'
             else:
                 setlist_string += '<br>'
+
+            setlist_string += band_string
 
         return setlist_string
     def make_file( self, filename, years_string, gigs_string, setlist_string, img = ""):
@@ -199,32 +218,32 @@ class g_html():
 
         lines = [
             '<html lang="en">',
-            '\n<head>',
-            '\n    <title>Concert Diary</title>',
-            '\n    <link rel="stylesheet" type="text/css" href="style.css">',
-            '\n    <link rel="shortcut icon" href="img/note.ico" type="image/x-icon">',
-            '\n</head>',
-            '\n<body>',
+            '<head>',
+            '    <title>Concert Diary</title>',
+            '    <link rel="stylesheet" type="text/css" href="style.css">',
+            '    <link rel="shortcut icon" href="img/note.ico" type="image/x-icon">',
+            '</head>',
+            '<body>',
             img_string,
-            '\n<div id="body">',
-            '\n<div id="header" class="cf"></div>',
-            '\n<div id="main" class="cf">',
-            '\n<div id="col_yearlist">',
-                 years_string,
-            '\n</div>',
-            '\n<div id="content">',
-            '\n<div id="' + giglist_id + '">',
-             gigs_string,
-            '\n</div>',
-            '\n<div id="col_setlist">',
-             setlist_string,
-            '\n</div>',
-            '\n</div>',
-            '\n</div>',
-            '\n<div id="footer" class="cf"> </div>',
-            '\n</div>',
-            '\n</body>',
-            '\n</html>',
+            '    <div id="body">',
+            '        <div id="header" class="cf"></div>',
+            '        <div id="main" class="cf">',
+            '            <div id="col_yearlist">',
+                             years_string,
+            '            </div>',
+            '            <div id="content">',
+            '                <div id="' + giglist_id + '">',
+                                 gigs_string,
+            '                </div>',
+            '                <div id="col_setlist">',
+                                 setlist_string,
+            '                </div>',
+            '            </div>',
+            '        </div>',
+            '        <div id="footer" class="cf"> </div>',
+            '    </div>',
+            '</body>',
+            '</html>',
             ]
         with open( fname_html, 'w') as the_file:
             for l in lines:
@@ -232,153 +251,125 @@ class g_html():
     def make_stylesheet(self):
         fname_html = self.head + 'style.css'
 
-        bgcolour = 'black'      # background
-        fgcolour = 'gray'       # normal text
-        lkcolour = '#C9BE62'    # for links and borders
-        hicolour = '#990000'    # hilighted links
-        divbgcol = '#153E7E'    # background of divs
+        col_maintext = 'gray'
+        col_mainbg = 'black'
+        col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
+        col_highlight = '#990000'
 
         lines = [
             'html,body {',
             '    margin:0;',
             '    padding:0;',
             '    font-family: sans-serif;',
-            '    color:' + fgcolour + ';',
-            '    background:' + bgcolour + ';',
+            '    color:' + col_maintext + ';',
+            '    background:' + col_mainbg + ';',
             '    }',
-            #'pre {',
-            #'    font-size: 3ex;',
-            #'    }',
             '#body {',
             '    width:1300px;',
             '    margin:0 auto;',
             '    font-size: 1.6ex;',
             '    font-family: sans-serif;',
-            '    color:' + fgcolour + ';',
-            '    background:' + bgcolour + ';',
+            '    color:' + col_maintext + ';',
+            '    background:' + col_mainbg + ';',
             '    }',
             '#img {',
-            '    position:fixed;',
-            '    top:100;',
-            '    left:1500px;',
-            '    width:500px;',
+            '    position: absolute;',
+            '    top: 100;',
+            '    right: 100;',
+            '    width: 200;',
+            '    height: auto;',
             '    z-index: 1;',
             '    }',
             '#header {',
             '    padding:10px;',
-            '    background:' + bgcolour + ';',
+            '    background:' + col_mainbg + ';',
             '    }',
             'ul {',
             '    list-style-type: square;',
-            '    }',
+            '    }'
             '#col_yearlist {',
             '    position:fixed;',
             '    float:left;',
             '    width:150px;',
             '    padding:10px;',
             '    left:20px;',
-            '    background:' + bgcolour + ';',
+            '    background:' + col_mainbg + ';',
             '    }',
             '#content {',
             '    position:relative;',
             '    float:left;',
             '    left:0px;',
             '    /*width:1340px;*/',
-            '    color:' + fgcolour + ';',
+            '    color:' + col_maintext + ';',
             '    }',
             '#col_giglist {',
-            '    position:fixed;',
-            '    left:200px;',
-            '    width:800px;',
-            '    background:' + bgcolour + ';',
-            '    }',
-            '#col_giglist_wide {',
-            '    position:fixed;',
-            '    left:200px;',
-            '    width:1500px;',
-            '    background:' + bgcolour + ';',
+            '    position:relative;',
+            '    float:left;',
+            '    left:0px;',
+            '    width:600px;',
+            '    background:' + col_mainbg + ';',
             '    }',
             '#col_setlist {',
-            '    position:fixed;',
+            '    position:relative;',
             '    float:left;',
-            '    left:1000px;',
+            '    left:200px;',
             '    width:500px;',
             '    padding:10px;',
-            '    background:' + bgcolour + ';',
-            '    color:' + fgcolour + ';',
-            '    }',
-            '#navigator {',
-            '    position:fixed;',
-            '    float:left;',
-            '    left:1275px;',
-            '    top:45;',
-            '    padding:0px;',
-            #'    width:500px;',
-            '    padding:10px;',
-            '    background:' + divbgcol + ';',
-            '    color:' + lkcolour + ';',
+            '    background:' + col_mainbg + ';',
+            '    color:' + col_maintext + ';',
             '    }',
             '#footer {',
             '    padding:10px;',
-            '    background:' + bgcolour + ';',
+            '    background:' + col_mainbg + ';',
             '    }',
-            '/* Easy clearing of floats (see http://positioniseverything.net/easyclearing.html) */',
-            '.cf:after {',
-            '    display:block;',
-            '    clear:both;',
-            '    height:0;',
-            '    visibility:hidden;',
-            '    content:" ";',
-            '    font-size:0;',
-            '    }',
-            '/* Does not validate - use conditional comments for this bit if you want valid CSS */',
             '.cf {*zoom:1;}',
             '',
             '.yr {',
             '    width: 60px;',
             '    left: 0;',
             '    text-align: center;',
-            '    background-color:' + divbgcol + ';',
+            '    background-color:' + col_boxbg + ';',
             '    display: float;',
-            '    border: 1px ' + lkcolour + ' solid;',
+            '    border: 1px ' + col_border + ' solid;',
             '    padding: 8px;',
             '    }',
             'a:link, a:visited {',
             '    text-decoration: none;',
-            '    color:' + lkcolour + ';',
+            '    color: ' + col_border + ';',
             '    text-decoration: bold;',
             '    }',
             'a:hover {text-decoration: underline}',
             'a.future:link {',
-            '    color: ' + fgcolour + ';',
+            '    color: ' + col_maintext + ';',
             '    text-decoration: none;',
             '    font-style: italic;',
             '    }',
             'a.future:visited {',
-            '    color: ' + fgcolour + ';',
+            '    color: ' + col_maintext + ';',
             '    text-decoration: none;',
             '    font-style: italic;',
             '    }',
             'a.future:hover {',
-            '    color: ' + fgcolour + ';',
+            '    color: ' + col_maintext + ';',
             '    text-decoration: none;',
             '    font-style: italic;',
             '    }',
             'a.future:active {',
-            '    color: ' + fgcolour + ';',
+            '    color: ' + col_maintext + ';',
             '    text-decoration: none;',
             '    font-style: italic; }',
             'a.invis {',
-            '   color: ' + bgcolour + ';',
+            '   color: ' + col_mainbg + ';',
             '   }',
             '',
             '.sl_title {',
             '    width:60%;',
-            '    color: ' + lkcolour + ';',
-            '    background-color: ' + divbgcol + ';',
+            '    color: ' + col_border + ';',
+            '    background-color:' + col_boxbg + ';',
             '    padding: 10px;',
             '    text-align: left;',
-            '    border: 1px ' + lkcolour + ' solid;',
+            '    border: 1px ' + col_border + ' solid;',
             '    }',
             'table {',
             '    font-size: 1.7ex;',
@@ -389,12 +380,12 @@ class g_html():
             '    font-family: "Courier new", monospace;',
             '    }',
             'a.highlight {',
-            '    color:' + hicolour + ';',
+            '    color:' + col_highlight + ';',
             '    font-weight: bold;',
             '    }',
             '.flag {',
             '    display: inline;',
-            '    color: ' + divbgcol + ';',
+            '    color:' + col_boxbg + ';',
             '    }',
         ]
         with open( fname_html, 'w') as the_file:
@@ -411,7 +402,7 @@ class g_html():
                 align = ' align=right'
             elif entry[1] == 'c':
                 align = ' align=center'
-            string += '\n    <td' + align + '>' + entry[0] + '</td>'
+            string += '\n<td' + align + '>' + entry[0] + '</td>'
         string += '</tr>'
         return string
     def order_collection_by_count(self,collection):
@@ -425,7 +416,6 @@ class g_html():
                     members.append(col)
             ordered.append( [ c, members ] )
         ordered.sort( key=lambda x: x[0] )
-        ordered.reverse()
         return ordered
     def build_gigs_string(self,gigs,y=None,link_suffix=None,file_title=None,force_artist=None,match_id=0):
         gigs_string = "<br>"
@@ -450,6 +440,17 @@ class g_html():
                 if force_artist != None and force_artist != name_str:
                     name_str = '<i>' + force_artist + '</i>'
 
+                if force_artist != None:
+                    # force_artist => only for artist giglist
+                    for s in gig.sets:
+                        # list band rather than band member!
+                        if s.band_only:
+                            for ss in gig.sets:
+                                if not ss.band_only and s.artist in ss.band:
+                                    #name_str = '<i>' + ss.artist + '</i>'
+                                    name_str = ss.artist
+                                    break
+
                 if not gig.future:
                     link = gig.date.strftime("%Y_%m_%d") 
                     if link_suffix:
@@ -465,7 +466,7 @@ class g_html():
                 else:
                     gigs_string += self.row( [ str(i) + '.' + self.sp(1), name_str, date_str, gig.venue ], 'rlll' )
 
-        gigs_string += self.row( [ self.sp(3), self.sp(15), self.sp(9), '' ] )
+        gigs_string += self.row( [ self.sp(3), self.sp(13), self.sp(9), '' ] )
         gigs_string += '\n</table>'
         return gigs_string
     def is_int(self,s):
@@ -504,7 +505,7 @@ class g_html():
             else:
                 n_headliners += 1
 
-        artists_string = str(self.gig_data.n_past_gigs()) + ' events featuring ' + \
+        artists_string = str(len(self.gig_data.get_past_gigs())) + ' events featuring ' + \
                 str(len(all_artists)) + \
                 ' artists [' + str(n_headliners) + ' headliners] ' + \
                 '(those in italic were never headliners): ' + \
@@ -522,12 +523,11 @@ class g_html():
 
             breakdown = ''
             if len(c) > 1:
+                breakdown += '\n<br> <hr> <pre>'
                 unique_songs = self.gig_data.unique_songs_of_artist(a + '$')
 
-                breakstr = 'Breakdown of %d songs across %d events (%.2f songs/event):' \
+                breakdown += 'Breakdown of %d songs across %d events (%.2f songs/event):<br> <br>' \
                                 % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
-
-                breakdown = '\n<br> <pre>' + '='*len(breakstr) + '<br>' + breakstr + '<br><br>'
 
                 events = [ x for x in c ]
                 events.sort(key=lambda x: x.index)
@@ -550,7 +550,7 @@ class g_html():
                 link = gig.date.strftime("%Y_%m_%d") + suffix
                 img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                 artist_string_h = self.build_gigs_string( all_agigs, None, afname, None, a, gig.index )
-                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, c, suffix)
+                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, True, c, suffix)
                 self.make_file( link, years_string_a, artist_string_h + breakdown, setlist_string, img )
 
             link = '<a href=' + afname + '.html>' + a + '</a>'
@@ -569,11 +569,8 @@ class g_html():
         return artists_string
     def make_venue_index_string(self,years_string_v):
         all_venues = self.gig_data.get_unique_venues()
-        all_cities = self.gig_data.unique_cities()
-
-        venues_string = str(self.gig_data.n_past_gigs()) + ' events at ' + \
-                str(len(all_venues)) + ' venues in ' + str(len(all_cities)) + ' cities:<br><br>\n<table>'
-
+        venues_string = str(len(self.gig_data.get_past_gigs())) + ' events at ' + \
+                str(len(all_venues)) + ' venues:<br><br>\n<table>'
         n_gigs_for_last_venue = 0
         counter = 0
         for (v,c) in all_venues:
@@ -589,7 +586,7 @@ class g_html():
                 link = gig.date.strftime("%Y_%m_%d") + suffix
                 img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                 venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
-                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, c, suffix)
+                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, True, c, suffix)
                 self.make_file( link, years_string_v, venue_string_h, setlist_string, img )
 
             link = '<a href=' + vfname + '.html>' + v + '</a>'
@@ -602,9 +599,11 @@ class g_html():
             n_gigs_for_last_venue = len(c)
 
         venues_string += '</table>'
-        venues_string += '\n<br> <br>\n<br><br>\n<table>'
-        #venues_string += '\n<br> <br> <hr>\n<br><br>\n<table>'
-        ordered_cities = self.order_collection_by_count(all_cities)
+
+        cities = self.gig_data.unique_cities()
+        venues_string += '\n<br> <br> <hr>\n<br>' + str(len(cities)) + ' cities:<br><br>\n<table>'
+        ordered_cities = self.order_collection_by_count(cities)
+        ordered_cities.reverse()
         for order in ordered_cities:
             venues_string += '\n<tr><td align=right valign=top>' + str(order[0]) + '.' + self.sp(1) + \
                     '</td><td>' + ', '.join([ x[0] for x in order[1]]) + '</td></tr>'
@@ -630,7 +629,7 @@ class g_html():
             self.make_file( str(y), years_string_h, gigs_string, '' )
             for gig in self.gig_data.gigs:
                 if gig.date.year == y:
-                    setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs )
+                    setlist_string = self.gig_setlist_string(gig,self.gig_data.gigs)
                     img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                     gigs_string_h = self.build_gigs_string( self.gig_data.gigs, y, 
                                                             None, None, None, gig.index)
@@ -650,6 +649,7 @@ class g_gigs():
     def __init__(self,root):
         self.root = root
         self.gigs = []
+        self.past_gigs = []
 
         self.unique_artists = None  # cached
         self.unique_venues = None   # cached
@@ -662,7 +662,7 @@ class g_gigs():
         artists   = self.get_unique_artists()
         venues    = self.get_unique_venues()
         years     = self.get_unique_years()
-        n_gigs    = self.n_past_gigs()
+        n_gigs    = len(self.get_past_gigs())
         n_venues  = " " + str(len(venues))
         n_artists = str(len(artists))
         n_years   = " " + str(len(years))
@@ -711,6 +711,9 @@ class g_gigs():
                     this_set.ordered = False
                 if 'solo' in splits[1]:
                     this_set.solo = True
+                # Comment out these two lines to suppress the band member processing
+                if match( '.*{.*', splits[1] ):
+                   this_set.band = findall( '{([0-9A-Za-z- ]+)}', splits[1])
         else:
             # process song flags and append
             if match( '\?+', title ):
@@ -722,16 +725,16 @@ class g_gigs():
                 song.medley = True;
             if len(splits) > 1:
                 # song flags:
-                if match( '.*{.*', splits[1] ):
+                if '{' in splits[1]:
                     song.guests += findall( '{([0-9A-Za-z- ]+)}', splits[1])
-                if match( '.*".*', splits[1] ):
-                    m = match( '.*(".*").*', splits[1])
-                    if m:
-                        song.quote = m.group(1)
-                if match( ".*<.*>.*", splits[1] ):
+                if '<' in splits[1]:
                     m = match( '.*<(.*)>.*', splits[1] )
                     if m:
                         song.cover = m.group(1)
+                if '"' in splits[1]:
+                    m = match( '.*(".*").*', splits[1])
+                    if m:
+                        song.quote = m.group(1)
                 if 'solo' in splits[1]:
                     song.solo = True
                 if 'debut' in splits[1]:
@@ -821,12 +824,6 @@ class g_gigs():
         self.identify_first_times()
         
     # Some utilities
-    def n_past_gigs(self):
-        n_gigs = 0
-        for g in self.gigs:
-            if not g.future:
-                n_gigs += 1
-        return n_gigs
     def artist_stats(self,artist):
         unique_songs = self.unique_songs_of_artist(artist)
         
@@ -873,7 +870,17 @@ class g_gigs():
         for gig in self.gigs:
             for s in gig.sets:
                 # look for song in artist's main set:
+
+                main_set = False
                 if search(artist, s.artist, IGNORECASE):
+                    main_set = True
+                elif s.band:
+                    for b in s.band:
+                        if search(artist, b, IGNORECASE):
+                            main_set = True
+                            break
+
+                if main_set:
                     for song in s.songs:
                         got = False
                         if not song.title: # Untitled
@@ -904,6 +911,13 @@ class g_gigs():
         raw_songs.sort(key=lambda x: (-len(x['events']),x['title']), reverse=True)
         raw_songs.reverse()
         return raw_songs
+    def get_past_gigs(self):
+        if not self.past_gigs:
+            self.past_gigs = []
+            for g in self.gigs:
+                if not g.future:
+                    self.past_gigs.append(g)
+        return self.past_gigs
 
     # Queries on gig data:
     def all_gigs_of_artist(self,artist,inc_future=False):
@@ -1011,6 +1025,49 @@ class g_gigs():
                 support_only = False 
                 break
         return support_only
+    def longest_gap(self):
+        gaps = []
+        gigs = self.get_past_gigs()
+        for i in range(1,len(gigs)):
+            gap = gigs[i].date.toordinal() - gigs[i-1].date.toordinal() 
+            gaps.append( [ gap, gigs[i-1], gigs[i] ] )
+        print "\n  Current gap is %d days (since %s)." % \
+            (datetime.today().toordinal() - gigs[-1].date.toordinal(), gigs[-1].date.strftime("%d-%b-%Y"))
+        ngaps = 20
+        gaps.sort(key=lambda x: -x[0])
+        gaps = gaps[:ngaps]
+        print "\n  Longest gaps:\n"
+        for gap in gaps:
+            print "   %s days (%s - %s)" % ( str(gap[0]).rjust(4), gap[1].date.strftime("%d-%b-%Y"), gap[2].date.strftime("%d-%b-%Y"))
+    def longest_run(self):
+        runs = []
+        gigs = self.get_past_gigs()
+        current_run = [gigs[0]]
+        last_g = gigs[0]
+        for g in gigs[1:]:
+            if g.date.toordinal() - last_g.date.toordinal() == 1:
+                current_run.append(g)
+            elif len(runs) == 0 or len(current_run) > len(runs[0]):
+                runs = [ current_run ]
+                current_run = [g]
+            elif len(current_run) == len(runs[0]):
+                runs.append(current_run)
+                current_run = [g]
+            else:
+                current_run = [g]
+            last_g = g
+            
+        print "\n  Longest run was %d gigs, which occurred %d times:\n" % ( len(runs[0]), len(runs) )
+        for run in runs:
+            for g in run:
+                print "    " + g.stub()
+            print ""
+    def monthly_histogram(self):
+        month_totals = [0] * 12
+        for gig in self.get_past_gigs():
+            i = int(gig.date.strftime("%m"))
+            month_totals[i-1] += 1
+        print month_totals
 
 class g_gig():
     def __init__(self, ident, date, venue):
@@ -1019,7 +1076,7 @@ class g_gig():
         self.venue  = venue
         self.sets   = []
         today = datetime.today()
-        self.future = date > today or date == today and today.hour < 20 
+        self.future = date > today or ( date.date() == today.date() and today.hour < 20 )
         self.artists = None # cached
     def __str__(self):
         # print formatter
@@ -1029,8 +1086,6 @@ class g_gig():
         for s in self.sets:
             string += "\n  Artist: " + s.artist
             for song in s.songs:
-                if song.set_opener:
-                    string += "\n"
                 string += "\n          > " + song.title
         string += "\n"
         return string
@@ -1059,18 +1114,36 @@ class g_gig():
             this_set = g_set(a)
             this_set.guest_only = True
             self.sets.insert(1,this_set)
+
+        # Now we also add dummy sets for band members who are explicity named:
+
+        band_artists = []
+        for s in self.sets:
+            for b in s.band:
+                band_artists.append(b)
+
+        for b in band_artists:
+            this_set = g_set(b)
+            this_set.band_only = True
+            self.sets.insert(1,this_set)
+
     def get_artists(self):
         if not self.artists:
             self.artists = [ x.artist for x in self.sets ]
         return self.artists
+    def stub(self):
+        # short printer
+        return "%s %s   %s" % (self.sets[0].artist.ljust(20), self.date.strftime("%d-%b-%Y (%a)"), self.venue )
 
 class g_set():
     def __init__(self, artist):
         self.artist     = artist
         self.songs      = []
+        self.band       = []
         # flags
         self.ordered    = True
         self.guest_only = False
+        self.band_only  = False
         self.solo       = False
     def append_song(self, song):
         self.songs.append(song)
@@ -1212,6 +1285,11 @@ if __name__ == "__main__":
         html_generator = g_html(gig_data,'./html/')
         sys.exit(0)
 
+    if first_arg == "-runs":
+        gig_data.longest_gap()
+        gig_data.longest_run()
+        sys.exit(0)
+
     query = g_query(gig_data,args)
 
     if not query.empty:
@@ -1219,4 +1297,5 @@ if __name__ == "__main__":
         sys.exit(0)
 
     print(gig_data)
+
 
