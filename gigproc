@@ -1,30 +1,25 @@
 #!/usr/bin/python
 import sys, os, glob
-from re import match, search, IGNORECASE, sub, findall
+from re import match, search, IGNORECASE, sub, findall, compile
 from datetime import datetime
 
 class g_html():
     def __init__(self, gig_data, head):
         self.gig_data = gig_data
         self.head = head
+
+        # optional extras:
+        self.do_covers = False      # mark covers
+        self.do_playlists = False   # add playlist links and index
+        self.do_solo_sets = False   # mark solo sets
+        self.do_songcount = False   # count song occurrences (SLOW)
+
+        # do the work:
         self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(True) ]
         self.years.sort()
         self.generate_html_files()
+
     # HTML Generation
-    def alpha_name(self, artist ):
-        alpha = artist
-        splitz = split(alpha)
-        if splitz[0] == 'The':
-            alpha = ' '.join(splitz[1:])
-        elif len(splitz) == 2:
-            alpha = splitz[1] + ', ' + splitz[0]
-        return alpha
-    def find_playlist_link(self, artist, d ):
-        alpha = alpha_name(artist)
-        letter = alpha[0]
-        date = d.strftime("%Y.%m.%d")
-        path = '~/Music/' + letter + '/' + alpha + '/Bootlegs/' + date
-        return path
     def id_of_artist(self,artist):
         counter = 0
         for (a,c) in self.gig_data.get_unique_artists():
@@ -79,7 +74,7 @@ class g_html():
             return '<div class=flag title="' + force_title + '">' + force_symbol + '</div>'
         else:
             return ''
-    def gig_setlist_string(self,gig,gigs,linkback = True, liszt = None, suffix = None ):
+    def gig_setlist_string(self,gig,linkback = True, liszt = None, suffix = None ):
         # linkback means whether to add artist/venue links
         ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
         day = int(gig.date.strftime("%d"))
@@ -97,8 +92,8 @@ class g_html():
         if linkback:
             # compute next/previous links
             if liszt == None:
-                g_prev = self.gig_prev(gigs,gig)
-                g_next = self.gig_next(gigs,gig)
+                g_prev = self.gig_prev(self.gig_data.gigs,gig)
+                g_next = self.gig_next(self.gig_data.gigs,gig)
             else:
                 g_prev = self.gig_prev(liszt,gig)
                 g_next = self.gig_next(liszt,gig)
@@ -132,6 +127,17 @@ class g_html():
         # artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
 
         for g in gig.sets:
+
+            artsongs = []
+            if self.do_songcount:
+                # Calculate the number of times I have seen the song.
+                # This is very slow. We need to cache the song data.
+                art_songs = self.gig_data.unique_songs_of_artist(g.artist)
+
+            playlist_link = ''
+            if self.do_playlists and g.playlist:
+                playlist_link = '\n<a href="' + g.playlist + '">&raquo;</a>\n'
+
             if g.band_only:
                 # if it's a dummy set for a band member, don't display it
                 continue
@@ -140,11 +146,12 @@ class g_html():
                 ag_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(g.artist) + '.html'
 
             alink = '<a href=' + ag_fname + '>' + g.artist + '</a>'
-            # not sure whether to label entire sets as solo:
-            # if g.solo:
-            #    alink += ' ' + self.make_flag_note('solo')
+
+            if g.solo and self.do_solo_sets:
+               alink += ' ' + self.make_flag_note('solo')
             if g.guest_only:
                 alink = '(' + alink + ')'
+
             setlist_string += '\n<br> ' + alink
 
             band_string = ''
@@ -156,12 +163,16 @@ class g_html():
                     band_links.append(blink)
                 band_string = '\n' + self.sp(3) + '<i>(Band included ' + ', '.join(band_links) + ')</i> <br>'
             
-            asymbol = self.footnote_symbol( gig.get_artists().index(g.artist) ) if g.artist in gig_guests else ''
+            asymbol = ''
+            if g.artist in gig_guests:
+                asymbol = self.footnote_symbol( gig.get_artists().index(g.artist) )
 
             if g.guest_only:
                 setlist_string += ' ' + self.make_flag_note( 'guest', "Only as a guest in another set", asymbol ) 
             else:
                 setlist_string += ' ' + self.make_flag_note( 'guest', "+ Guested in another set", asymbol ) 
+
+            setlist_string += playlist_link
 
             list_tag = 'ol' if g.ordered else 'ul'
 
@@ -170,9 +181,25 @@ class g_html():
 
                 #for (s,f) in zip(g['setlist'],g['songflags']):
                 for s in g.songs:
+
+                    if self.do_songcount:
+                        # calculate how many times I have seen this artist perform this song:
+                        n_times = 0
+                        for usong in art_songs:
+                            if s.title == usong['title']:
+                                for e in usong['events']:
+                                    if e.date == gig.date:
+                                        n_times += 1
+                                        break
+                                    else:
+                                        n_times += 1
+
+
                     sn = s.title if s.title else '???'
                     if sn == '???' and s.quote != None:
                         sn = '<div title=' + s.quote + '>' + sn + '</div>'
+                    elif self.do_songcount:
+                        sn += ' [%d]' % n_times
                     if s.set_opener:
                         setlist_string += '\n<br><br>'
                     if s.medley:
@@ -188,15 +215,15 @@ class g_html():
                         setlist_string += self.make_flag_note('debut')
                     if s.first_time:
                         setlist_string += self.make_flag_note('first_time')
-                    # if s.cover:
-                    #     setlist_string += '<div class=flag title="' + s.cover + \
-                    #                       ' cover">&curren;</div>'
+                    if s.cover and self.do_covers:
+                        setlist_string += '<div class=flag title="' + s.cover + \
+                                          ' cover">&curren;</div>'
                     for guest in s.guests:
                         if guest in gig.get_artists():
                             a_indx = gig.get_artists().index(guest)
                             setlist_string += ' ' + self.make_flag_note( 'guest', '+ ' + guest, 
                                                                    self.footnote_symbol(a_indx) )
-                        
+
                 setlist_string += '\n</' + list_tag + '>'
             else:
                 setlist_string += '<br>'
@@ -287,7 +314,7 @@ class g_html():
             '    }',
             'ul {',
             '    list-style-type: square;',
-            '    }'
+            '    }',
             '#col_yearlist {',
             '    position:fixed;',
             '    float:left;',
@@ -444,7 +471,7 @@ class g_html():
                     # force_artist => only for artist giglist
                     for s in gig.sets:
                         # list band rather than band member!
-                        if s.band_only:
+                        if s.band_only and s.artist == force_artist:
                             for ss in gig.sets:
                                 if not ss.band_only and s.artist in ss.band:
                                     #name_str = '<i>' + ss.artist + '</i>'
@@ -464,7 +491,8 @@ class g_html():
                 if gig.future:
                     gigs_string += self.row( [ '', name_str, date_str, gig.venue ], 'rlll' )
                 else:
-                    gigs_string += self.row( [ str(i) + '.' + self.sp(1), name_str, date_str, gig.venue ], 'rlll' )
+                    cols = [ str(i) + '.' + self.sp(1), name_str, date_str, gig.venue ]
+                    gigs_string += self.row( cols, 'rlll' )
 
         gigs_string += self.row( [ self.sp(3), self.sp(13), self.sp(9), '' ] )
         gigs_string += '\n</table>'
@@ -524,7 +552,7 @@ class g_html():
             breakdown = ''
             if len(c) > 1:
                 breakdown += '\n<br> <hr> <pre>'
-                unique_songs = self.gig_data.unique_songs_of_artist(a + '$')
+                unique_songs = self.gig_data.unique_songs_of_artist(a)
 
                 breakdown += 'Breakdown of %d songs across %d events (%.2f songs/event):<br> <br>' \
                                 % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
@@ -550,7 +578,7 @@ class g_html():
                 link = gig.date.strftime("%Y_%m_%d") + suffix
                 img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                 artist_string_h = self.build_gigs_string( all_agigs, None, afname, None, a, gig.index )
-                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, True, c, suffix)
+                setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_a, artist_string_h + breakdown, setlist_string, img )
 
             link = '<a href=' + afname + '.html>' + a + '</a>'
@@ -586,7 +614,7 @@ class g_html():
                 link = gig.date.strftime("%Y_%m_%d") + suffix
                 img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                 venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
-                setlist_string = self.gig_setlist_string( gig, self.gig_data.gigs, True, c, suffix)
+                setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_v, venue_string_h, setlist_string, img )
 
             link = '<a href=' + vfname + '.html>' + v + '</a>'
@@ -609,13 +637,31 @@ class g_html():
                     '</td><td>' + ', '.join([ x[0] for x in order[1]]) + '</td></tr>'
         venues_string += '</table>'
         return venues_string
+    def make_bootlegs_index_string(self,years_string_p):
+        playlist_gigs = self.gig_data.playlist_gigs
+        string = '\n<ul>'
+        for p in playlist_gigs:
+            links = []
+            for s in p.sets:
+                if s.playlist:
+                    link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
+                    links.append(link)
+            string += '\n  <li> ' + p.date.strftime("%Y-%b-%d") + ' ' + " + ".join(links)
+        string += '\n</ul>'
+        return string
     def generate_html_files(self):
         self.make_stylesheet()
 
-        self.years     = ['Artists', 'Venues', ''] + self.years
+        extras = [ 'Artists', 'Venues' ]
+        if self.do_playlists:
+            extras += [ 'Boots' ]
+        self.years = extras + [ '' ] + self.years
+
         years_string   = self.make_years_string()
         years_string_a = self.make_years_string("Artists")
         years_string_v = self.make_years_string("Venues")
+        if self.do_playlists:
+            years_string_b = self.make_years_string("Boots")
         index_string   = ''
         years_string_i = ''
          
@@ -629,7 +675,7 @@ class g_html():
             self.make_file( str(y), years_string_h, gigs_string, '' )
             for gig in self.gig_data.gigs:
                 if gig.date.year == y:
-                    setlist_string = self.gig_setlist_string(gig,self.gig_data.gigs)
+                    setlist_string = self.gig_setlist_string(gig)
                     img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                     gigs_string_h = self.build_gigs_string( self.gig_data.gigs, y, 
                                                             None, None, None, gig.index)
@@ -638,10 +684,14 @@ class g_html():
             
         artists_string = self.make_artist_index_string(years_string_a)
         venues_string = self.make_venue_index_string(years_string_v)
+        if self.do_playlists:
+            bootlegs_string = self.make_bootlegs_index_string(years_string_b)
 
         self.make_file( 'venues',    years_string_v,   venues_string,    '' )
         self.make_file( 'artists',   years_string_a,   artists_string,   '' )
         self.make_file( 'index',     years_string_i,   index_string,     '' )
+        if self.do_playlists:
+            self.make_file( 'boots',     years_string_b,   bootlegs_string,  '' )
 
         return
 
@@ -654,6 +704,7 @@ class g_gigs():
         self.unique_artists = None  # cached
         self.unique_venues = None   # cached
         self.unique_years = None    # cached
+        self.playlist_gigs = []
         
         self.build_gig_data()
     def __str__(self):
@@ -768,6 +819,27 @@ class g_gigs():
                                     break
                             except ValueError:
                                 pass
+    def fill_in_playlist_links(self):
+        fname = self.root + '/playlists'
+        lines = []
+        with open(fname) as f:
+            for l in f.read().splitlines():
+                if os.path.exists(l):
+                    lines.append(l)
+        if len(lines) > 0:
+            used_lines = []
+            for g in self.gigs:
+                for s in [ x for x in g.sets if not x.band_only ]:
+                    date_string = g.date.strftime("%Y.%m.%d")
+                    artist_words = s.artist.lower().split(' ')
+                    for line in lines:
+                        if line in used_lines:
+                            pass
+                        elif date_string in line and artist_words[-1] in line.lower():
+                            s.playlist = line
+                            if len(self.playlist_gigs) == 0 or self.playlist_gigs[-1] != g:
+                                self.playlist_gigs.append(g)
+                                used_lines.append(line)
     def get_data_from_file(self,path):
         level = 0
         count = 0
@@ -822,6 +894,7 @@ class g_gigs():
             self.get_data_from_file(f)
         self.gigs.sort(key=lambda x: x.index)
         self.identify_first_times()
+        self.fill_in_playlist_links()
         
     # Some utilities
     def artist_stats(self,artist):
@@ -865,8 +938,10 @@ class g_gigs():
         raw_songs = [ x for x in raw_songs if len(x['artists']) > 1 ]
         for song in raw_songs:
             print song['title'].ljust(30) + ' ' + ', '.join(song['artists'])
-    def unique_songs_of_artist(self,artist):
+    def unique_songs_of_artist(self,a):
+        # this is quite slow. it could be cached!
         raw_songs = []
+        artist = a + '$'
         for gig in self.gigs:
             for s in gig.sets:
                 # look for song in artist's main set:
@@ -1028,6 +1103,7 @@ class g_gigs():
     def longest_gap(self):
         gaps = []
         gigs = self.get_past_gigs()
+        gigs = [ x for x in gigs if x.date.year >= 2010 ]
         for i in range(1,len(gigs)):
             gap = gigs[i].date.toordinal() - gigs[i-1].date.toordinal() 
             gaps.append( [ gap, gigs[i-1], gigs[i] ] )
@@ -1036,7 +1112,7 @@ class g_gigs():
         ngaps = 20
         gaps.sort(key=lambda x: -x[0])
         gaps = gaps[:ngaps]
-        print "\n  Longest gaps:\n"
+        print "\n  Longest gaps since 2010:\n"
         for gap in gaps:
             print "   %s days (%s - %s)" % ( str(gap[0]).rjust(4), gap[1].date.strftime("%d-%b-%Y"), gap[2].date.strftime("%d-%b-%Y"))
     def longest_run(self):
@@ -1055,6 +1131,13 @@ class g_gigs():
                 current_run = [g]
             else:
                 current_run = [g]
+
+            # if we're at the end, maybe add current run:
+            if g == gigs[-1] and len(current_run) == len(runs[0]):
+                runs.append(current_run)
+            elif g == gigs[-1] and len(current_run) > len(runs[0]):
+                runs = [ current_run ]
+
             last_g = g
             
         print "\n  Longest run was %d gigs, which occurred %d times:\n" % ( len(runs[0]), len(runs) )
@@ -1086,7 +1169,7 @@ class g_gig():
         for s in self.sets:
             string += "\n  Artist: " + s.artist
             for song in s.songs:
-                string += "\n          > " + song.title
+                string += "\n          > " + song.title if song.title else "???"
         string += "\n"
         return string
     def append_set(self,s):
@@ -1145,6 +1228,7 @@ class g_set():
         self.guest_only = False
         self.band_only  = False
         self.solo       = False
+        self.playlist   = ''
     def append_song(self, song):
         self.songs.append(song)
 
@@ -1281,6 +1365,14 @@ if __name__ == "__main__":
         gig_data.songs_performed_by_multiple_artists()
         sys.exit(0)
 
+    if first_arg == "-play":
+        pls = gig_data.playlist_gigs[:]
+        print "Recorded gigs: " + str(len(pls))
+        for p in pls:
+            print p.date.strftime("%d-%b-%Y") + "  " + ", ".join(p.get_artists())
+        sys.exit(0)
+
+
     if first_arg == "-html":
         html_generator = g_html(gig_data,'./html/')
         sys.exit(0)
@@ -1297,5 +1389,4 @@ if __name__ == "__main__":
         sys.exit(0)
 
     print(gig_data)
-
 
