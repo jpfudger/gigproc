@@ -179,9 +179,7 @@ class g_html():
             if len(g.songs) > 0:
                 setlist_string += '\n<' + list_tag + '>'
 
-                #for (s,f) in zip(g['setlist'],g['songflags']):
                 for s in g.songs:
-
                     if self.do_songcount:
                         # calculate how many times I have seen this artist perform this song:
                         n_times = 0
@@ -193,7 +191,6 @@ class g_html():
                                         break
                                     else:
                                         n_times += 1
-
 
                     sn = s.title if s.title else '???'
                     if sn == '???' and s.quote != None:
@@ -241,7 +238,7 @@ class g_html():
 
         giglist_id = 'col_giglist'
         if setlist_string == '':
-            giglist_id = 'col_giglist_wide'
+            giglist_id = 'col_onlylist'
 
         lines = [
             '<html lang="en">',
@@ -258,13 +255,13 @@ class g_html():
             '            <div id="col_yearlist">',
                              years_string,
             '            </div>',
-            '            <div id="content">',
+            #'            <div id="content">',
             '                <div id="' + giglist_id + '">',
                                  gigs_string,
             '                </div>',
             '                <div id="col_setlist">',
                                  setlist_string,
-            '                </div>',
+            #'                </div>',
             '            </div>',
             '        </div>',
             '        <div id="footer" class="cf"> </div>',
@@ -284,6 +281,15 @@ class g_html():
         col_border = '#C9BE62'
         col_highlight = '#990000'
 
+        col_gigbg = col_mainbg
+        col_setlbg = col_mainbg
+        col_setltext = col_maintext
+        col_gigtext = col_maintext
+
+        # different colours for debugging:
+        #col_setlbg = 'red'
+        #col_gigbg = 'yellow'
+
         lines = [
             'html,body {',
             '    margin:0;',
@@ -293,7 +299,7 @@ class g_html():
             '    background:' + col_mainbg + ';',
             '    }',
             '#body {',
-            '    width:1300px;',
+            #'    width:1300px;',
             '    margin:0 auto;',
             '    font-size: 1.6ex;',
             '    font-family: sans-serif;',
@@ -302,11 +308,12 @@ class g_html():
             '    }',
             '#img {',
             '    position: absolute;',
-            '    top: 100;',
-            '    right: 100;',
-            '    width: 200;',
-            '    height: auto;',
-            '    z-index: 1;',
+            '    float: right;',
+            '    top: 50;',
+            '    right: 60;',
+            '    z-index: 8;',
+            #'    overflow: hidden;',
+            '    display: block;',
             '    }',
             '#header {',
             '    padding:10px;',
@@ -316,35 +323,52 @@ class g_html():
             '    list-style-type: square;',
             '    }',
             '#col_yearlist {',
-            '    position:fixed;',
             '    float:left;',
-            '    width:150px;',
-            '    padding:10px;',
-            '    left:20px;',
+            #'    width:10%;',
+            '    padding-top:5px;',
+            '    padding-left:2%;',
+            #'    left:20px;',
             '    background:' + col_mainbg + ';',
+            #'    background:' + 'green' + ';',
             '    }',
-            '#content {',
-            '    position:relative;',
-            '    float:left;',
-            '    left:0px;',
-            '    /*width:1340px;*/',
-            '    color:' + col_maintext + ';',
-            '    }',
+            # '#content {',
+            # '    position:relative;',
+            # '    float:left;',
+            # '    left:0px;',
+            # '    width:100%;',
+            # '    color:' + col_maintext + ';',
+            # '    }',
             '#col_giglist {',
-            '    position:relative;',
+            #'    position: relative;',
             '    float:left;',
-            '    left:0px;',
-            '    width:600px;',
-            '    background:' + col_mainbg + ';',
+            #'    left:0px;',
+            '    padding-left:5%;',
+            #'    padding-right:5%;',
+            '    width:40%;',
+            #'    width:600px;',
+            '    background:' + col_gigbg + ';',
+            '    color:' + col_gigtext + ';',
+            '    overflow: hidden;',
+            '    }',
+            '#col_onlylist {',
+            '    float:left;',
+            '    padding-left:5%;',
+            '    width:80%;',
+            '    background:' + col_gigbg + ';',
             '    }',
             '#col_setlist {',
-            '    position:relative;',
+            #'    position: relative;',
             '    float:left;',
-            '    left:200px;',
-            '    width:500px;',
-            '    padding:10px;',
-            '    background:' + col_mainbg + ';',
-            '    color:' + col_maintext + ';',
+            #'    left:200px;',
+            #'    padding-left:60px;',
+            '    width:30%;',
+            #'    padding:30px;',
+            '    padding-top:5px;',
+            '    padding-left:3%;',
+            '    padding-right:5%;',
+            '    background:' + col_setlbg + ';',
+            '    color:' + col_setltext + ';',
+            '    overflow: hidden;',
             '    }',
             '#footer {',
             '    padding:10px;',
@@ -391,20 +415,24 @@ class g_html():
             '   }',
             '',
             '.sl_title {',
+            '    display: block;',
             '    width:60%;',
+            #'    float:left;',
             '    color: ' + col_border + ';',
             '    background-color:' + col_boxbg + ';',
-            '    padding: 10px;',
+            '    padding: 12px;',
             '    text-align: left;',
             '    border: 1px ' + col_border + ' solid;',
             '    }',
             'table {',
             '    font-size: 1.7ex;',
             '    border-collapse: collapse',
+            #'    overflow: hidden;',
             '    }',
             '.date {',
             '    font-weight: bold;',
             '    font-family: "Courier new", monospace;',
+            '    display: inline;',
             '    }',
             'a.highlight {',
             '    color:' + col_highlight + ';',
@@ -494,7 +522,7 @@ class g_html():
                     cols = [ str(i) + '.' + self.sp(1), name_str, date_str, gig.venue ]
                     gigs_string += self.row( cols, 'rlll' )
 
-        gigs_string += self.row( [ self.sp(3), self.sp(13), self.sp(9), '' ] )
+        gigs_string += self.row( [ self.sp(3), self.sp(15), self.sp(9), '' ] )
         gigs_string += '\n</table>'
         return gigs_string
     def is_int(self,s):
@@ -551,7 +579,8 @@ class g_html():
 
             breakdown = ''
             if len(c) > 1:
-                breakdown += '\n<br> <hr> <pre>'
+                breakdown += '\n<br> \n' + '='*45 + '\n<pre>'
+
                 unique_songs = self.gig_data.unique_songs_of_artist(a)
 
                 breakdown += 'Breakdown of %d songs across %d events (%.2f songs/event):<br> <br>' \
@@ -646,7 +675,7 @@ class g_html():
                 if s.playlist:
                     link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
                     links.append(link)
-            string += '\n  <li> ' + p.date.strftime("%Y-%b-%d") + ' ' + " + ".join(links)
+            string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + '</div> &nbsp;' + " + ".join(links)
         string += '\n</ul>'
         return string
     def generate_html_files(self):
@@ -1079,17 +1108,39 @@ class g_gigs():
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
+    # def get_unique_years(self,inc_future=False):
+    #     if not self.unique_years:
+    #         raw_years = []
+    #         for gig in self.gigs:
+    #             if not gig.future or inc_future:
+    #                 raw_years += [ gig.date.year ]
+    #         years = list(set(raw_years))
+    #         years.sort()
+    #         count = [ raw_years.count(y) for y in years ]
+    #         zipped = zip( years, count )
+    #         zipped.sort(key=lambda x: x[1])
+    #         zipped.reverse()
+    #         self.unique_years = zipped
+    #     return self.unique_years
     def get_unique_years(self,inc_future=False):
         if not self.unique_years:
-            raw_years = []
+            years = []
+            ygigs = []
             for gig in self.gigs:
                 if not gig.future or inc_future:
-                    raw_years += [ gig.date.year ]
-            years = list(set(raw_years))
-            years.sort()
-            count = [ raw_years.count(y) for y in years ]
-            zipped = zip( years, count )
-            zipped.sort(key=lambda x: x[1])
+                    y = gig.date.year
+                    try:
+                        i = years.index(y)
+                        ygigs[i].append(gig)
+                    except ValueError:
+                        years.append(y)
+                        ygigs.append([gig])
+            
+            for l in ygigs:
+                l.sort(key=lambda x: x.index)
+            
+            zipped = zip( years, ygigs )
+            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
             zipped.reverse()
             self.unique_years = zipped
         return self.unique_years
@@ -1145,12 +1196,65 @@ class g_gigs():
             for g in run:
                 print "    " + g.stub()
             print ""
-    def monthly_histogram(self):
+    def make_graphs(self):
+        import matplotlib.pyplot as plt
         month_totals = [0] * 12
+        months = []
+        day_totals = [0] * 7
+        days = []
         for gig in self.get_past_gigs():
             i = int(gig.date.strftime("%m"))
+            months.append(i-1)
             month_totals[i-1] += 1
-        print month_totals
+            j = int(gig.date.strftime("%w"))
+            days.append(j)
+            day_totals[j-1] += 1
+        fig, ax = plt.subplots()
+        N, bins, patches = ax.hist(months, 12)
+        #N, bins, patches = ax.hist(days, 7)
+        plt.show()
+        print "Months: [ " + ", ".join([str(x) for x in month_totals]) + " ]"
+        print "Days:   [ " + ", ".join([str(x) for x in day_totals]) + " ]"
+    def histogram_year(self):
+        import matplotlib.pyplot as plt
+
+        years = self.get_unique_years()
+        years.sort()
+
+        x = [ a[0] for a in years ]
+        y = [ len(a[1]) for a in years ]
+        
+        plt.plot(x, y)
+        plt.grid()
+        plt.show()
+    def relative_progress(self):
+        year = datetime.today().year
+        yday = datetime.today().timetuple().tm_yday
+        print "Today is the %dth day of %d" % (yday, year)
+        current_count = 0
+        previous_counts = []
+
+        gigs_by_year = self.get_unique_years()
+        gigs_by_year.sort()
+
+        for (y,c) in gigs_by_year:
+            if y == year:
+                #print "This is " + str(y)
+                for g in c:
+                    if g.date.timetuple().tm_yday < yday:
+                        current_count += 1
+            elif y < year:
+                #print y
+                previous_counts.append(0)
+                for g in c:
+                    if g.date.timetuple().tm_yday < yday:
+                        previous_counts[-1] += 1
+
+        print "Current count: %d" % current_count
+        print "Previous counts:"
+        print previous_counts
+        print "Average (%d/%d) : %f" % ( sum(previous_counts), len(previous_counts), \
+                (sum(previous_counts)/float(len(previous_counts))))
 
 class g_gig():
     def __init__(self, ident, date, venue):
@@ -1361,6 +1465,15 @@ if __name__ == "__main__":
 
     gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
+    if first_arg == "-graphs":
+        #gig_data.make_graphs()
+        gig_data.histogram_year()
+        sys.exit(0)
+
+    if first_arg == "-progress":
+        gig_data.relative_progress()
+        sys.exit(0)
+
     if first_arg == "-test":
         gig_data.songs_performed_by_multiple_artists()
         sys.exit(0)
@@ -1371,7 +1484,6 @@ if __name__ == "__main__":
         for p in pls:
             print p.date.strftime("%d-%b-%Y") + "  " + ", ".join(p.get_artists())
         sys.exit(0)
-
 
     if first_arg == "-html":
         html_generator = g_html(gig_data,'./html/')
