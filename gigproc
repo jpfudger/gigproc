@@ -128,7 +128,7 @@ class g_html():
 
         for g in gig.sets:
 
-            artsongs = []
+            art_songs = []
             if self.do_songcount:
                 # Calculate the number of times I have seen the song.
                 # This is very slow. We need to cache the song data.
@@ -201,7 +201,7 @@ class g_html():
                         setlist_string += '\n<br><br>'
                     if s.medley:
                         joiner = '' # could be '&gt; ' or '+ '
-                        setlist_string += '\n<br>' + joiner + sn
+                        setlist_string += '\n<br>' + joiner + sn + ' '
                     else:
                         setlist_string += '\n<li>' + sn + ' '
                     if s.improv:
@@ -231,8 +231,7 @@ class g_html():
     def make_file( self, filename, years_string, gigs_string, setlist_string, img = ""):
         # writes lines to file
         fname_html = self.head + filename + '.html'
-        #fname_img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
-        img_string = '' # '    <div id="img"><img src=./img/0000_00_00.jpg></div>' 
+        img_string = ''
         if os.path.isfile('./html/' + img):
             img_string = '    <div id="img"><img src=./' + img + '></div>' 
 
@@ -551,7 +550,7 @@ class g_html():
 
             breakdown = ''
             if len(c) > 1:
-                breakdown += '\n<br> \n' + '='*45 + '\n<pre>'
+                breakdown += '\n<br> \n' + '='*50 + '\n<pre>'
 
                 unique_songs = self.gig_data.unique_songs_of_artist(a)
 
@@ -577,10 +576,9 @@ class g_html():
             for gig in c:
                 suffix = '_a' + str(counter).zfill(3)
                 link = gig.date.strftime("%Y_%m_%d") + suffix
-                img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                 artist_string_h = self.build_gigs_string( all_agigs, None, afname, None, a, gig.index )
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
-                self.make_file( link, years_string_a, artist_string_h + breakdown, setlist_string, img )
+                self.make_file( link, years_string_a, artist_string_h + breakdown, setlist_string, gig.img )
 
             link = '<a href=' + afname + '.html>' + a + '</a>'
             if self.gig_data.artist_is_support(a):
@@ -613,10 +611,9 @@ class g_html():
             for gig in c:
                 suffix = '_v' + str(counter).zfill(3)
                 link = gig.date.strftime("%Y_%m_%d") + suffix
-                img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                 venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
-                self.make_file( link, years_string_v, venue_string_h, setlist_string, img )
+                self.make_file( link, years_string_v, venue_string_h, setlist_string, gig.img )
 
             link = '<a href=' + vfname + '.html>' + v + '</a>'
 
@@ -630,7 +627,8 @@ class g_html():
         venues_string += '</table>'
 
         cities = self.gig_data.unique_cities()
-        venues_string += '\n<br> <br> <hr>\n<br>' + str(len(cities)) + ' cities:<br><br>\n<table>'
+        venues_string += '\n<br> <br> ' + '='*50 + '\n<br><br>' + str(len(cities)) + ' cities:' \
+                + '<br><br>\n<table>'
         ordered_cities = self.order_collection_by_count(cities)
         ordered_cities.reverse()
         for order in ordered_cities:
@@ -677,11 +675,10 @@ class g_html():
             for gig in self.gig_data.gigs:
                 if gig.date.year == y:
                     setlist_string = self.gig_setlist_string(gig)
-                    img = 'img/' + gig.date.strftime("%Y_%m_%d") + '.jpg'
                     gigs_string_h = self.build_gigs_string( self.gig_data.gigs, y, 
                                                             None, None, None, gig.index)
                     self.make_file( gig.date.strftime("%Y_%m_%d"), 
-                               years_string_h, gigs_string_h, setlist_string, img)
+                               years_string_h, gigs_string_h, setlist_string, gig.img)
             
         artists_string = self.make_artist_index_string(years_string_a)
         venues_string = self.make_venue_index_string(years_string_v)
@@ -1213,7 +1210,7 @@ class g_gigs():
             if y == year:
                 #print "This is " + str(y)
                 for g in c:
-                    if g.date.timetuple().tm_yday < yday:
+                    if g.date.timetuple().tm_yday <= yday:
                         current_count += 1
             elif y < year:
                 #print y
@@ -1227,6 +1224,38 @@ class g_gigs():
         print previous_counts
         print "Average (%d/%d) : %f" % ( sum(previous_counts), len(previous_counts), \
                 (sum(previous_counts)/float(len(previous_counts))))
+    def growth(self):
+        gigs_by_year = self.get_unique_years()
+        gigs_by_year.sort(key=lambda x: x[0])
+        all_venues = []
+        all_artists = []
+        n_venues = []
+        n_artists = []
+        for (y,c) in gigs_by_year:
+            n_new_venues = 0
+            n_new_artists = 0
+            
+            for g in c:
+                if g.venue in all_venues:
+                    pass
+                else:
+                    n_new_venues += 1
+                    all_venues.append(g.venue)
+
+                for s in g.sets:
+                    if s.artist in all_artists:
+                        pass
+                    else:
+                        n_new_artists += 1
+                        all_artists.append(s.artist)
+
+            n_venues.append(n_new_venues)
+            n_artists.append(n_new_artists)
+
+        print n_venues
+        print n_artists
+
+        #print years
 
 class g_gig():
     def __init__(self, ident, date, venue):
@@ -1237,6 +1266,7 @@ class g_gig():
         today = datetime.today()
         self.future = date > today or ( date.date() == today.date() and today.hour < 20 )
         self.artists = None # cached
+        self.img     = 'img/' + self.date.strftime("%Y_%m_%d") + '.gif'
     def __str__(self):
         # print formatter
         string = ""
@@ -1248,6 +1278,17 @@ class g_gig():
                 string += "\n          > " + song.title if song.title else "???"
         string += "\n"
         return string
+    def print_short(self):
+        date = self.date.strftime('%d-%b-%Y')
+        venue = self.venue
+        artist_list = [ s.artist for s in self.sets ]
+        artists = artist_list[0]
+        if len(artist_list) > 1:
+            artists += ' + ' + artist_list[1]
+        if len(artist_list) > 2:
+            artists += ' + ... '
+        ident = '[' + self.index + ']'
+        print ' {0:8s} {1:15s} {2:30s} {3:20s}' . format( ident, date, venue, artists)
     def append_set(self,s):
         self.sets.append(s)
     def add_dummy_sets_for_guests(self):
@@ -1405,17 +1446,7 @@ class g_query():
             self.results.sort(key=lambda x: x.index)
             print "\n %d matching events.\n" % len(self.results)
             for gig in self.results:
-                date = gig.date.strftime('%d-%b-%Y')
-                venue = gig.venue
-                artist_list = [ s.artist for s in gig.sets ]
-                # artists = " + ".join(artist_list)
-                artists = artist_list[0]
-                if len(artist_list) > 1:
-                    artists += ' + ' + artist_list[1]
-                if len(artist_list) > 2:
-                    artists += ' + ... '
-                ident = '[' + gig.index + ']'
-                print ' {0:8s} {1:15s} {2:30s} {3:20s}' . format( ident, date, venue, artists)
+                gig.print_short()
             print '\n'
         
 if __name__ == "__main__":
@@ -1464,6 +1495,10 @@ if __name__ == "__main__":
     if first_arg == "-runs":
         gig_data.longest_gap()
         gig_data.longest_run()
+        sys.exit(0)
+
+    if first_arg == "-growth":
+        gig_data.growth()
         sys.exit(0)
 
     query = g_query(gig_data,args)
