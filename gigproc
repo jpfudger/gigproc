@@ -1256,6 +1256,36 @@ class g_gigs():
         print n_artists
 
         #print years
+    def print_fuzzy_matches(self,items,category = ''):
+        from difflib import SequenceMatcher as SM
+        min_ratio = 0.8
+        n_items = len(items)
+        matches = []
+        for i in range(0,n_items-1):
+            ti = items[i]
+            for j in range(i+1,n_items-1):
+                tj = items[j]
+                ratio = SM(None, ti, tj).ratio()
+                if ratio > min_ratio:
+                    # print( "(%d %d) (%s, %s) %f" % ( i, j, ti, tj, ratio ) )
+                    matches.append( [ ti, tj ] )
+        if len(matches) > 0:
+            print '\n  ' + category + ':'
+            for match in matches:
+                print '    ' + ','.join(match)
+
+    def fuzzy_matcher(self):
+        artists = self.get_unique_artists()
+        artists = [ x[0] for x in artists ]
+        for a in artists:
+            songs = self.unique_songs_of_artist(a)
+            songs = [ x['title'] for x in songs ]
+            self.print_fuzzy_matches(songs,a)
+        venues = self.get_unique_venues()
+        venues = [ x[0] for x in venues ]
+
+        self.print_fuzzy_matches(artists, 'Artists')
+        self.print_fuzzy_matches(venues, 'Venues')
 
 class g_gig():
     def __init__(self, ident, date, venue):
@@ -1499,6 +1529,10 @@ if __name__ == "__main__":
 
     if first_arg == "-growth":
         gig_data.growth()
+        sys.exit(0)
+
+    if first_arg == "-fuzzy":
+        gig_data.fuzzy_matcher()
         sys.exit(0)
 
     query = g_query(gig_data,args)
