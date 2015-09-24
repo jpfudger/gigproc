@@ -4,19 +4,21 @@ from re import match, search, IGNORECASE, sub, findall, compile
 from datetime import datetime
 
 class g_html():
-    def __init__(self, gig_data, head):
+    def __init__(self, gig_data, head, playlists = False):
         self.gig_data = gig_data
         self.head = head
 
         # optional extras:
-        self.do_covers = False      # mark covers
-        self.do_playlists = False   # add playlist links and index
-        self.do_solo_sets = False   # mark solo sets
-        self.do_songcount = False   # count song occurrences (SLOW)
+        self.do_covers = False          # mark covers
+        self.do_playlists = playlists   # add playlist links and index
+        self.do_solo_sets = False       # mark solo sets
+        self.do_songcount = False       # count song occurrences (SLOW)
 
         # do the work:
         self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(True) ]
         self.years.sort()
+        if self.do_playlists:
+            gig_data.fill_in_playlist_links()
         self.generate_html_files()
 
     # HTML Generation
@@ -639,7 +641,11 @@ class g_html():
     def make_bootlegs_index_string(self,years_string_p):
         playlist_gigs = self.gig_data.playlist_gigs
         string = '\n<ul>'
+        y = ""
         for p in playlist_gigs:
+            if y != p.date.strftime("%Y"):
+                string += '\n <br> ========'
+            y = p.date.strftime("%Y")
             links = []
             for s in p.sets:
                 if s.playlist:
@@ -712,7 +718,7 @@ class g_gigs():
         venues    = self.get_unique_venues()
         years     = self.get_unique_years()
         n_gigs    = len(self.get_past_gigs())
-        n_venues  = " " + str(len(venues))
+        n_venues  = str(len(venues))
         n_artists = str(len(artists))
         n_years   = " " + str(len(years))
 
@@ -748,6 +754,7 @@ class g_gigs():
         title = sub( r"\s*\*+\s*$", '', title)
         title = sub( r"\s*\^+\s*$", '', title)
         title = sub( r"\s*\~+\s*$", '', title)
+        title = sub( r"\?", '', title)
         title = ' '.join(w[0].upper() + w[1:] for w in title.split()) # capitalise each word
         
 
@@ -833,11 +840,21 @@ class g_gigs():
                     for line in lines:
                         if line in used_lines:
                             pass
-                        elif date_string in line and artist_words[-1] in line.lower():
-                            s.playlist = line
-                            if len(self.playlist_gigs) == 0 or self.playlist_gigs[-1] != g:
-                                self.playlist_gigs.append(g)
-                                used_lines.append(line)
+                        elif not date_string in line:
+                            pass
+                        else:
+                            checked_all_names = True
+                            for aw in artist_words:
+                                if aw.lower() == 'the':
+                                    pass
+                                elif not aw in line.lower():
+                                    checked_all_names = False
+                                    break
+                            if checked_all_names:
+                                s.playlist = line
+                                if len(self.playlist_gigs) == 0 or self.playlist_gigs[-1] != g:
+                                    self.playlist_gigs.append(g)
+                                    used_lines.append(line)
     def get_data_from_file(self,path):
         level = 0
         count = 0
@@ -892,7 +909,6 @@ class g_gigs():
             self.get_data_from_file(f)
         self.gigs.sort(key=lambda x: x.index)
         self.identify_first_times()
-        self.fill_in_playlist_links()
         
     # Some utilities
     def artist_stats(self,artist):
@@ -1272,8 +1288,7 @@ class g_gigs():
         if len(matches) > 0:
             print '\n  ' + category + ':'
             for match in matches:
-                print '    ' + ','.join(match)
-
+                print '    ' + ', '.join(match)
     def fuzzy_matcher(self):
         artists = self.get_unique_artists()
         artists = [ x[0] for x in artists ]
@@ -1356,7 +1371,6 @@ class g_gig():
             this_set = g_set(b)
             this_set.band_only = True
             self.sets.insert(1,this_set)
-
     def get_artists(self):
         if not self.artists:
             self.artists = [ x.artist for x in self.sets ]
@@ -1481,9 +1495,10 @@ class g_query():
         
 if __name__ == "__main__":
     args = sys.argv[1:]
-    first_arg = args[0] if len(args) == 1 else None
+    arg1 = args[0] if len(args) > 0 else None
+    arg2 = args[1] if len(args) > 1 else None
     
-    if first_arg == "-h":
+    if arg1 == "-h":
         # print html data
         print """\n Optional args:
         
@@ -1498,40 +1513,41 @@ if __name__ == "__main__":
 
     gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
-    if first_arg == "-graphs":
+    if arg1 == "-graphs":
         #gig_data.make_graphs()
         gig_data.histogram_year()
         sys.exit(0)
 
-    if first_arg == "-progress":
+    if arg1 == "-progress":
         gig_data.relative_progress()
         sys.exit(0)
 
-    if first_arg == "-test":
+    if arg1 == "-test":
         gig_data.songs_performed_by_multiple_artists()
         sys.exit(0)
 
-    if first_arg == "-play":
+    if arg1 == "-play":
         pls = gig_data.playlist_gigs[:]
         print "Recorded gigs: " + str(len(pls))
         for p in pls:
             print p.date.strftime("%d-%b-%Y") + "  " + ", ".join(p.get_artists())
         sys.exit(0)
 
-    if first_arg == "-html":
-        html_generator = g_html(gig_data,'./html/')
+    if arg1 == "-html":
+        playlists = True if arg2 == "-playlists" else False
+        html_generator = g_html(gig_data,'./html/', playlists)
         sys.exit(0)
 
-    if first_arg == "-runs":
+    if arg1 == "-runs":
         gig_data.longest_gap()
         gig_data.longest_run()
         sys.exit(0)
 
-    if first_arg == "-growth":
+    if arg1 == "-growth":
         gig_data.growth()
         sys.exit(0)
 
-    if first_arg == "-fuzzy":
+    if arg1 == "-fuzzy":
         gig_data.fuzzy_matcher()
         sys.exit(0)
 
