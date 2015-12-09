@@ -899,12 +899,16 @@ class g_gigs():
                 last_blank = True
             elif mopen:
                 level += 1
-                m1 = match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                m1 = match('^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                date_regex = "%d-%b-%Y"
+                if not m1:
+                    m1 = match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                    date_regex = "%d.%m.%Y"
                 if commented:
                     pass
                 elif m1:
                     count += 1
-                    d = datetime.strptime( m1.group(1), "%d.%m.%Y" )
+                    d = datetime.strptime( m1.group(1), date_regex )
                     ident = d.strftime( "%y" ) + '{0:02d}'.format(count)
                     v = self.process_venue_name( m1.group(2) )
                     this_gig = g_gig( ident, d, v )
