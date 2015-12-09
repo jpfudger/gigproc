@@ -156,15 +156,6 @@ class g_html():
 
             setlist_string += '\n<br> ' + alink
 
-            band_string = ''
-            if g.band:
-                band_links = []
-                for b in g.band:
-                    bg_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(b) + '.html'
-                    blink = '<a href=' + bg_fname + '>' + b + '</a>'
-                    band_links.append(blink)
-                band_string = '\n' + self.sp(3) + '<i>(Band included ' + ', '.join(band_links) + ')</i> <br>'
-            
             asymbol = ''
             if g.artist in gig_guests:
                 asymbol = self.footnote_symbol( gig.get_artists().index(g.artist) )
@@ -175,6 +166,16 @@ class g_html():
                 setlist_string += ' ' + self.make_flag_note( 'guest', "+ Guested in another set", asymbol ) 
 
             setlist_string += playlist_link
+
+            band_string = ''
+            if g.band:
+                band_links = []
+                for b in g.band:
+                    bg_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(b) + '.html'
+                    blink = '<a href=' + bg_fname + '>' + b + '</a>'
+                    band_links.append(blink)
+                band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + '] <br>'
+            setlist_string += band_string
 
             list_tag = 'ol' if g.ordered else 'ul'
 
@@ -222,12 +223,14 @@ class g_html():
                             a_indx = gig.get_artists().index(guest)
                             setlist_string += ' ' + self.make_flag_note( 'guest', '+ ' + guest, 
                                                                    self.footnote_symbol(a_indx) )
+                    if s.youtube:
+                        setlist_string += self.make_youtube_link(s.youtube)
 
                 setlist_string += '\n</' + list_tag + '>'
             else:
                 setlist_string += '<br>'
 
-            setlist_string += band_string
+            #setlist_string += band_string
 
         return setlist_string
     def make_file( self, filename, years_string, gigs_string, setlist_string, img = ""):
@@ -324,6 +327,7 @@ class g_html():
             '    padding-top:5px;',
             '    padding-left:2%;',
             '    background:transparent;',
+            #'    position:fixed;',
             '    }',
             '#col_giglist {',
             '    float:left;',
@@ -644,14 +648,14 @@ class g_html():
         y = ""
         for p in playlist_gigs:
             if y != p.date.strftime("%Y"):
-                string += '\n <br> ========'
+                string += '\n <br>' # '========'
             y = p.date.strftime("%Y")
             links = []
             for s in p.sets:
                 if s.playlist:
                     link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
                     links.append(link)
-            string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + '</div> &nbsp;' + " + ".join(links)
+            string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + '</div> &nbsp;' + " + ".join(links) + ' (' + p.venue + ')'
         string += '\n</ul>'
         return string
     def generate_html_files(self):
@@ -698,6 +702,11 @@ class g_html():
             self.make_file( 'boots',     years_string_b,   bootlegs_string,  '' )
 
         return
+    def make_youtube_link(self,yt):
+        link = '<a href="http://www.youtube.com/watch?v=' + yt + '">'
+        link += '&bullet;'
+        link += '</a>'
+        return link
 
 class g_gigs():
     def __init__(self,root):
@@ -754,9 +763,15 @@ class g_gigs():
         title = sub( r"\s*\*+\s*$", '', title)
         title = sub( r"\s*\^+\s*$", '', title)
         title = sub( r"\s*\~+\s*$", '', title)
-        title = sub( r"\?", '', title)
-        title = ' '.join(w[0].upper() + w[1:] for w in title.split()) # capitalise each word
-        
+        #title = sub( r"(?<=[^?])\?$", '\1', title)
+
+        # capitalise each word:
+        title = ' '.join(w[0].upper() + w[1:] for w in title.split()) 
+
+        # uncapitalise conjunctions:
+        title = sub( " And ", " and ", title)
+        title = sub( " The ", " the ", title)
+        title = sub( " Of ", " of ", title)
 
         if match('^\s*$', title):
             # process set flags
@@ -797,6 +812,10 @@ class g_gigs():
                     song.debut = True
                 if 'improv' in splits[1]:
                     song.improv = True
+                if '|' in splits[1]:
+                    m = match( '.*\|(\w+)\|.*', splits[1] )
+                    if m:
+                        song.youtube = m.group(1)
             this_set.append_song(song)
     def process_venue_name(self,name):
         # This does nothing, but it would be nice to sort out underscores.
@@ -829,7 +848,7 @@ class g_gigs():
         lines = []
         with open(fname) as f:
             for l in f.read().splitlines():
-                if os.path.exists(l):
+                if True or os.path.exists(l):
                     lines.append(l)
         if len(lines) > 0:
             used_lines = []
@@ -844,12 +863,16 @@ class g_gigs():
                             pass
                         else:
                             checked_all_names = True
-                            for aw in artist_words:
-                                if aw.lower() == 'the':
-                                    pass
-                                elif not aw in line.lower():
-                                    checked_all_names = False
-                                    break
+                            if len(artist_words) == 2 and artist_words[1] == 'dylan':
+                                checked_all_names = 'dylan' in line.lower()
+                                pass
+                            else:
+                                for aw in artist_words:
+                                    if aw.lower() == 'the':
+                                        pass
+                                    elif not aw in line.lower():
+                                        checked_all_names = False
+                                        break
                             if checked_all_names:
                                 s.playlist = line
                                 if len(self.playlist_gigs) == 0 or self.playlist_gigs[-1] != g:
@@ -1406,6 +1429,7 @@ class g_song():
         self.improv      = False
         self.quote       = None
         self.cover       = None
+        self.youtube     = None
 
 class g_query():
     def __init__(self,gig_data,args):
@@ -1507,7 +1531,18 @@ if __name__ == "__main__":
         -s      song
         -d      date
         -i      index
-        -html   reuild html
+        -html   reuild html (-playlists)
+
+        Experimental options:
+
+        -graphs
+        -progress
+        -test
+        -play
+        -runs
+        -growth
+        -fuzzy
+
         """
         sys.exit(0)
 
