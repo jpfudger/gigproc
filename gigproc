@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import sys, os, glob
 from re import match, search, IGNORECASE, sub, findall, compile
 from datetime import datetime
@@ -428,7 +428,7 @@ class g_html():
         return '&emsp;' * n
     def row(self,entries, alignment = 'lll'):
         string = '\n<tr>'
-        for entry in zip(entries,alignment):
+        for entry in list( zip(entries,alignment) ):
             align = ''
             if entry[1] == 'r':
                 align = ' align=right'
@@ -677,10 +677,12 @@ class g_html():
         for (y,c) in self.gig_data.get_unique_years(True):
             gigs_string = self.build_gigs_string(self.gig_data.gigs,y)
             years_string_h = self.make_years_string(y)
-            if y == datetime.today().year:
-                # The index page should load the current year, with appropriate highlighting
+
+            # Set the index page to the date of the next future gig:
+            if y == self.gig_data.first_unseen().date.year:
                 index_string = gigs_string
                 years_string_i = years_string_h
+
             self.make_file( str(y), years_string_h, gigs_string, '' )
             for gig in self.gig_data.gigs:
                 if gig.date.year == y:
@@ -948,8 +950,8 @@ class g_gigs():
         events = list(set(raw_events))
         events.sort(key=lambda x: x.index) 
         
-        print "\n\n Profiling %d unique songs from %d events by %s:\n"  \
-            % (len(unique_songs), len(events), artist)
+        print( "\n\n Profiling %d unique songs from %d events by %s:\n"  \
+            % (len(unique_songs), len(events), artist) )
         
         for song in unique_songs:
             event_string = ""
@@ -958,8 +960,8 @@ class g_gigs():
                     event_string += 'X'
                 else:
                     event_string += '-'
-            print '{0:3d} {1:50s} {2:30s}' \
-                . format( len(song['events']), song['title'], event_string )
+            print( '{0:3d} {1:50s} {2:30s}' \
+                . format( len(song['events']), song['title'], event_string ) )
     def songs_performed_by_multiple_artists(self):
         raw_songs = [] # list of { song, artists, gigs }
         for g in self.gigs:
@@ -978,7 +980,7 @@ class g_gigs():
                             raw_songs.append(new_song)
         raw_songs = [ x for x in raw_songs if len(x['artists']) > 1 ]
         for song in raw_songs:
-            print song['title'].ljust(30) + ' ' + ', '.join(song['artists'])
+            print( song['title'].ljust(30) + ' ' + ', '.join(song['artists']) )
     def unique_songs_of_artist(self,a):
         # this is quite slow. it could be cached!
         raw_songs = []
@@ -1034,6 +1036,10 @@ class g_gigs():
                 if not g.future:
                     self.past_gigs.append(g)
         return self.past_gigs
+    def first_unseen(self):
+        for gigs in self.gigs:
+            if gigs.future:
+                return gigs
 
     # Queries on gig data:
     def all_gigs_of_artist(self,artist,inc_future=False):
@@ -1073,7 +1079,7 @@ class g_gigs():
             for l in artgigs:
                 l.sort(key=lambda x: x.index)
             
-            zipped = zip( artists, artgigs )
+            zipped = list( zip( artists, artgigs ) )
             zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
             zipped.reverse()
             self.unique_artists = zipped
@@ -1095,7 +1101,7 @@ class g_gigs():
             for l in vengigs:
                 l.sort(key=lambda x: x.index)
             
-            zipped = zip( venues, vengigs )
+            zipped = list( zip( venues, vengigs ) )
             zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
             zipped.reverse()
             self.unique_venues = zipped
@@ -1116,7 +1122,7 @@ class g_gigs():
         for l in city_gigs:
             l.sort(key=lambda x: x.index)
         
-        zipped = zip( cities, city_gigs )
+        zipped = list( zip( cities, city_gigs ) )
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
@@ -1129,7 +1135,7 @@ class g_gigs():
     #         years = list(set(raw_years))
     #         years.sort()
     #         count = [ raw_years.count(y) for y in years ]
-    #         zipped = zip( years, count )
+    #         zipped = list( zip( years, count ) )
     #         zipped.sort(key=lambda x: x[1])
     #         zipped.reverse()
     #         self.unique_years = zipped
@@ -1151,8 +1157,8 @@ class g_gigs():
             for l in ygigs:
                 l.sort(key=lambda x: x.index)
             
-            zipped = zip( years, ygigs )
-            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
+            zipped = list( zip( years, ygigs ) )
+            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True )
             zipped.reverse()
             self.unique_years = zipped
         return self.unique_years
@@ -1170,14 +1176,17 @@ class g_gigs():
         for i in range(1,len(gigs)):
             gap = gigs[i].date.toordinal() - gigs[i-1].date.toordinal() 
             gaps.append( [ gap, gigs[i-1], gigs[i] ] )
-        print "\n  Current gap is %d days (since %s)." % \
-            (datetime.today().toordinal() - gigs[-1].date.toordinal(), gigs[-1].date.strftime("%d-%b-%Y"))
+        print( "\n  Current gap is %d days (since %s)." % \
+                (datetime.today().toordinal() - gigs[-1].date.toordinal(), 
+                gigs[-1].date.strftime("%d-%b-%Y")) )
         ngaps = 20
         gaps.sort(key=lambda x: -x[0])
         gaps = gaps[:ngaps]
-        print "\n  Longest gaps since 2010:\n"
+        print( "\n  Longest gaps since 2010:\n" )
         for gap in gaps:
-            print "   %s days (%s - %s)" % ( str(gap[0]).rjust(4), gap[1].date.strftime("%d-%b-%Y"), gap[2].date.strftime("%d-%b-%Y"))
+            print( "   %s days (%s - %s)" % ( str(gap[0]).rjust(4), 
+                gap[1].date.strftime("%d-%b-%Y"), 
+                gap[2].date.strftime("%d-%b-%Y")) )
     def longest_run(self):
         runs = []
         gigs = self.get_past_gigs()
@@ -1203,12 +1212,39 @@ class g_gigs():
 
             last_g = g
             
-        print "\n  Longest run was %d gigs, which occurred %d times:\n" % ( len(runs[0]), len(runs) )
+        print( "\n  Longest run was %d gigs, which occurred %d times:\n" % ( len(runs[0]), len(runs) ) )
         for run in runs:
             for g in run:
-                print "    " + g.stub()
-            print ""
-    def make_graphs(self):
+                print( "    " + g.stub() )
+            print( "" )
+    def plot_venue_growth(self):
+        import matplotlib.pyplot as plt
+        f, ax = plt.subplots()
+        top_n = 5
+        venues = self.get_unique_venues()[0:top_n]
+        all_dates = []
+        vnames = []
+        for (v,gs) in venues:
+            vnames.append(v)
+            for g in gs:
+                all_dates.append(g.date)
+
+        all_dates.sort()
+
+        for (v,gs) in venues:
+            counts = []
+            for d in all_dates:
+                counts.append(0)
+
+            for g in gs:
+                indx = all_dates.index(g.date)
+                for i in range(indx,len(all_dates)):
+                    counts[i] += 1
+            plt.plot(all_dates,counts)
+        ax.legend(vnames,'upper left')
+        plt.grid()
+        plt.show()
+    def plot_date_stats(self):
         import matplotlib.pyplot as plt
         month_totals = [0] * 12
         months = []
@@ -1225,9 +1261,9 @@ class g_gigs():
         N, bins, patches = ax.hist(months, 12)
         #N, bins, patches = ax.hist(days, 7)
         plt.show()
-        print "Months: [ " + ", ".join([str(x) for x in month_totals]) + " ]"
-        print "Days:   [ " + ", ".join([str(x) for x in day_totals]) + " ]"
-    def histogram_year(self):
+        print( "Months: [ " + ", ".join([str(x) for x in month_totals]) + " ]" )
+        print( "Days:   [ " + ", ".join([str(x) for x in day_totals]) + " ]" )
+    def plot_year_growth(self):
         import matplotlib.pyplot as plt
 
         years = self.get_unique_years()
@@ -1242,7 +1278,7 @@ class g_gigs():
     def relative_progress(self):
         year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday
-        print "Today is the %dth day of %d" % (yday, year)
+        print( "Today is the %dth day of %d" % (yday, year) )
         current_count = 0
         previous_counts = []
 
@@ -1251,22 +1287,22 @@ class g_gigs():
 
         for (y,c) in gigs_by_year:
             if y == year:
-                #print "This is " + str(y)
+                #print( "This is " + str(y) )
                 for g in c:
                     if g.date.timetuple().tm_yday <= yday:
                         current_count += 1
             elif y < year:
-                #print y
+                #print( y )
                 previous_counts.append(0)
                 for g in c:
                     if g.date.timetuple().tm_yday < yday:
                         previous_counts[-1] += 1
 
-        print "Current count: %d" % current_count
-        print "Previous counts:"
-        print previous_counts
-        print "Average (%d/%d) : %f" % ( sum(previous_counts), len(previous_counts), \
-                (sum(previous_counts)/float(len(previous_counts))))
+        print( "Current count: %d" % current_count )
+        print( "Previous counts:" )
+        print( previous_counts )
+        print( "Average (%d/%d) : %f" % ( sum(previous_counts), len(previous_counts), \
+                (sum(previous_counts)/float(len(previous_counts)))) )
     def growth(self):
         gigs_by_year = self.get_unique_years()
         gigs_by_year.sort(key=lambda x: x[0])
@@ -1295,10 +1331,10 @@ class g_gigs():
             n_venues.append(n_new_venues)
             n_artists.append(n_new_artists)
 
-        print n_venues
-        print n_artists
+        print( n_venues )
+        print( n_artists )
 
-        #print years
+        #print( years )
     def print_fuzzy_matches(self,items,category = ''):
         from difflib import SequenceMatcher as SM
         min_ratio = 0.8
@@ -1313,9 +1349,9 @@ class g_gigs():
                     # print( "(%d %d) (%s, %s) %f" % ( i, j, ti, tj, ratio ) )
                     matches.append( [ ti, tj ] )
         if len(matches) > 0:
-            print '\n  ' + category + ':'
+            print( '\n  ' + category + ':' )
             for match in matches:
-                print '    ' + ', '.join(match)
+                print( '    ' + ', '.join(match) )
     def fuzzy_matcher(self):
         artists = self.get_unique_artists()
         artists = [ x[0] for x in artists ]
@@ -1360,7 +1396,7 @@ class g_gig():
         if len(artist_list) > 2:
             artists += ' + ... '
         ident = '[' + self.index + ']'
-        print ' {0:8s} {1:15s} {2:30s} {3:20s}' . format( ident, date, venue, artists)
+        print( ' {0:8s} {1:15s} {2:30s} {3:20s}' . format( ident, date, venue, artists) )
     def append_set(self,s):
         self.sets.append(s)
     def add_dummy_sets_for_guests(self):
@@ -1516,10 +1552,10 @@ class g_query():
             print(self.results[0])
         else:
             self.results.sort(key=lambda x: x.index)
-            print "\n %d matching events.\n" % len(self.results)
+            print( "\n %d matching events.\n" % len(self.results) )
             for gig in self.results:
                 gig.print_short()
-            print '\n'
+            print( '\n' )
         
 if __name__ == "__main__":
     args = sys.argv[1:]
@@ -1528,7 +1564,7 @@ if __name__ == "__main__":
     
     if arg1 == "-h":
         # print html data
-        print """\n Optional args:
+        print( """\n Optional args:
         
         -a      artist
         -v      venue
@@ -1547,14 +1583,15 @@ if __name__ == "__main__":
         -growth
         -fuzzy
 
-        """
+        """ )
         sys.exit(0)
 
     gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
     if arg1 == "-graphs":
-        #gig_data.make_graphs()
-        gig_data.histogram_year()
+        gig_data.plot_venue_growth()
+        gig_data.plot_date_stats()
+        gig_data.plot_year_growth()
         sys.exit(0)
 
     if arg1 == "-progress":
@@ -1567,9 +1604,9 @@ if __name__ == "__main__":
 
     if arg1 == "-play":
         pls = gig_data.playlist_gigs[:]
-        print "Recorded gigs: " + str(len(pls))
+        print( "Recorded gigs: " + str(len(pls)) )
         for p in pls:
-            print p.date.strftime("%d-%b-%Y") + "  " + ", ".join(p.get_artists())
+            print( p.date.strftime("%d-%b-%Y") + "  " + ", ".join(p.get_artists()) )
         sys.exit(0)
 
     if arg1 == "-html":
