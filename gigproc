@@ -104,11 +104,11 @@ class g_html():
             fname_next = '""'
 
             if g_prev != None:
-                fname_prev = g_prev.date.strftime("%Y_%m_%d")
+                fname_prev = g_prev.link
                 if suffix != None:
                     fname_prev += suffix
             if g_next != None:
-                fname_next = g_next.date.strftime("%Y_%m_%d")
+                fname_next = g_next.link
                 if suffix != None:
                     fname_next += suffix
             
@@ -118,8 +118,8 @@ class g_html():
         vg_fname = ''
         yg_fname = ''
         if linkback:
-            vg_fname = gig.date.strftime("%Y_%m_%d") + '_v' + self.id_of_venue(gig.venue) + '.html'
-            yg_fname = gig.date.strftime("%Y_%m_%d") + '.html'
+            vg_fname = gig.link + '_v' + self.id_of_venue(gig.venue) + '.html'
+            yg_fname = gig.link + '.html'
         vlink = '<a href=' + vg_fname + '>' + gig.venue + '</a>'
         ylink = '<a href=' + yg_fname + '>' + gig.date.strftime("%Y") + '</a>' 
         setlist_string = '<div class=sl_title>\n' + vlink + '<br>' + \
@@ -145,7 +145,7 @@ class g_html():
                 continue
             ag_fname = ''
             if linkback:
-                ag_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(g.artist) + '.html'
+                ag_fname = gig.link + '_a' + self.id_of_artist(g.artist) + '.html'
 
             alink = '<a href=' + ag_fname + '>' + g.artist + '</a>'
 
@@ -171,7 +171,7 @@ class g_html():
             if g.band:
                 band_links = []
                 for b in g.band:
-                    bg_fname = gig.date.strftime("%Y_%m_%d") + '_a' + self.id_of_artist(b) + '.html'
+                    bg_fname = gig.link + '_a' + self.id_of_artist(b) + '.html'
                     blink = '<a href=' + bg_fname + '>' + b + '</a>'
                     band_links.append(blink)
                 band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + '] <br>'
@@ -484,7 +484,7 @@ class g_html():
                                     break
 
                 if not gig.future:
-                    link = gig.date.strftime("%Y_%m_%d") 
+                    link = gig.link 
                     if link_suffix:
                         link += '_' + link_suffix
                     name_str2 = name_str
@@ -581,7 +581,7 @@ class g_html():
 
             for gig in c:
                 suffix = '_a' + str(counter).zfill(3)
-                link = gig.date.strftime("%Y_%m_%d") + suffix
+                link = gig.link + suffix
                 artist_string_h = self.build_gigs_string( all_agigs, None, afname, None, a, gig.index )
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_a, artist_string_h + breakdown, setlist_string, gig.img )
@@ -616,7 +616,7 @@ class g_html():
 
             for gig in c:
                 suffix = '_v' + str(counter).zfill(3)
-                link = gig.date.strftime("%Y_%m_%d") + suffix
+                link = gig.link + suffix
                 venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_v, venue_string_h, setlist_string, gig.img )
@@ -689,7 +689,7 @@ class g_html():
                     setlist_string = self.gig_setlist_string(gig)
                     gigs_string_h = self.build_gigs_string( self.gig_data.gigs, y, 
                                                             None, None, None, gig.index)
-                    self.make_file( gig.date.strftime("%Y_%m_%d"), 
+                    self.make_file( gig.link, 
                                years_string_h, gigs_string_h, setlist_string, gig.img)
             
         artists_string = self.make_artist_index_string(years_string_a)
@@ -720,6 +720,8 @@ class g_gigs():
         self.unique_venues = None   # cached
         self.unique_years = None    # cached
         self.playlist_gigs = []
+
+        self.n_graphs = 0
         
         self.build_gig_data()
     def __str__(self):
@@ -771,9 +773,11 @@ class g_gigs():
         title = ' '.join(w[0].upper() + w[1:] for w in title.split()) 
 
         # uncapitalise conjunctions:
-        title = sub( " And ", " and ", title)
-        title = sub( " The ", " the ", title)
-        title = sub( " Of ", " of ", title)
+        #title = sub( " And ", " and ", title)
+        #title = sub( " The ", " the ", title)
+        #title = sub( " Of ", " of ", title)
+        #title = sub( " In ", " in ", title)
+        #title = sub( " On ", " on ", title)
 
         if match('^\s*$', title):
             # process set flags
@@ -882,7 +886,7 @@ class g_gigs():
                                     used_lines.append(line)
     def get_data_from_file(self,path):
         level = 0
-        count = 0
+        n_processed = 0
         commented = False
         com_level = -1
         last_blank = False
@@ -909,9 +913,9 @@ class g_gigs():
                 if commented:
                     pass
                 elif m1:
-                    count += 1
+                    n_processed += 1
                     d = datetime.strptime( m1.group(1), date_regex )
-                    ident = d.strftime( "%y" ) + '{0:02d}'.format(count)
+                    ident = d.strftime( "%y" ) + '{0:02d}'.format(n_processed)
                     v = self.process_venue_name( m1.group(2) )
                     this_gig = g_gig( ident, d, v )
                 else:
@@ -1217,12 +1221,16 @@ class g_gigs():
             for g in run:
                 print( "    " + g.stub() )
             print( "" )
-    def plot_venue_growth(self):
+    def plot_top_venue_growth(self):
         import matplotlib.pyplot as plt
-        f, ax = plt.subplots()
+
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
         top_n = 5
         venues = self.get_unique_venues()[0:top_n]
-        all_dates = []
+        first_date = self.get_unique_years()[0][1][0].date
+        all_dates = [ first_date ]
         vnames = []
         for (v,gs) in venues:
             vnames.append(v)
@@ -1241,44 +1249,182 @@ class g_gigs():
                 for i in range(indx,len(all_dates)):
                     counts[i] += 1
             plt.plot(all_dates,counts)
+
         ax.legend(vnames,'upper left')
+        ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
+        ax.set_ylim(-1,len(venues[0][1])+1)
         plt.grid()
+
+        plt.title("Venue Growth (Top %d)" % top_n)
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
         plt.show()
-    def plot_date_stats(self):
+    def plot_artist_growth(self):
         import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+
+        self.n_graphs += 1
+
+        y_gigs = self.get_unique_years()
+        y_gigs.sort()
+        years = []
+        n_artists = []
+        n_new_artists = []
+        all_artists = []
+
+        for (y,c) in y_gigs:
+            y_artists = []
+            years.append(y)
+            n_artists.append(0)
+            n_new_artists.append(0)
+            for g in c:
+                for s in g.sets:
+                    if s.artist in y_artists:
+                        pass
+                    else:
+                        y_artists.append(s.artist)
+                        n_artists[-1] += 1
+
+                    if s.artist in all_artists:
+                        pass
+                    else:
+                        all_artists.append(s.artist)
+                        n_new_artists[-1] += 1
+        
+        ind = range(0,len(years))
+        bar1 = ax.bar( ind, n_artists, align='center', color='b' )
+        bar2 = ax.bar( ind, n_new_artists, align='center', color='r' )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+        plt.legend((bar1[0], bar2[0]), ('Total artists', 'Total new artists'), 'upper left')
+
+        plt.title("Total artists seen per year")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        plt.show()
+    def plot_month_growth(self):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+        months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
         month_totals = [0] * 12
-        months = []
-        day_totals = [0] * 7
-        days = []
         for gig in self.get_past_gigs():
             i = int(gig.date.strftime("%m"))
-            months.append(i-1)
             month_totals[i-1] += 1
-            j = int(gig.date.strftime("%w"))
-            days.append(j)
-            day_totals[j-1] += 1
+
         fig, ax = plt.subplots()
-        N, bins, patches = ax.hist(months, 12)
-        #N, bins, patches = ax.hist(days, 7)
+        ind = range(0,len(months))
+        rects = ax.bar( ind, month_totals, align='center' )
+        plt.xticks(ind,months)
+
+        plt.title("Month histogram")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
         plt.show()
-        print( "Months: [ " + ", ".join([str(x) for x in month_totals]) + " ]" )
-        print( "Days:   [ " + ", ".join([str(x) for x in day_totals]) + " ]" )
+    def plot_days_growth(self):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+
+        days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        day_totals = [0] * 7
+        for gig in self.get_past_gigs():
+            i = int(gig.date.strftime("%w"))
+            day_totals[i-1] += 1
+
+        fig, ax = plt.subplots()
+        ind = range(0,len(day_totals))
+        rects = ax.bar( ind, day_totals, align='center' )
+        plt.xticks(ind,days)
+
+        plt.title("Gigs per day")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        plt.show()
     def plot_year_growth(self):
         import matplotlib.pyplot as plt
+        self.n_graphs += 1
 
-        years = self.get_unique_years()
-        years.sort()
+        fig, ax = plt.subplots()
+        y_gigs = self.get_unique_years()
+        y_gigs.sort()
 
-        x = [ a[0] for a in years ]
-        y = [ len(a[1]) for a in years ]
+        artists = []
+        venues = []
+
+        n_gigs = [ a[0] for a in y_gigs ]
+        years = [ len(a[1]) for a in y_gigs ]
+
+        ind = range(0,len(years))
+        bar1 = ax.bar( ind, years, align='center', color='b' )
+        #bar2 = ax.bar( ind, n_new_venues, align='center', color='r' )
+        plt.xticks(ind,[str(xx)[2:4] for xx in n_gigs])
+        #plt.legend((bar1[0], bar2[0]), ('Total gigs', 'Total new venues'), 'upper left')
+
+        plt.title("Year Histogram")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        plt.show()
+    def plot_venue_growth(self):
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+
+        self.n_graphs += 1
+
+        y_gigs = self.get_unique_years()
+        y_gigs.sort()
+        years = []
+        n_venues = []
+        n_new_venues = []
+        all_venues = []
+
+        for (y,c) in y_gigs:
+            y_venues = []
+            years.append(y)
+            n_venues.append(0)
+            n_new_venues.append(0)
+            for g in c:
+                if g.venue in y_venues:
+                    pass
+                else:
+                    y_venues.append(g.venue)
+                    n_venues[-1] += 1
+
+                if g.venue in all_venues:
+                    pass
+                else:
+                    all_venues.append(g.venue)
+                    n_new_venues[-1] += 1
         
-        plt.plot(x, y)
-        plt.grid()
+        ind = range(0,len(years))
+        bar1 = ax.bar( ind, n_venues, align='center', color='b' )
+        bar2 = ax.bar( ind, n_new_venues, align='center', color='r' )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+        plt.legend((bar1[0], bar2[0]), ('Total venues', 'Total new venues'), 'upper left')
+
+        plt.title("Total venues seen per year")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        plt.show()
+    def plot_freq_dist(self):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        a_gigs = self.get_unique_artists()
+
+        freq = [ 0 ] * len(a_gigs[0][1] )
+
+        for (a,c) in a_gigs:
+            freq[ len(c) - 1 ] += 1
+
+        ind = range(1,len(freq)+1)
+        bar1 = ax.bar( ind, freq, align='center', color='b' )
+
+        plt.title("Frequency Distribution of Artists")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
         plt.show()
     def relative_progress(self):
         year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday
-        print( "Today is the %dth day of %d" % (yday, year) )
         current_count = 0
         previous_counts = []
 
@@ -1287,22 +1433,30 @@ class g_gigs():
 
         for (y,c) in gigs_by_year:
             if y == year:
-                #print( "This is " + str(y) )
                 for g in c:
                     if g.date.timetuple().tm_yday <= yday:
                         current_count += 1
+                    else:
+                        break
             elif y < year:
-                #print( y )
                 previous_counts.append(0)
                 for g in c:
                     if g.date.timetuple().tm_yday < yday:
                         previous_counts[-1] += 1
+                    else:
+                        break
 
-        print( "Current count: %d" % current_count )
-        print( "Previous counts:" )
-        print( previous_counts )
-        print( "Average (%d/%d) : %f" % ( sum(previous_counts), len(previous_counts), \
-                (sum(previous_counts)/float(len(previous_counts)))) )
+        print( "\n  Days into %d:  %d" % (year, yday) )
+        print( "  Current count:   %d" % current_count )
+        print( "  Previous counts: %s" % ",".join( str(x) for x in previous_counts) )
+
+        rank = len(previous_counts) + 1
+        for x in previous_counts:
+            if x < current_count:
+                rank -= 1
+
+        print( "  %d rank:       %d/%d" % ( year, rank, 1+len(previous_counts)) )
+        print( "" )
     def growth(self):
         gigs_by_year = self.get_unique_years()
         gigs_by_year.sort(key=lambda x: x[0])
@@ -1373,8 +1527,14 @@ class g_gig():
         self.sets   = []
         today = datetime.today()
         self.future = date > today or ( date.date() == today.date() and today.hour < 20 )
+        self.link    = str(ident)
+        # self.img should really be the same as self.link 
+        # (so multiple gigs per day can have individual images). 
+        # But that would require renaming all the existing images.
+        # More importantly, the images would need renaming every time 
+        # a gig was added retrospectively (thus incrementing all subsequent gig indices).
+        self.img     = 'img/' + date.strftime('%Y_%m_%d') + '.gif'
         self.artists = None # cached
-        self.img     = 'img/' + self.date.strftime("%Y_%m_%d") + '.gif'
     def __str__(self):
         # print formatter
         string = ""
@@ -1589,9 +1749,13 @@ if __name__ == "__main__":
     gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
     if arg1 == "-graphs":
-        gig_data.plot_venue_growth()
-        gig_data.plot_date_stats()
         gig_data.plot_year_growth()
+        gig_data.plot_artist_growth()
+        gig_data.plot_venue_growth()
+        gig_data.plot_month_growth()
+        ##gig_data.plot_days_growth()
+        gig_data.plot_top_venue_growth()
+        gig_data.plot_freq_dist()
         sys.exit(0)
 
     if arg1 == "-progress":
