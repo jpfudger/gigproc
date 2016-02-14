@@ -78,7 +78,7 @@ class g_html():
             return ''
     def gig_setlist_string(self,gig,linkback = True, liszt = None, suffix = None ):
         # linkback means whether to add artist/venue links
-        ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
+        ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
         day = int(gig.date.strftime("%d"))
 
         # list of all guesting artists (so we know whether we need footnotes):
@@ -1130,20 +1130,6 @@ class g_gigs():
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
-    # def get_unique_years(self,inc_future=False):
-    #     if not self.unique_years:
-    #         raw_years = []
-    #         for gig in self.gigs:
-    #             if not gig.future or inc_future:
-    #                 raw_years += [ gig.date.year ]
-    #         years = list(set(raw_years))
-    #         years.sort()
-    #         count = [ raw_years.count(y) for y in years ]
-    #         zipped = list( zip( years, count ) )
-    #         zipped.sort(key=lambda x: x[1])
-    #         zipped.reverse()
-    #         self.unique_years = zipped
-    #     return self.unique_years
     def get_unique_years(self,inc_future=False):
         if not self.unique_years:
             years = []
@@ -1258,7 +1244,7 @@ class g_gigs():
         plt.title("Venue Growth (Top %d)" % top_n)
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
-        plt.show()
+        plt.show(block=False)
     def plot_artist_growth(self):
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
@@ -1295,12 +1281,12 @@ class g_gigs():
         bar1 = ax.bar( ind, n_artists, align='center', color='b' )
         bar2 = ax.bar( ind, n_new_artists, align='center', color='r' )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0]), ('Total artists', 'Total new artists'), 'upper left')
+        plt.legend((bar1[0], bar2[0]), ('Total artists', 'New artists'), 'upper left')
 
         plt.title("Total artists seen per year")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
-        plt.show()
+        plt.show(block=False)
     def plot_month_growth(self):
         import matplotlib.pyplot as plt
         self.n_graphs += 1
@@ -1318,7 +1304,7 @@ class g_gigs():
         plt.title("Month histogram")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
-        plt.show()
+        plt.show(block=False)
     def plot_days_growth(self):
         import matplotlib.pyplot as plt
         self.n_graphs += 1
@@ -1337,7 +1323,7 @@ class g_gigs():
         plt.title("Gigs per day")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
-        plt.show()
+        plt.show(block=False)
     def plot_year_growth(self):
         import matplotlib.pyplot as plt
         self.n_graphs += 1
@@ -1354,14 +1340,12 @@ class g_gigs():
 
         ind = range(0,len(years))
         bar1 = ax.bar( ind, years, align='center', color='b' )
-        #bar2 = ax.bar( ind, n_new_venues, align='center', color='r' )
         plt.xticks(ind,[str(xx)[2:4] for xx in n_gigs])
-        #plt.legend((bar1[0], bar2[0]), ('Total gigs', 'Total new venues'), 'upper left')
 
         plt.title("Year Histogram")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
-        plt.show()
+        plt.show(block=False)
     def plot_venue_growth(self):
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
@@ -1397,12 +1381,12 @@ class g_gigs():
         bar1 = ax.bar( ind, n_venues, align='center', color='b' )
         bar2 = ax.bar( ind, n_new_venues, align='center', color='r' )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0]), ('Total venues', 'Total new venues'), 'upper left')
+        plt.legend((bar1[0], bar2[0]), ('Total venues', 'New venues'), 'upper left')
 
         plt.title("Total venues seen per year")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
-        plt.show()
+        plt.show(block=False)
     def plot_freq_dist(self):
         import matplotlib.pyplot as plt
         self.n_graphs += 1
@@ -1417,14 +1401,17 @@ class g_gigs():
 
         ind = range(1,len(freq)+1)
         bar1 = ax.bar( ind, freq, align='center', color='b' )
+        plt.xticks(ind, [ str(i+1) if freq[i] > 0 else "" for i in range(0,len(freq)) ] )
 
         plt.title("Frequency Distribution of Artists")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
+        #plt.show(block=False)
         plt.show()
     def relative_progress(self):
         year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday
+        yweek = yday % 7 if yday > 7 else 0
         current_count = 0
         previous_counts = []
 
@@ -1446,7 +1433,9 @@ class g_gigs():
                     else:
                         break
 
-        print( "\n  Days into %d:  %d" % (year, yday) )
+        print( "" )
+        print( "  Days into %d:  %d" % (year, yday) )
+        print( "  Weeks into %d: %d" % (year, yweek) )
         print( "  Current count:   %d" % current_count )
         print( "  Previous counts: %s" % ",".join( str(x) for x in previous_counts) )
 
@@ -1456,6 +1445,7 @@ class g_gigs():
                 rank -= 1
 
         print( "  %d rank:       %d/%d" % ( year, rank, 1+len(previous_counts)) )
+        print( "  %d gigs/week:  %f" % ( year, current_count/yweek ) )
         print( "" )
     def growth(self):
         gigs_by_year = self.get_unique_years()
