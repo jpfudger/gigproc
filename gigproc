@@ -13,6 +13,7 @@ class g_html():
         self.do_playlists = playlists   # add playlist links and index
         self.do_solo_sets = False       # mark solo sets
         self.do_songcount = False       # count song occurrences (SLOW)
+        self.do_graphs    = True
 
         # do the work:
         self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(True) ]
@@ -642,7 +643,7 @@ class g_html():
                     '</td><td>' + ', '.join([ x[0] for x in order[1]]) + '</td></tr>'
         venues_string += '</table>'
         return venues_string
-    def make_bootlegs_index_string(self,years_string_p):
+    def make_bootlegs_index_string(self):
         playlist_gigs = self.gig_data.playlist_gigs
         string = '\n<ul>'
         y = ""
@@ -655,22 +656,45 @@ class g_html():
                 if s.playlist:
                     link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
                     links.append(link)
-            string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + '</div> &nbsp;' + " + ".join(links) + ' (' + p.venue + ')'
+            string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + \
+                    '</div> &nbsp;' + " + ".join(links) + ' (' + p.venue + ')'
         string += '\n</ul>'
+        return string
+    def make_graphs_index_string(self):
+        graphs = []
+
+        graphs.append( self.gig_data.plot_year_growth() )
+        graphs.append( self.gig_data.plot_artist_growth() )
+        graphs.append( self.gig_data.plot_venue_growth() )
+        graphs.append( self.gig_data.plot_month_growth() )
+        #graphs.append( self.gig_data.plot_days_growth() )
+        #graphs.append( self.gig_data.plot_top_venue_growth() )
+        graphs.append( self.gig_data.plot_freq_dist() )
+        graphs.append( self.gig_data.plot_relative_progress() )
+
+        graphs = [ 'img/' + x for x in graphs ]
+
+        string = '<br> <br> <center>\n'
+
+        for graph in graphs:
+            string += '<img src="' + graph + '" style="width:30%;"><nbsp>\n'
+
+        string += '</center>\n'
         return string
     def generate_html_files(self):
         self.make_stylesheet()
 
         extras = [ 'Artists', 'Venues' ]
         if self.do_playlists:
-            extras += [ 'Boots' ]
+            extras += [ 'Tapes' ]
+        if self.do_graphs:
+            extras += [ 'Plots' ]
         self.years = extras + [ '' ] + self.years
 
         years_string   = self.make_years_string()
         years_string_a = self.make_years_string("Artists")
         years_string_v = self.make_years_string("Venues")
-        if self.do_playlists:
-            years_string_b = self.make_years_string("Boots")
+
         index_string   = ''
         years_string_i = ''
          
@@ -694,14 +718,20 @@ class g_html():
             
         artists_string = self.make_artist_index_string(years_string_a)
         venues_string = self.make_venue_index_string(years_string_v)
-        if self.do_playlists:
-            bootlegs_string = self.make_bootlegs_index_string(years_string_b)
 
         self.make_file( 'venues',    years_string_v,   venues_string,    '' )
         self.make_file( 'artists',   years_string_a,   artists_string,   '' )
         self.make_file( 'index',     years_string_i,   index_string,     '' )
+
         if self.do_playlists:
-            self.make_file( 'boots',     years_string_b,   bootlegs_string,  '' )
+            years_string_b = self.make_years_string("Tapes")
+            bootlegs_string = self.make_bootlegs_index_string()
+            self.make_file( 'tapes',     years_string_b,   bootlegs_string,  '' )
+
+        if self.do_graphs:
+            years_string_g = self.make_years_string("Plots")
+            graphs_string = self.make_graphs_index_string()
+            self.make_file( 'plots',     years_string_g,   graphs_string,  '' )
 
         return
     def make_youtube_link(self,yt):
@@ -717,8 +747,11 @@ class g_gigs():
         self.past_gigs = []
 
         self.unique_artists = None  # cached
+        self.unique_artists_inc_future = None  # cached
         self.unique_venues = None   # cached
+        self.unique_venues_inc_future = None   # cached
         self.unique_years = None    # cached
+        self.unique_years_inc_future = None    # cached
         self.playlist_gigs = []
 
         self.n_graphs = 0
@@ -1065,51 +1098,64 @@ class g_gigs():
         
         vengigs.sort(key=lambda x: x.index)
         return vengigs
-    def get_unique_artists(self,inc_future=False):
-        if not self.unique_artists:
-            #def unique_artists(self,inc_future=False):
-            artists = []
-            artgigs = []
-            for gig in self.gigs:
-                if not gig.future or inc_future:
-                    for artist in gig.get_artists():
-                        try:
-                            i = artists.index(artist)
-                            artgigs[i].append(gig)
-                        except ValueError:
-                            artists.append(artist)
-                            artgigs.append([gig])
-            
-            for l in artgigs:
-                l.sort(key=lambda x: x.index)
-            
-            zipped = list( zip( artists, artgigs ) )
-            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
-            zipped.reverse()
-            self.unique_artists = zipped
-        return self.unique_artists
-    def get_unique_venues(self,inc_future=False):
-        if not self.unique_venues:
-            venues = []
-            vengigs = []
-            for gig in self.gigs:
-                if not gig.future or inc_future:
-                    venue = gig.venue
+    def generate_unique_artists(self,inc_future=False):
+        artists = []
+        artgigs = []
+        for gig in self.gigs:
+            if not gig.future or inc_future:
+                for artist in gig.get_artists():
                     try:
-                        i = venues.index(venue)
-                        vengigs[i].append(gig)
+                        i = artists.index(artist)
+                        artgigs[i].append(gig)
                     except ValueError:
-                        venues.append(venue)
-                        vengigs.append([gig])
-            
-            for l in vengigs:
-                l.sort(key=lambda x: x.index)
-            
-            zipped = list( zip( venues, vengigs ) )
-            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
-            zipped.reverse()
-            self.unique_venues = zipped
-        return self.unique_venues
+                        artists.append(artist)
+                        artgigs.append([gig])
+        
+        for l in artgigs:
+            l.sort(key=lambda x: x.index)
+        
+        zipped = list( zip( artists, artgigs ) )
+        zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
+        zipped.reverse()
+        return zipped
+    def get_unique_artists(self,inc_future=False):
+        if inc_future:
+            if not self.unique_artists_inc_future:
+                self.unique_artists_inc_future = self.generate_unique_artists(inc_future)
+            return self.unique_artists_inc_future
+        else:
+            if not self.unique_artists:
+                self.unique_artists = self.generate_unique_artists(inc_future)
+            return self.unique_artists
+    def generate_unique_venues(self,inc_future=False):
+        venues = []
+        vengigs = []
+        for gig in self.gigs:
+            if not gig.future or inc_future:
+                venue = gig.venue
+                try:
+                    i = venues.index(venue)
+                    vengigs[i].append(gig)
+                except ValueError:
+                    venues.append(venue)
+                    vengigs.append([gig])
+        
+        for l in vengigs:
+            l.sort(key=lambda x: x.index)
+        
+        zipped = list( zip( venues, vengigs ) )
+        zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
+        zipped.reverse()
+        return zipped
+    def get_unique_venues(self,inc_future=False):
+        if inc_future:
+            if not self.unique_venues_inc_future:
+                self.unique_venues_inc_future = self.generate_unique_venues(inc_future)
+            return self.unique_venues_inc_future
+        else:
+            if not self.unique_venues:
+                self.unique_venues = self.generate_unique_venues(inc_future)
+            return self.unique_venues
     def unique_cities(self):
         cities = []
         city_gigs = []
@@ -1130,28 +1176,35 @@ class g_gigs():
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
+    def generate_unique_years(self,inc_future=False):
+        years = []
+        ygigs = []
+        for gig in self.gigs:
+            if not gig.future or inc_future:
+                y = gig.date.year
+                try:
+                    i = years.index(y)
+                    ygigs[i].append(gig)
+                except ValueError:
+                    years.append(y)
+                    ygigs.append([gig])
+        
+        for l in ygigs:
+            l.sort(key=lambda x: x.index)
+        
+        zipped = list( zip( years, ygigs ) )
+        zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True )
+        zipped.reverse()
+        return zipped
     def get_unique_years(self,inc_future=False):
-        if not self.unique_years:
-            years = []
-            ygigs = []
-            for gig in self.gigs:
-                if not gig.future or inc_future:
-                    y = gig.date.year
-                    try:
-                        i = years.index(y)
-                        ygigs[i].append(gig)
-                    except ValueError:
-                        years.append(y)
-                        ygigs.append([gig])
-            
-            for l in ygigs:
-                l.sort(key=lambda x: x.index)
-            
-            zipped = list( zip( years, ygigs ) )
-            zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True )
-            zipped.reverse()
-            self.unique_years = zipped
-        return self.unique_years
+        if inc_future:
+            if not self.unique_years_inc_future:
+                self.unique_years_inc_future = self.generate_unique_years(inc_future)
+            return self.unique_years_inc_future
+        else:
+            if not self.unique_years:
+                self.unique_years = self.generate_unique_years(inc_future)
+            return self.unique_years
     def artist_is_support(self,a):
         support_only = True
         for gig in self.gigs:
@@ -1207,207 +1260,6 @@ class g_gigs():
             for g in run:
                 print( "    " + g.stub() )
             print( "" )
-    def plot_top_venue_growth(self):
-        import matplotlib.pyplot as plt
-
-        self.n_graphs += 1
-
-        fig, ax = plt.subplots()
-        top_n = 5
-        venues = self.get_unique_venues()[0:top_n]
-        first_date = self.get_unique_years()[0][1][0].date
-        all_dates = [ first_date ]
-        vnames = []
-        for (v,gs) in venues:
-            vnames.append(v)
-            for g in gs:
-                all_dates.append(g.date)
-
-        all_dates.sort()
-
-        for (v,gs) in venues:
-            counts = []
-            for d in all_dates:
-                counts.append(0)
-
-            for g in gs:
-                indx = all_dates.index(g.date)
-                for i in range(indx,len(all_dates)):
-                    counts[i] += 1
-            plt.plot(all_dates,counts)
-
-        ax.legend(vnames,'upper left')
-        ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
-        ax.set_ylim(-1,len(venues[0][1])+1)
-        plt.grid()
-
-        plt.title("Venue Growth (Top %d)" % top_n)
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        plt.show(block=False)
-    def plot_artist_growth(self):
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-
-        self.n_graphs += 1
-
-        y_gigs = self.get_unique_years()
-        y_gigs.sort()
-        years = []
-        n_artists = []
-        n_new_artists = []
-        all_artists = []
-
-        for (y,c) in y_gigs:
-            y_artists = []
-            years.append(y)
-            n_artists.append(0)
-            n_new_artists.append(0)
-            for g in c:
-                for s in g.sets:
-                    if s.artist in y_artists:
-                        pass
-                    else:
-                        y_artists.append(s.artist)
-                        n_artists[-1] += 1
-
-                    if s.artist in all_artists:
-                        pass
-                    else:
-                        all_artists.append(s.artist)
-                        n_new_artists[-1] += 1
-        
-        ind = range(0,len(years))
-        bar1 = ax.bar( ind, n_artists, align='center', color='b' )
-        bar2 = ax.bar( ind, n_new_artists, align='center', color='r' )
-        plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0]), ('Total artists', 'New artists'), 'upper left')
-
-        plt.title("Total artists seen per year")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        plt.show(block=False)
-    def plot_month_growth(self):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-        months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        month_totals = [0] * 12
-        for gig in self.get_past_gigs():
-            i = int(gig.date.strftime("%m"))
-            month_totals[i-1] += 1
-
-        fig, ax = plt.subplots()
-        ind = range(0,len(months))
-        rects = ax.bar( ind, month_totals, align='center' )
-        plt.xticks(ind,months)
-
-        plt.title("Month histogram")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        plt.show(block=False)
-    def plot_days_growth(self):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-        day_totals = [0] * 7
-        for gig in self.get_past_gigs():
-            i = int(gig.date.strftime("%w"))
-            day_totals[i-1] += 1
-
-        fig, ax = plt.subplots()
-        ind = range(0,len(day_totals))
-        rects = ax.bar( ind, day_totals, align='center' )
-        plt.xticks(ind,days)
-
-        plt.title("Gigs per day")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        plt.show(block=False)
-    def plot_year_growth(self):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        fig, ax = plt.subplots()
-        y_gigs = self.get_unique_years()
-        y_gigs.sort()
-
-        artists = []
-        venues = []
-
-        n_gigs = [ a[0] for a in y_gigs ]
-        years = [ len(a[1]) for a in y_gigs ]
-
-        ind = range(0,len(years))
-        bar1 = ax.bar( ind, years, align='center', color='b' )
-        plt.xticks(ind,[str(xx)[2:4] for xx in n_gigs])
-
-        plt.title("Year Histogram")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        plt.show(block=False)
-    def plot_venue_growth(self):
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-
-        self.n_graphs += 1
-
-        y_gigs = self.get_unique_years()
-        y_gigs.sort()
-        years = []
-        n_venues = []
-        n_new_venues = []
-        all_venues = []
-
-        for (y,c) in y_gigs:
-            y_venues = []
-            years.append(y)
-            n_venues.append(0)
-            n_new_venues.append(0)
-            for g in c:
-                if g.venue in y_venues:
-                    pass
-                else:
-                    y_venues.append(g.venue)
-                    n_venues[-1] += 1
-
-                if g.venue in all_venues:
-                    pass
-                else:
-                    all_venues.append(g.venue)
-                    n_new_venues[-1] += 1
-        
-        ind = range(0,len(years))
-        bar1 = ax.bar( ind, n_venues, align='center', color='b' )
-        bar2 = ax.bar( ind, n_new_venues, align='center', color='r' )
-        plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0]), ('Total venues', 'New venues'), 'upper left')
-
-        plt.title("Total venues seen per year")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        plt.show(block=False)
-    def plot_freq_dist(self):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        fig, ax = plt.subplots()
-        a_gigs = self.get_unique_artists()
-
-        freq = [ 0 ] * len(a_gigs[0][1] )
-
-        for (a,c) in a_gigs:
-            freq[ len(c) - 1 ] += 1
-
-        ind = range(1,len(freq)+1)
-        bar1 = ax.bar( ind, freq, align='center', color='b' )
-        plt.xticks(ind, [ str(i+1) if freq[i] > 0 else "" for i in range(0,len(freq)) ] )
-
-        plt.title("Frequency Distribution of Artists")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        #plt.show(block=False)
-        plt.show()
     def relative_progress(self):
         year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday
@@ -1508,6 +1360,294 @@ class g_gigs():
 
         self.print_fuzzy_matches(artists, 'Artists')
         self.print_fuzzy_matches(venues, 'Venues')
+
+    # Plotting
+    def plot_top_venue_growth(self,show=False):
+        import matplotlib.pyplot as plt
+
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        top_n = 5
+        venues = self.get_unique_venues()[0:top_n]
+        first_date = self.get_unique_years()[0][1][0].date
+        all_dates = [ first_date ]
+        vnames = []
+        for (v,gs) in venues:
+            vnames.append(v)
+            for g in gs:
+                all_dates.append(g.date)
+
+        all_dates.sort()
+
+        for (v,gs) in venues:
+            counts = []
+            for d in all_dates:
+                counts.append(0)
+
+            for g in gs:
+                indx = all_dates.index(g.date)
+                for i in range(indx,len(all_dates)):
+                    counts[i] += 1
+            plt.plot(all_dates,counts)
+
+        ax.legend(vnames,'upper left')
+        ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
+        ax.set_ylim(-1,len(venues[0][1])+1)
+        plt.grid()
+
+        plt.title("Venue Growth (Top %d)" % top_n)
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_venue_growth.png', bbox_inches='tight')
+            return 'plot_venue_growth.png'
+    def plot_artist_growth(self,show=False):
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+
+        self.n_graphs += 1
+
+        y_gigs = self.get_unique_years()
+        y_gigs.sort()
+        years = []
+        n_artists = []
+        n_new_artists = []
+        all_artists = []
+
+        col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
+
+        for (y,c) in y_gigs:
+            y_artists = []
+            years.append(y)
+            n_artists.append(0)
+            n_new_artists.append(0)
+            for g in c:
+                for s in g.sets:
+                    if s.artist in y_artists:
+                        pass
+                    else:
+                        y_artists.append(s.artist)
+                        n_artists[-1] += 1
+
+                    if s.artist in all_artists:
+                        pass
+                    else:
+                        all_artists.append(s.artist)
+                        n_new_artists[-1] += 1
+        
+        ind = range(1,len(years)+1)
+        bar1 = ax.bar( ind, n_artists, align='center', color=col_boxbg )
+        bar2 = ax.bar( ind, n_new_artists, align='center', color=col_border )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+        plt.legend((bar1[0], bar2[0]), ('Total artists', 'New artists'), 'upper left')
+
+        #plt.title("Total artists seen per year")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_artist_growth.png', bbox_inches='tight')
+            return 'plot_artist_growth.png'
+    def plot_month_growth(self,show=False):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+        months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        month_totals = [0] * 12
+        for gig in self.get_past_gigs():
+            i = int(gig.date.strftime("%m"))
+            month_totals[i-1] += 1
+
+        col_boxbg = '#153E7E'
+
+        fig, ax = plt.subplots()
+        ind = range(1,len(months)+1)
+        bar1 = ax.bar( ind, month_totals, align='center', color=col_boxbg )
+        plt.legend((bar1[0],), ('Events by month',), 'upper left')
+        plt.xticks(ind,months)
+
+        #plt.title("Month histogram")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_month_growth.png', bbox_inches='tight')
+            return 'plot_month_growth.png'
+    def plot_days_growth(self,show=False):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+
+        days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        day_totals = [0] * 7
+        for gig in self.get_past_gigs():
+            i = int(gig.date.strftime("%w"))
+            day_totals[i-1] += 1
+
+        fig, ax = plt.subplots()
+        ind = range(1,len(day_totals)+1)
+        bar1 = ax.bar( ind, day_totals, align='center' )
+        plt.xticks(ind,days)
+
+        plt.title("Gigs per day")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_days_growth.png', bbox_inches='tight')
+            return 'plot_days_growth.png'
+    def plot_year_growth(self,show=False):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        y_gigs = self.get_unique_years()
+        y_gigs.sort()
+
+        artists = []
+        venues = []
+
+        n_gigs = [ a[0] for a in y_gigs ]
+        years = [ len(a[1]) for a in y_gigs ]
+
+        col_boxbg = '#153E7E'
+
+        ind = range(1,len(years)+1)
+        bar1 = ax.bar( ind, years, align='center', color=col_boxbg )
+        plt.xticks(ind,[str(xx)[2:4] for xx in n_gigs])
+        plt.legend((bar1[0],), ('Total events',), 'upper left')
+
+        #plt.title("Year Histogram")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_year_growth.png', bbox_inches='tight')
+            return 'plot_year_growth.png'
+    def plot_venue_growth(self,show=False):
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+
+        self.n_graphs += 1
+
+        y_gigs = self.get_unique_years()
+        y_gigs.sort()
+        years = []
+        n_venues = []
+        n_new_venues = []
+        all_venues = []
+
+        for (y,c) in y_gigs:
+            y_venues = []
+            years.append(y)
+            n_venues.append(0)
+            n_new_venues.append(0)
+            for g in c:
+                if g.venue in y_venues:
+                    pass
+                else:
+                    y_venues.append(g.venue)
+                    n_venues[-1] += 1
+
+                if g.venue in all_venues:
+                    pass
+                else:
+                    all_venues.append(g.venue)
+                    n_new_venues[-1] += 1
+
+        col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
+        
+        ind = range(1,len(years)+1)
+        bar1 = ax.bar( ind, n_venues, align='center', color=col_boxbg )
+        bar2 = ax.bar( ind, n_new_venues, align='center', color=col_border )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+        plt.legend((bar1[0], bar2[0]), ('Total venues', 'New venues'), 'upper left')
+
+        #plt.title("Total venues seen per year")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_venue_growth.png', bbox_inches='tight')
+            return 'plot_venue_growth.png'
+    def plot_freq_dist(self,show=False):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        a_gigs = self.get_unique_artists()
+
+        freq = [ 0 ] * len(a_gigs[0][1] )
+
+        for (a,c) in a_gigs:
+            freq[ len(c) - 1 ] += 1
+
+        col_boxbg = '#153E7E'
+
+        ind = range(1,len(freq)+1)
+        bar1 = ax.bar( ind, freq, align='center', color=col_boxbg )
+        plt.xticks(ind, [ str(i+1) if freq[i] > 0 else "" for i in range(0,len(freq)) ] )
+        plt.legend((bar1[0],), ('Artist frequency distribution',), 'upper right')
+
+        #plt.title("Frequency Distribution of Artists")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+            plt.show()
+        else:
+            fig.savefig('html/img/plot_freq_dist.png', bbox_inches='tight')
+            return 'plot_freq_dist.png'
+    def plot_relative_progress(self,show=False):
+        import matplotlib.pyplot as plt
+        self.n_graphs += 1
+
+        year = datetime.today().year
+        yday = datetime.today().timetuple().tm_yday
+
+        gig_counts = []
+        gig_years = []
+
+        gigs_by_year = self.get_unique_years()
+        gigs_by_year.sort()
+
+        for (y,c) in gigs_by_year:
+            gig_years.append(y)
+            gig_counts.append(0)
+            for g in c:
+                if g.date.timetuple().tm_yday <= yday:
+                    gig_counts[-1] += 1
+            
+        #print( "gig_counts: %s" % ",".join( str(x) for x in gig_counts ) )
+
+        fig, ax = plt.subplots()
+
+        col_boxbg = '#153E7E'
+
+        ind = range(1,len(gig_counts)+1)
+        bar1 = ax.bar( ind, gig_counts, align='center', color=col_boxbg )
+        plt.xticks(ind, [str(xx)[2:4] for xx in gig_years] )
+
+        plt.legend((bar1[0],), ('Events up to %s' % datetime.today().strftime("%d %b"),), 'upper left')
+
+        #plt.title("Relative Progress")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        plt.ylim([0,max(gig_counts)+1])
+
+        if show:
+            plt.show(block=False)
+            plt.show()
+        else:
+            fig.savefig('html/img/plot_relative_progress.png', bbox_inches='tight')
+            return 'plot_relative_progress.png'
 
 class g_gig():
     def __init__(self, ident, date, venue):
@@ -1739,13 +1879,13 @@ if __name__ == "__main__":
     gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
     if arg1 == "-graphs":
-        gig_data.plot_year_growth()
-        gig_data.plot_artist_growth()
-        gig_data.plot_venue_growth()
-        gig_data.plot_month_growth()
-        ##gig_data.plot_days_growth()
-        gig_data.plot_top_venue_growth()
-        gig_data.plot_freq_dist()
+        gig_data.plot_year_growth(True)
+        gig_data.plot_artist_growth(True)
+        gig_data.plot_venue_growth(True)
+        #gig_data.plot_month_growth(True)
+        ##gig_data.plot_days_growth(True)
+        #gig_data.plot_top_venue_growth(True)
+        #gig_data.plot_freq_dist(True)
         sys.exit(0)
 
     if arg1 == "-progress":
