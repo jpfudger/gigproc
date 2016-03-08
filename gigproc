@@ -129,8 +129,9 @@ class g_html():
 
         # artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
 
-        for g in gig.sets:
+        main_artists = [ s.artist for s in gig.sets if not s.guest_only ]
 
+        for g in gig.sets:
             art_songs = []
             if self.do_songcount:
                 # Calculate the number of times I have seen the song.
@@ -155,16 +156,17 @@ class g_html():
             if g.guest_only:
                 alink = '(' + alink + ')'
 
-            setlist_string += '\n<br> ' + alink
-
             asymbol = ''
             if g.artist in gig_guests:
                 asymbol = self.footnote_symbol( gig.get_artists().index(g.artist) )
 
             if g.guest_only:
-                setlist_string += ' ' + self.make_flag_note( 'guest', "Only as a guest in another set", asymbol ) 
+                continue
+                #fn = self.make_flag_note( 'guest', "Only as a guest in another set", asymbol ) 
+                #setlist_string += '\n<br> ' + alink + ' ' +  fn
             else:
-                setlist_string += ' ' + self.make_flag_note( 'guest', "+ Guested in another set", asymbol ) 
+                fn = self.make_flag_note( 'guest', "+ Guested in another set", asymbol ) 
+                setlist_string += '\n<br> ' + alink + ' ' + fn
 
             setlist_string += playlist_link
 
@@ -175,8 +177,26 @@ class g_html():
                     bg_fname = gig.link + '_a' + self.id_of_artist(b) + '.html'
                     blink = '<a href=' + bg_fname + '>' + b + '</a>'
                     band_links.append(blink)
-                band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + '] <br>'
+                band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + ']'
             setlist_string += band_string
+
+            proc_guests = []
+            for s in g.songs:
+                for guest in s.guests:
+                    if guest in main_artists:
+                        continue
+                    if guest in proc_guests:
+                        continue
+                    elif not proc_guests and not band_string:
+                        setlist_string += '<br>'
+                    a_indx = gig.get_artists().index(guest)
+                    ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
+                    glink = '<a href=' + ag_fname + '>' + guest + '</a>'
+                    setlist_string += '\n<br>' + self.sp(3) + '[Guesting ' + glink + ' '
+                    setlist_string += self.make_flag_note( 'guest', '+ ' + guest, 
+                                                            self.footnote_symbol(a_indx) )
+                    setlist_string += ']'
+                    proc_guests.append(guest)
 
             list_tag = 'ol' if g.ordered else 'ul'
 
@@ -230,8 +250,6 @@ class g_html():
                 setlist_string += '\n</' + list_tag + '>'
             else:
                 setlist_string += '<br>'
-
-            #setlist_string += band_string
 
         return setlist_string
     def make_file( self, filename, years_string, gigs_string, setlist_string, img = ""):
@@ -680,7 +698,7 @@ class g_html():
 
         for graph in graphs:
             count += 1
-            string += '<img src="' + graph + '" style="width:32%;"><nbsp>'
+            string += '<img src="' + graph + '" style="width:30%;"><nbsp>'
             if count % 2 == 0:
                 string += '<br>'
             string += '\n'
@@ -1467,21 +1485,25 @@ class g_gigs():
         self.n_graphs += 1
         months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
         month_totals = [0] * 12
+        curr_totals = [0] * 12
+
+        year = datetime.today().year
+
         for gig in self.get_past_gigs():
             i = int(gig.date.strftime("%m"))
+            if gig.date.year != year:
+                curr_totals[i-1] += 1
             month_totals[i-1] += 1
 
         col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
 
         fig, ax = plt.subplots()
         ind = range(1,len(months)+1)
 
-        #print(ind)
-        #print(months)
-        #print(month_totals)
-
-        bar1 = ax.bar( ind, month_totals, align='center', color=col_boxbg )
-        plt.legend((bar1[0],), ('Events by month',), 'upper left')
+        bar1 = ax.bar( ind, month_totals, align='center', color=col_border )
+        bar2 = ax.bar( ind, curr_totals, align='center', color=col_boxbg )
+        #plt.legend((bar1[0],bar2[0]), ('This year','Total'), 'upper left')
         plt.xticks(ind,months)
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
