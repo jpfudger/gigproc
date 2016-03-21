@@ -456,18 +456,6 @@ class g_html():
             string += '\n<td' + align + '>' + entry[0] + '</td>'
         string += '</tr>'
         return string
-    def order_collection_by_count(self,collection):
-        # accepts a list of 2-element lists : [ ( thing, [gigs] ) , ... ]
-        unique_counts = list(set([ len(x[1]) for x in collection ]))
-        ordered = []
-        for c in unique_counts:
-            members = []
-            for col in collection:
-                if len(col[1]) == c:
-                    members.append(col)
-            ordered.append( [ c, members ] )
-        ordered.sort( key=lambda x: x[0] )
-        return ordered
     def build_gigs_string(self,gigs,y=None,link_suffix=None,file_title=None,force_artist=None,match_id=0):
         gigs_string = "<br>"
         if file_title:
@@ -634,7 +622,7 @@ class g_html():
             self.make_file( vfname, years_string_v, venue_string, '' )
 
             for gig in c:
-                suffix = '_v' + str(counter).zfill(3)
+                suffix = '_' + vfname
                 link = gig.link + suffix
                 venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
@@ -652,13 +640,48 @@ class g_html():
         venues_string += '</table>'
 
         cities = self.gig_data.unique_cities()
-        venues_string += '\n<br> <br> ' + '='*50 + '\n<br><br>' + str(len(cities)) + ' cities:' \
-                + '<br><br>\n<table>'
-        ordered_cities = self.order_collection_by_count(cities)
-        ordered_cities.reverse()
-        for order in ordered_cities:
-            venues_string += '\n<tr><td align=right valign=top>' + str(order[0]) + '.' + self.sp(1) + \
-                    '</td><td>' + ', '.join([ x[0] for x in order[1]]) + '</td></tr>'
+        n_cities = 0
+        for (city,gigs_past,gigs_future) in cities:
+            if len(gigs_past) > 0:
+                n_cities += 1
+
+        venues_string += '\n<br> <br> ' + '='*50 + '\n<br><br>' + str(n_cities) + ' cities:' \
+                + '<br>\n<table>'
+
+        n_gigs_for_last_city = 0
+        counter = 0
+
+        for (city,gigs_past,gigs_future) in cities:
+            #print( "%s %d %d" % ( city, len(gigs_past), len(gigs_future) ) )
+            #venues_string += '\n<tr><td align=right valign=top>' + str(len(c)) + '.' + self.sp(1) + \
+                    #'</td><td>' + ', '.join([ x[0] for x in c]) + '</td></tr>'
+            counter += 1
+            cfname = 'c' + str(counter).zfill(3)
+            clink = '<a href=' + cfname + '.html>' + city + '</a>' 
+
+            all_cgigs = gigs_past + gigs_future;
+
+            city_string = self.build_gigs_string( all_cgigs, None, cfname, city )
+            self.make_file( cfname, years_string_v, city_string, '' )
+
+            for gig in all_cgigs:
+                suffix = '_' + cfname
+                link = gig.link + suffix
+                city_string_h = self.build_gigs_string( all_cgigs, None, cfname, city, None, gig.index )
+                setlist_string = self.gig_setlist_string( gig, True, all_cgigs, suffix )
+                self.make_file( link, years_string_v, city_string_h, setlist_string, gig.img )
+
+            if len(gigs_past) == 0:
+                pass
+            elif len(gigs_past) == n_gigs_for_last_city:
+                venues_string += ', ' + clink
+            else:
+                venues_string += '</td></tr>\b<tr><td align=right valign=top>' + str(len(gigs_past)) + \
+                        '.' + self.sp(1) + '</td><td>' + clink
+            
+            n_gigs_for_last_city = len(gigs_past)
+
+
         venues_string += '</table>'
         return venues_string
     def make_bootlegs_index_string(self):
@@ -705,6 +728,9 @@ class g_html():
 
         string += '</center>\n'
         return string
+    def make_calendar(self):
+        # get future gigs
+        pass
     def generate_html_files(self):
         self.make_stylesheet()
 
@@ -756,6 +782,8 @@ class g_html():
             years_string_g = self.make_years_string("Stats")
             graphs_string = self.make_graphs_index_string()
             self.make_file( 'stats',     years_string_g,   graphs_string,  '' )
+
+        self.make_calendar()
 
         return
     def make_youtube_link(self,yt):
@@ -1183,20 +1211,28 @@ class g_gigs():
     def unique_cities(self):
         cities = []
         city_gigs = []
+        city_gigs_future = []
         for gig in self.gigs:
-            if not gig.future:
-                city = match('^(\w+).*',gig.venue).group(1)
-                try:
-                    pos = cities.index(city)
-                    city_gigs[pos].append(gig)
-                except ValueError:
-                    cities.append(city)
-                    city_gigs.append([gig])
-        
+            city = match('^(\w+).*',gig.venue).group(1)
+            try:
+                pos = cities.index(city)
+            except ValueError:
+                pos = len(cities)
+                city_gigs.append([])
+                city_gigs_future.append([])
+                cities.append(city)
+
+            if gig.future:
+                city_gigs_future[pos].append(gig)
+            else:
+                city_gigs[pos].append(gig)
+
         for l in city_gigs:
             l.sort(key=lambda x: x.index)
-        
-        zipped = list( zip( cities, city_gigs ) )
+        for l in city_gigs_future:
+            l.sort(key=lambda x: x.index)
+
+        zipped = list( zip( cities, city_gigs, city_gigs_future ) )
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
