@@ -1,6 +1,5 @@
 #!/usr/bin/python3
-import sys, os, glob
-from re import match, search, IGNORECASE, sub, findall, compile
+import sys, os, glob, re
 from datetime import datetime
 
 class g_html():
@@ -848,23 +847,23 @@ class g_gigs():
 
         splits = line.split('---')
         title = splits[0]
-        title = sub( r"\s*---.*$", '', title)
-        title = sub( r"\s*\*+\s*$", '', title)
-        title = sub( r"\s*\^+\s*$", '', title)
-        title = sub( r"\s*\~+\s*$", '', title)
-        #title = sub( r"(?<=[^?])\?$", '\1', title)
+        title = re.sub( r"\s*---.*$", '', title)
+        title = re.sub( r"\s*\*+\s*$", '', title)
+        title = re.sub( r"\s*\^+\s*$", '', title)
+        title = re.sub( r"\s*\~+\s*$", '', title)
+        #title = re.sub( r"(?<=[^?])\?$", '\1', title)
 
         # capitalise each word:
         title = ' '.join(w[0].upper() + w[1:] for w in title.split()) 
 
         # uncapitalise conjunctions:
-        #title = sub( " And ", " and ", title)
-        #title = sub( " The ", " the ", title)
-        #title = sub( " Of ", " of ", title)
-        #title = sub( " In ", " in ", title)
-        #title = sub( " On ", " on ", title)
+        #title = re.sub( " And ", " and ", title)
+        #title = re.sub( " The ", " the ", title)
+        #title = re.sub( " Of ", " of ", title)
+        #title = re.sub( " In ", " in ", title)
+        #title = re.sub( " On ", " on ", title)
 
-        if match('^\s*$', title):
+        if re.match('^\s*$', title):
             # process set flags
             title = None
             if len(splits) > 1:
@@ -874,27 +873,27 @@ class g_gigs():
                 if 'solo' in splits[1]:
                     this_set.solo = True
                 # Comment out these two lines to suppress the band member processing
-                if match( '.*{.*', splits[1] ):
-                   this_set.band = findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                if re.match( '.*{.*', splits[1] ):
+                   this_set.band = re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
         else:
             # process song flags and append
-            if match( '\?+', title ):
+            if re.match( '\?+', title ):
                 title = None
             song = g_song(title)
             song.set_opener = opener
-            if match( '^\s+', line )  :
+            if re.match( '^\s+', line )  :
                 # if the line is indented, it's part of a medley
                 song.medley = True;
             if len(splits) > 1:
                 # song flags:
                 if '{' in splits[1]:
-                    song.guests += findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                    song.guests += re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
                 if '<' in splits[1]:
-                    m = match( '.*<(.*)>.*', splits[1] )
+                    m = re.match( '.*<(.*)>.*', splits[1] )
                     if m:
                         song.cover = m.group(1)
                 if '"' in splits[1]:
-                    m = match( '.*(".*").*', splits[1])
+                    m = re.match( '.*(".*").*', splits[1])
                     if m:
                         song.quote = m.group(1)
                 if 'solo' in splits[1]:
@@ -904,18 +903,18 @@ class g_gigs():
                 if 'improv' in splits[1]:
                     song.improv = True
                 if '|' in splits[1]:
-                    m = match( '.*\|(\w+)\|.*', splits[1] )
+                    m = re.match( '.*\|(\w+)\|.*', splits[1] )
                     if m:
                         song.youtube = m.group(1)
             this_set.append_song(song)
     def process_venue_name(self,name):
         # This does nothing, but it would be nice to sort out underscores.
-        #new_name = sub( r'_', '&nbsp;', name)
+        #new_name = re.sub( r'_', '&nbsp;', name)
         return name
     def process_artist_name(self,name):
         # Just strips comments
         new_name = name
-        m = match( '^(.*)\s*---', new_name )
+        m = re.match( '^(.*)\s*---', new_name )
         if m:
             new_name = m.group(1)
         new_name = new_name.strip()
@@ -978,10 +977,10 @@ class g_gigs():
         with open(path) as f:
             lines = f.read().splitlines()
         for line in lines:
-            mopen = match('^\{\{\{ (.*)',line)
-            mclose = match('^\}\}\}',line)
-            mblank = match('^\s*$',line)
-            mc = match('^\{\{\{\s*---',line)
+            mopen = re.match('^\{\{\{ (.*)',line)
+            mclose = re.match('^\}\}\}',line)
+            mblank = re.match('^\s*$',line)
+            mc = re.match('^\{\{\{\s*---',line)
             if mc:
                 commented = True
                 if com_level == -1:
@@ -990,10 +989,10 @@ class g_gigs():
                 last_blank = True
             elif mopen:
                 level += 1
-                m1 = match('^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                m1 = re.match('^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
                 date_regex = "%d-%b-%Y"
                 if not m1:
-                    m1 = match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                    m1 = re.match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
                     date_regex = "%d.%m.%Y"
                 if commented:
                     pass
@@ -1079,11 +1078,11 @@ class g_gigs():
                 # look for song in artist's main set:
 
                 main_set = False
-                if search(artist, s.artist, IGNORECASE):
+                if re.search(artist, s.artist, re.IGNORECASE):
                     main_set = True
                 elif s.band:
                     for b in s.band:
-                        if search(artist, b, IGNORECASE):
+                        if re.search(artist, b, re.IGNORECASE):
                             main_set = True
                             break
 
@@ -1104,7 +1103,7 @@ class g_gigs():
                     for song in s.songs:
                         flagged = False
                         for guest in song.guests:
-                            if search( artist, guest, IGNORECASE ):
+                            if re.search( artist, guest, re.IGNORECASE ):
                                 flagged = True
                         if flagged:
                             got = False
@@ -1213,7 +1212,7 @@ class g_gigs():
         city_gigs = []
         city_gigs_future = []
         for gig in self.gigs:
-            city = match('^(\w+).*',gig.venue).group(1)
+            city = re.match('^(\w+).*',gig.venue).group(1)
             try:
                 pos = cities.index(city)
             except ValueError:
@@ -1949,15 +1948,15 @@ class g_query():
                             match = True
                     if self.date.isalpha():
                         # it's a month
-                        if search( self.date, gig.date.strftime("%B"),IGNORECASE): 
+                        if re.search( self.date, gig.date.strftime("%B"),re.IGNORECASE): 
                             match = True
-                if match and self.venue and not search(self.venue,gig.venue,IGNORECASE):
+                if match and self.venue and not re.search(self.venue,gig.venue,re.IGNORECASE):
                     match = False
                 if match and self.artist:
                     match = False
                     artists = gig.get_artists()
                     for a in artists:
-                        if search(self.artist,a,IGNORECASE):
+                        if re.search(self.artist,a,re.IGNORECASE):
                             match = True
                             break
                 if match and self.song:
@@ -1966,7 +1965,7 @@ class g_query():
                     for s in gig.sets:
                         titles += [ x.title for x in s.songs if x.title ]
                     for t in titles:
-                        if search(self.song,t,IGNORECASE):
+                        if re.search(self.song,t,re.IGNORECASE):
                             match = True
                             break
                 if match:
