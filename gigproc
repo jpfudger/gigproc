@@ -562,15 +562,21 @@ class g_html():
 
             breakdown = ''
             if len(c) > 1:
-                breakdown += '\n<br> \n' + '='*50 + '\n<pre>'
-
                 unique_songs = self.gig_data.unique_songs_of_artist(a)
-
-                breakdown += 'Breakdown of %d songs across %d events (%.2f songs/event):<br> <br>' \
-                                % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
 
                 events = [ x for x in c ]
                 events.sort(key=lambda x: x.index)
+
+                if len(c) > 3:
+                    plot_fname = 'html/img/' + afname + '.png'
+                    self.gig_data.plot_song_breakdown(a,events,unique_songs,plot_fname)
+                    breakdown += '\n<br>\n<img src="img/' + afname + '.png" style="width:30%;"' + '><br>\n'
+                else:
+                    breakdown += '\n<br> \n' + '='*50
+
+                breakdown += '\n<pre>'
+                breakdown += 'Breakdown of %d songs across %d events (%.2f songs/event):<br> <br>' \
+                                % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
 
                 for song in unique_songs:
                     event_string = ""
@@ -857,11 +863,10 @@ class g_gigs():
         title = ' '.join(w[0].upper() + w[1:] for w in title.split()) 
 
         # uncapitalise conjunctions:
-        #title = re.sub( " And ", " and ", title)
-        #title = re.sub( " The ", " the ", title)
-        #title = re.sub( " Of ", " of ", title)
-        #title = re.sub( " In ", " in ", title)
-        #title = re.sub( " On ", " on ", title)
+        # words = [ "And", "The", "Of", "In", "On" ]
+        # for w in words:
+        #     title = re.sub( ' (' + w + ') ', 
+        #         lambda m: ' ' + m.group(1).lower() + ' ', title )
 
         if re.match('^\s*$', title):
             # process set flags
@@ -911,14 +916,13 @@ class g_gigs():
         # This does nothing, but it would be nice to sort out underscores.
         #new_name = re.sub( r'_', '&nbsp;', name)
         return name
-    def process_artist_name(self,name):
-        # Just strips comments
-        new_name = name
-        m = re.match( '^(.*)\s*---', new_name )
-        if m:
-            new_name = m.group(1)
-        new_name = new_name.strip()
-        return new_name
+    def process_artist_name(self,n):
+        # strip comments and remove definite articles
+        name = n
+        name = re.sub( '\s*---.*', '', name )
+        name = name.strip()
+        name = re.sub( '^The\s+', '', name )
+        return name
     def identify_first_times(self):
         for (a,c) in self.get_unique_artists():
             for song in self.unique_songs_of_artist(a):
@@ -1786,6 +1790,40 @@ class g_gigs():
         else:
             fig.savefig('html/img/plot_total_progress.png', bbox_inches='tight')
             return 'plot_total_progress.png'
+    def plot_song_breakdown(self,artist,events,unique_songs,plot_fname):
+        import matplotlib.pyplot as plt
+
+        event_idx = list(range(1,len(events)+1))
+        new_songs = [0 for event in events]
+        
+        for song in unique_songs:
+            index = 0
+            for event in events:
+                if event in song['events']:
+                    new_songs[index] += 1
+                    break
+                index += 1
+
+        for i in range(1,len(events)):
+            new_songs[i] += new_songs[i-1]
+
+        #print(event_idx)
+        #print(new_songs)
+
+        fig, ax = plt.subplots()
+        ax.set_axisbelow(True)
+
+        line1 = plt.plot(event_idx,new_songs,marker='.')
+        #plt.legend((line1[0],), ('%s: unique song growth' % artist,), 'upper left')
+        plt.legend((line1[0],), ('Unique song count',), 'upper left')
+        #plt.xticks(event_idx)
+        plt.grid(b=True, which='both')
+        plt.xlim( 0, len(events)+1 )
+
+        #plt.show()
+        #print(plot_fname)
+        fig.savefig( plot_fname, bbox_inches='tight')
+        plt.close()
 
 class g_gig():
     def __init__(self, ident, date, venue):
