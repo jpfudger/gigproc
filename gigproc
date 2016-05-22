@@ -11,7 +11,7 @@ class g_html():
         self.do_covers = False          # mark covers
         self.do_playlists = playlists   # add playlist links and index
         self.do_solo_sets = False       # mark solo sets
-        self.do_songcount = False       # count song occurrences (SLOW)
+        self.do_songcount = False      # count song occurrences (SLOW)
         self.do_graphs    = True
 
         # do the work:
@@ -437,6 +437,9 @@ class g_html():
             '    display: inline;',
             '    color:' + col_boxbg + ';',
             '    }',
+            '.png {',
+            '    width: 35em;', #500px;', #30%;',
+            '    }',
         ]
         with open( fname_html, 'w') as the_file:
             for l in lines:
@@ -570,7 +573,7 @@ class g_html():
                 if len(c) > 3:
                     plot_fname = 'html/img/' + afname + '.png'
                     self.gig_data.plot_song_breakdown(a,events,unique_songs,plot_fname)
-                    breakdown += '\n<br>\n<img src="img/' + afname + '.png" style="width:30%;"' + '><br>\n'
+                    breakdown += '\n<br>\n<img class=png src="img/' + afname + '.png"><br>\n'
                 else:
                     breakdown += '\n<br> \n' + '='*50
 
@@ -1586,34 +1589,40 @@ class g_gigs():
         self.n_graphs += 1
 
         fig, ax = plt.subplots()
-        y_gigs = self.get_unique_years()
+        y_gigs = self.get_unique_years(True)
         y_gigs.sort()
 
         yday = datetime.today().timetuple().tm_yday
         years = []
         total_counts = []
         relative_counts = []
+        future_counts = []  # total + future
 
         for (y,c) in y_gigs:
             years.append(y)
             relative_counts.append(0)
-            total_counts.append(len(c))
+            total_counts.append(0)
+            future_counts.append(0)
             for g in c:
-                if g.date.timetuple().tm_yday <= yday:
-                    relative_counts[-1] += 1
-
-        #relative_counts[-1] = 0
+                future_counts[-1] += 1
+                if not g.future:
+                    total_counts[-1] += 1
+                    if g.date.timetuple().tm_yday <= yday:
+                        relative_counts[-1] += 1
 
         col_boxbg = '#153E7E'
         col_border = '#C9BE62'
+        col_grey   = '#CCCCCC'
 
         ind = range(1,len(years)+1)
+        bar0 = ax.bar( ind, future_counts,   align='center', color=col_grey )
         bar1 = ax.bar( ind, total_counts,    align='center', color=col_boxbg )
         bar2 = ax.bar( ind, relative_counts, align='center', color=col_border )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
-        plt.legend((bar1[0], bar2[0]), ('Total events', \
-            'Events up to %s' % datetime.today().strftime("%d %b") ), 'upper left' )
+        plt.legend((bar1[0], bar2[0], bar0[0]), ('Total events', \
+            'Events up to %s' % datetime.today().strftime("%d %b"), \
+            'Scheduled events' ), 'upper left' )
 
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
