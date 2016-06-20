@@ -11,7 +11,7 @@ class g_html():
         self.do_covers = False          # mark covers
         self.do_playlists = playlists   # add playlist links and index
         self.do_solo_sets = False       # mark solo sets
-        self.do_songcount = False      # count song occurrences (SLOW)
+        self.do_songcount = True      # count song occurrences (SLOW)
         self.do_graphs    = True
 
         # do the work:
@@ -34,6 +34,14 @@ class g_html():
         for (v,c) in self.gig_data.get_unique_venues():
             counter += 1
             if venue == v:
+                break
+        return str(counter).zfill(3)
+    def id_of_city(self,city):
+        counter = 0
+        cities = self.gig_data.unique_cities()
+        for (this_city,gigs_past,gigs_future) in cities:
+            counter += 1
+            if city == this_city:
                 break
         return str(counter).zfill(3)
     def gig_prev(self,gigs,gig):
@@ -115,14 +123,18 @@ class g_html():
             link_prev = '<a href=' + fname_prev + '.html>&lt;</a>'
             link_next = '<a href=' + fname_next + '.html>&gt;</a>'
 
+        cf_fname = ''
         vg_fname = ''
         yg_fname = ''
+        vsplits = gig.venue.split()
         if linkback:
+            cf_fname = gig.link + '_c' + self.id_of_city(vsplits[0]) + '.html'
             vg_fname = gig.link + '_v' + self.id_of_venue(gig.venue) + '.html'
             yg_fname = gig.link + '.html'
-        vlink = '<a href=' + vg_fname + '>' + gig.venue + '</a>'
+        clink = '<a href=' + cf_fname + '>' + vsplits[0] + '</a>'
+        vlink = '<a href=' + vg_fname + '>' + " ".join(vsplits[1:]) + '</a>'
         ylink = '<a href=' + yg_fname + '>' + gig.date.strftime("%Y") + '</a>' 
-        setlist_string = '<div class=sl_title>\n' + vlink + '<br>' + \
+        setlist_string = '<div class=sl_title>\n' + clink + ' ' + vlink + '<br>' + \
                     link_prev + link_next + ' ' + \
                     ordinal(day) + gig.date.strftime(" %B, ") + ylink + '</div>' + '\n'
 
@@ -216,10 +228,12 @@ class g_html():
                                         n_times += 1
 
                     sn = s.title if s.title else '???'
-                    if sn == '???' and s.quote != None:
-                        sn = '<div title=' + s.quote + '>' + sn + '</div>'
+                    if sn == '???':
+                        if s.quote != None:
+                            sn = '<div title=' + s.quote + '>' + sn + '</div>'
                     elif self.do_songcount:
-                        sn += ' [%d]' % n_times
+                        sn = '<div class=greyflag title="Songcount: ' + str(n_times) + '">' + sn + '</div>'
+                        #sn += ' [%d]' % n_times
                     if s.set_opener:
                         setlist_string += '\n<br><br>'
                     if s.medley:
@@ -437,8 +451,16 @@ class g_html():
             '    display: inline;',
             '    color:' + col_boxbg + ';',
             '    }',
+            '.greyflag {',
+            '    display: inline;',
+            #'    color:' + col_boxbg + ';',
+            '    }',
             '.png {',
             '    width: 35em;', #500px;', #30%;',
+            '    }',
+            'pre {',
+            '    font-family: "courier new", courier, monospace;',
+            '    font-size: 14px;',
             '    }',
         ]
         with open( fname_html, 'w') as the_file:
@@ -585,7 +607,9 @@ class g_html():
                     event_string = ""
                     for event in events:
                         if event in song['events']:
-                            event_string += 'X'
+                            #event_string += 'X'
+                            title = song['title'] + ' / ' + event.venue + ' / ' + event.date.strftime("%d %b %Y")
+                            event_string += '<div class=greyflag title="' + title + '">X</div>'
                         else:
                             event_string += '-'
                     breakdown += '<br>{0:3d} {1:50s} {2:30s}' \
@@ -1052,6 +1076,8 @@ class g_gigs():
             event_string = ""
             for event in events:
                 if event in song['events']:
+                    #title = song['title'] + ' / ' + event.venue + ' / ' + event.date.strftime("%d %b %Y")
+                    #event_string += '<div class=greyflag title="' + title + '">X</div>'
                     event_string += 'X'
                 else:
                     event_string += '-'
@@ -1121,6 +1147,7 @@ class g_gigs():
                             if not got:
                                 raw_songs.append( { 'title': song.title, 'events': [gig] } )
 
+        raw_songs = [ x for x in raw_songs if x['title'] ] # shouldn't be necessary
         raw_songs.sort(key=lambda x: (-len(x['events']),x['title']), reverse=True)
         raw_songs.reverse()
         return raw_songs
@@ -1219,14 +1246,13 @@ class g_gigs():
         city_gigs = []
         city_gigs_future = []
         for gig in self.gigs:
-            city = re.match('^(\w+).*',gig.venue).group(1)
             try:
-                pos = cities.index(city)
+                pos = cities.index(gig.city)
             except ValueError:
                 pos = len(cities)
                 city_gigs.append([])
                 city_gigs_future.append([])
-                cities.append(city)
+                cities.append(gig.city)
 
             if gig.future:
                 city_gigs_future[pos].append(gig)
@@ -1483,16 +1509,20 @@ class g_gigs():
         n_artists = []
         n_new_artists = []
         all_artists = []
+        n_new_headliners = []
 
         col_boxbg = '#153E7E'
         col_border = '#C9BE62'
+        col_grey   = '#CCCCCC'
 
         for (y,c) in y_gigs:
             y_artists = []
             years.append(y)
             n_artists.append(0)
             n_new_artists.append(0)
+            n_new_headliners.append(0)
             for g in c:
+                set_index = 0
                 for s in g.sets:
                     if s.artist in y_artists:
                         pass
@@ -1505,12 +1535,18 @@ class g_gigs():
                     else:
                         all_artists.append(s.artist)
                         n_new_artists[-1] += 1
+                        if set_index == 0:
+                            n_new_headliners[-1] += 1
+                    set_index += 1
         
         ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_artists, align='center', color=col_boxbg )
-        bar2 = ax.bar( ind, n_new_artists, align='center', color=col_border )
+        bar1 = ax.bar( ind, n_artists,        align='center', color=col_boxbg )
+        bar2 = ax.bar( ind, n_new_artists,    align='center', color=col_border )
+        bar3 = ax.bar( ind, n_new_headliners, align='center', color=col_grey )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0]), ('Total artists', 'New artists'), 'upper left')
+        plt.legend((bar1[0], bar2[0], bar3[0]), \
+                   ('Total artists', 'New artists', 'New headliners'), \
+                   'upper left')
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
@@ -1622,7 +1658,7 @@ class g_gigs():
 
         plt.legend((bar1[0], bar2[0], bar0[0]), ('Total events', \
             'Events up to %s' % datetime.today().strftime("%d %b"), \
-            'Scheduled events' ), 'upper left' )
+            'Projected total' ), 'upper left' )
 
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -1647,18 +1683,26 @@ class g_gigs():
         n_venues = []
         n_new_venues = []
         all_venues = []
+        all_cities = []
+        n_new_cities = []
 
         for (y,c) in y_gigs:
             y_venues = []
             years.append(y)
             n_venues.append(0)
             n_new_venues.append(0)
+            n_new_cities.append(0)
             for g in c:
                 if g.venue in y_venues:
                     pass
                 else:
                     y_venues.append(g.venue)
                     n_venues[-1] += 1
+                    if g.city in all_cities:
+                        pass
+                    else:
+                        all_cities.append(g.city)
+                        n_new_cities[-1] += 1
 
                 if g.venue in all_venues:
                     pass
@@ -1668,12 +1712,16 @@ class g_gigs():
 
         col_boxbg = '#153E7E'
         col_border = '#C9BE62'
+        col_grey   = '#CCCCCC'
         
         ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_venues, align='center', color=col_boxbg )
+        bar1 = ax.bar( ind, n_venues,     align='center', color=col_boxbg )
         bar2 = ax.bar( ind, n_new_venues, align='center', color=col_border )
+        bar3 = ax.bar( ind, n_new_cities, align='center', color=col_grey )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0]), ('Total venues', 'New venues'), 'upper left')
+        plt.legend((bar1[0], bar2[0], bar3[0]), \
+                   ('Total venues', 'New venues', 'New cities'), \
+                   'upper left')
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
@@ -1828,6 +1876,7 @@ class g_gigs():
         #plt.xticks(event_idx)
         plt.grid(b=True, which='both')
         plt.xlim( 0, len(events)+1 )
+        #plt.ylim( 0, new_songs[-1] +1 )
 
         #plt.show()
         #print(plot_fname)
@@ -1839,6 +1888,7 @@ class g_gig():
         self.index  = ident
         self.date   = date
         self.venue  = venue
+        self.city   = venue.split()[0]
         self.sets   = []
         today = datetime.today()
         self.future = date > today or ( date.date() == today.date() and today.hour < 20 )
