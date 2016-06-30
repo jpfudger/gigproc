@@ -1,11 +1,436 @@
 #!/usr/bin/python3
 import sys, os, glob, re
+import matplotlib.pyplot as plt
 from datetime import datetime
+
+class g_plot():
+    def __init__(self, gig_data):
+        self.gig_data = gig_data
+        self.n_graphs = 0
+    def top_venue_growth(self,show=False):
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        top_n = 5
+        venues = self.gig_data.get_unique_venues()[0:top_n]
+        first_date = self.gig_data.get_unique_years()[0][1][0].date
+        all_dates = [ first_date ]
+        vnames = []
+        for (v,gs) in venues:
+            vnames.append(v)
+            for g in gs:
+                all_dates.append(g.date)
+
+        all_dates.sort()
+
+        for (v,gs) in venues:
+            counts = []
+            for d in all_dates:
+                counts.append(0)
+
+            for g in gs:
+                indx = all_dates.index(g.date)
+                for i in range(indx,len(all_dates)):
+                    counts[i] += 1
+            plt.plot(all_dates,counts)
+
+        ax.legend(vnames,'upper left')
+        ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
+        ax.set_ylim(-1,len(venues[0][1])+1)
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        plt.title("Venue Growth (Top %d)" % top_n)
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_venue_growth.png', bbox_inches='tight')
+            return 'plot_venue_growth.png'
+    def artist_growth(self,show=False):
+        fig, ax = plt.subplots()
+
+        self.n_graphs += 1
+
+        y_gigs = self.gig_data.get_unique_years()
+        y_gigs.sort()
+        years = []
+        n_artists = []
+        n_new_artists = []
+        all_artists = []
+        n_new_headliners = []
+
+        col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
+        col_grey   = '#CCCCCC'
+
+        for (y,c) in y_gigs:
+            y_artists = []
+            years.append(y)
+            n_artists.append(0)
+            n_new_artists.append(0)
+            n_new_headliners.append(0)
+            for g in c:
+                set_index = 0
+                for s in g.sets:
+                    if s.artist in y_artists:
+                        pass
+                    else:
+                        y_artists.append(s.artist)
+                        n_artists[-1] += 1
+
+                    if s.artist in all_artists:
+                        pass
+                    else:
+                        all_artists.append(s.artist)
+                        n_new_artists[-1] += 1
+                        if set_index == 0:
+                            n_new_headliners[-1] += 1
+                    set_index += 1
+        
+        ind = range(1,len(years)+1)
+        bar1 = ax.bar( ind, n_artists,        align='center', color=col_boxbg )
+        bar2 = ax.bar( ind, n_new_artists,    align='center', color=col_border )
+        bar3 = ax.bar( ind, n_new_headliners, align='center', color=col_grey )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+        plt.legend((bar1[0], bar2[0], bar3[0]), \
+                   ('Total artists', 'New artists', 'New headliners'), \
+                   'upper left')
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        #plt.title("Total artists seen per year")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_artist_growth.png', bbox_inches='tight')
+            return 'plot_artist_growth.png'
+    def month_growth(self,show=False):
+        self.n_graphs += 1
+        months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        month_totals = [0] * 12
+        curr_totals = [0] * 12
+
+        year = datetime.today().year
+
+        for gig in self.get_past_gigs():
+            i = int(gig.date.strftime("%m"))
+            if gig.date.year != year:
+                curr_totals[i-1] += 1
+            month_totals[i-1] += 1
+
+        col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
+
+        fig, ax = plt.subplots()
+        ind = range(1,len(months)+1)
+
+        bar1 = ax.bar( ind, month_totals, align='center', color=col_border )
+        bar2 = ax.bar( ind, curr_totals, align='center', color=col_boxbg )
+        #plt.legend((bar1[0],bar2[0]), ('This year','Total'), 'upper left')
+        plt.xticks(ind,months)
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        plt.xlim([0,len(ind)+1])
+
+        #plt.title("Month histogram")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_month_growth.png', bbox_inches='tight')
+            return 'plot_month_growth.png'
+    def days_growth(self,show=False):
+        self.n_graphs += 1
+
+        days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        day_totals = [0] * 7
+        for gig in self.get_past_gigs():
+            i = int(gig.date.strftime("%w"))
+            day_totals[i-1] += 1
+
+        fig, ax = plt.subplots()
+        ind = range(1,len(day_totals)+1)
+        bar1 = ax.bar( ind, day_totals, align='center' )
+        plt.xticks(ind,days)
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        plt.title("Gigs per day")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_days_growth.png', bbox_inches='tight')
+            return 'plot_days_growth.png'
+    def year_growth(self,show=False):
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        y_gigs = self.gig_data.get_unique_years(True)
+        y_gigs.sort()
+
+        yday = datetime.today().timetuple().tm_yday
+        years = []
+        total_counts = []
+        relative_counts = []
+        future_counts = []  # total + future
+
+        for (y,c) in y_gigs:
+            years.append(y)
+            relative_counts.append(0)
+            total_counts.append(0)
+            future_counts.append(0)
+            for g in c:
+                future_counts[-1] += 1
+                if not g.future:
+                    total_counts[-1] += 1
+                    if g.date.timetuple().tm_yday <= yday:
+                        relative_counts[-1] += 1
+            if y == datetime.today().year:
+                break
+
+        col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
+        col_grey   = '#CCCCCC'
+
+        ind = range(1,len(years)+1)
+        bar0 = ax.bar( ind, future_counts,   align='center', color=col_grey )
+        bar1 = ax.bar( ind, total_counts,    align='center', color=col_boxbg )
+        bar2 = ax.bar( ind, relative_counts, align='center', color=col_border )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+
+        plt.legend((bar1[0], bar2[0], bar0[0]), ('Total events', \
+            'Events up to %s' % datetime.today().strftime("%d %b"), \
+            'Projected total' ), 'upper left' )
+
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        #plt.title("Year Histogram")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_year_growth.png', bbox_inches='tight')
+            return 'plot_year_growth.png'
+    def venue_growth(self,show=False):
+        fig, ax = plt.subplots()
+
+        self.n_graphs += 1
+
+        y_gigs = self.gig_data.get_unique_years()
+        y_gigs.sort()
+        years = []
+        n_venues = []
+        n_new_venues = []
+        all_venues = []
+        all_cities = []
+        n_new_cities = []
+
+        for (y,c) in y_gigs:
+            y_venues = []
+            years.append(y)
+            n_venues.append(0)
+            n_new_venues.append(0)
+            n_new_cities.append(0)
+            for g in c:
+                if g.venue in y_venues:
+                    pass
+                else:
+                    y_venues.append(g.venue)
+                    n_venues[-1] += 1
+                    if g.city in all_cities:
+                        pass
+                    else:
+                        all_cities.append(g.city)
+                        n_new_cities[-1] += 1
+
+                if g.venue in all_venues:
+                    pass
+                else:
+                    all_venues.append(g.venue)
+                    n_new_venues[-1] += 1
+
+        col_boxbg = '#153E7E'
+        col_border = '#C9BE62'
+        col_grey   = '#CCCCCC'
+        
+        ind = range(1,len(years)+1)
+        bar1 = ax.bar( ind, n_venues,     align='center', color=col_boxbg )
+        bar2 = ax.bar( ind, n_new_venues, align='center', color=col_border )
+        bar3 = ax.bar( ind, n_new_cities, align='center', color=col_grey )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+        plt.legend((bar1[0], bar2[0], bar3[0]), \
+                   ('Total venues', 'New venues', 'New cities'), \
+                   'upper left')
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        #plt.title("Total venues seen per year")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+        else:
+            fig.savefig('html/img/plot_venue_growth.png', bbox_inches='tight')
+            return 'plot_venue_growth.png'
+    def freq_dist(self,show=False):
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        a_gigs = self.gig_data.get_unique_artists()
+
+        freq = [ 0 ] * len(a_gigs[0][1] )
+
+        for (a,c) in a_gigs:
+            freq[ len(c) - 1 ] += 1
+
+        col_boxbg = '#153E7E'
+
+        ind = range(1,len(freq)+1)
+        bar1 = ax.bar( ind, freq, align='center', color=col_boxbg )
+        plt.xticks(ind, [ str(i+1) if freq[i] > 0 else "" for i in range(0,len(freq)) ] )
+        plt.legend((bar1[0],), ('Artist frequency distribution',), 'upper right')
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        #plt.title("Frequency Distribution of Artists")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+
+        if show:
+            plt.show(block=False)
+            plt.show()
+        else:
+            fig.savefig('html/img/plot_freq_dist.png', bbox_inches='tight')
+            return 'plot_freq_dist.png'
+    def relative_progress(self,show=False):
+        self.n_graphs += 1
+
+        year = datetime.today().year
+        yday = datetime.today().timetuple().tm_yday
+
+        gig_counts = []
+        gig_years = []
+
+        gigs_by_year = self.gig_data.get_unique_years()
+        gigs_by_year.sort()
+
+        for (y,c) in gigs_by_year:
+            gig_years.append(y)
+            gig_counts.append(0)
+            for g in c:
+                if g.date.timetuple().tm_yday <= yday:
+                    gig_counts[-1] += 1
+            
+        #print( "gig_counts: %s" % ",".join( str(x) for x in gig_counts ) )
+
+        fig, ax = plt.subplots()
+
+        col_boxbg = '#153E7E'
+
+        ind = range(1,len(gig_counts)+1)
+        bar1 = ax.bar( ind, gig_counts, align='center', color=col_boxbg )
+        plt.xticks(ind, [str(xx)[2:4] for xx in gig_years] )
+
+        plt.legend((bar1[0],), ('Events up to %s' % datetime.today().strftime("%d %b"),), 'upper left')
+
+        #plt.title("Relative Progress")
+        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        plt.ylim([0,max(gig_counts)+1])
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        if show:
+            plt.show(block=False)
+            plt.show()
+        else:
+            fig.savefig('html/img/plot_relative_progress.png', bbox_inches='tight')
+            return 'plot_relative_progress.png'
+    def total_progress(self,show=False):
+        self.n_graphs += 1
+
+        gigs_by_year = self.gig_data.get_unique_years()
+        gigs_by_year.sort()
+
+        running_total = 0
+        totals = []
+        dates = []
+        years = []
+
+        for (y,c) in gigs_by_year:
+            years.append(datetime.strptime(str(y),"%Y"))
+            for g in c:
+                running_total += 1
+                totals.append(running_total)
+                dates.append(g.date)
+            
+        #print( "gig_counts: %s" % ",".join( str(x) for x in gig_counts ) )
+        fig, ax = plt.subplots()
+
+        col_boxbg = '#153E7E'
+        line1 = plt.plot(dates,totals,color=col_boxbg) #,linewidth=2.0)
+        plt.xticks(years,[xx.strftime("%y") for xx in years])
+        plt.legend((line1[0],), ('Cumulative event count',), 'upper left')
+
+        ax.set_axisbelow(True)
+        ax.fill_between(dates, 0, totals, color=col_boxbg)
+
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
+                  datetime.strptime(str(years[-1].year+1),"%Y")])
+
+        if show:
+            plt.show(block=False)
+            plt.show()
+        else:
+            fig.savefig('html/img/plot_total_progress.png', bbox_inches='tight')
+            return 'plot_total_progress.png'
+    def song_breakdown(self,artist,events,unique_songs,plot_fname):
+        event_idx = list(range(1,len(events)+1))
+        new_songs = [0 for event in events]
+        
+        for song in unique_songs:
+            index = 0
+            for event in events:
+                if event in song['events']:
+                    new_songs[index] += 1
+                    break
+                index += 1
+
+        for i in range(1,len(events)):
+            new_songs[i] += new_songs[i-1]
+
+        #print(event_idx)
+        #print(new_songs)
+
+        fig, ax = plt.subplots()
+        ax.set_axisbelow(True)
+
+        line1 = plt.plot(event_idx,new_songs,marker='.')
+        #plt.legend((line1[0],), ('%s: unique song growth' % artist,), 'upper left')
+        plt.legend((line1[0],), ('Unique song count',), 'upper left')
+        #plt.xticks(event_idx)
+        plt.grid(b=True, which='both')
+        plt.xlim( 0, len(events)+1 )
+        #plt.ylim( 0, new_songs[-1] +1 )
+
+        #plt.show()
+        #print(plot_fname)
+        fig.savefig( plot_fname, bbox_inches='tight')
+        plt.close()
 
 class g_html():
     def __init__(self, gig_data, head, playlists = False):
         self.gig_data = gig_data
         self.head = head
+        self.plotter = g_plot(gig_data)
 
         # optional extras:
         self.do_covers = True           # mark covers
@@ -605,7 +1030,7 @@ class g_html():
 
                 if len(c) > 3:
                     plot_fname = 'html/img/' + afname + '.png'
-                    self.gig_data.plot_song_breakdown(a,events,unique_songs,plot_fname)
+                    self.plotter.song_breakdown(a,events,unique_songs,plot_fname)
                     breakdown += '\n<br>\n<img class=png src="img/' + afname + '.png"><br>\n'
                 else:
                     breakdown += '\n<br> \n' + '='*50
@@ -747,15 +1172,15 @@ class g_html():
     def make_graphs_index_string(self):
         graphs = []
 
-        graphs.append( self.gig_data.plot_year_growth() )
-        graphs.append( self.gig_data.plot_total_progress() )
-        graphs.append( self.gig_data.plot_artist_growth() )
-        graphs.append( self.gig_data.plot_venue_growth() )
-        #graphs.append( self.gig_data.plot_relative_progress() )
-        #graphs.append( self.gig_data.plot_month_growth() )
-        #graphs.append( self.gig_data.plot_days_growth() )
-        #graphs.append( self.gig_data.plot_top_venue_growth() )
-        #graphs.append( self.gig_data.plot_freq_dist() )
+        graphs.append(  self.plotter.year_growth() )
+        graphs.append(  self.plotter.total_progress() )
+        graphs.append(  self.plotter.artist_growth() )
+        graphs.append(  self.plotter.venue_growth() )
+        #graphs.append( self.plotter.relative_progress() )
+        #graphs.append( self.plotter.month_growth() )
+        #graphs.append( self.plotter.days_growth() )
+        #graphs.append( self.plotter.top_venue_growth() )
+        #graphs.append( self.plotter.freq_dist() )
 
         graphs = [ 'img/' + x for x in graphs ]
 
@@ -849,8 +1274,6 @@ class g_gigs():
         self.unique_years_inc_future = None    # cached
         self.playlist_gigs = []
 
-        self.n_graphs = 0
-        
         self.build_gig_data()
     def __str__(self):
         # print summary of gig data
@@ -1523,438 +1946,6 @@ class g_gigs():
                     if e.index == gig.index:
                         return n_times
         return 0
-
-    # Plotting
-    def plot_top_venue_growth(self,show=False):
-        import matplotlib.pyplot as plt
-
-        self.n_graphs += 1
-
-        fig, ax = plt.subplots()
-        top_n = 5
-        venues = self.get_unique_venues()[0:top_n]
-        first_date = self.get_unique_years()[0][1][0].date
-        all_dates = [ first_date ]
-        vnames = []
-        for (v,gs) in venues:
-            vnames.append(v)
-            for g in gs:
-                all_dates.append(g.date)
-
-        all_dates.sort()
-
-        for (v,gs) in venues:
-            counts = []
-            for d in all_dates:
-                counts.append(0)
-
-            for g in gs:
-                indx = all_dates.index(g.date)
-                for i in range(indx,len(all_dates)):
-                    counts[i] += 1
-            plt.plot(all_dates,counts)
-
-        ax.legend(vnames,'upper left')
-        ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
-        ax.set_ylim(-1,len(venues[0][1])+1)
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        plt.title("Venue Growth (Top %d)" % top_n)
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        if show:
-            plt.show(block=False)
-        else:
-            fig.savefig('html/img/plot_venue_growth.png', bbox_inches='tight')
-            return 'plot_venue_growth.png'
-    def plot_artist_growth(self,show=False):
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-
-        self.n_graphs += 1
-
-        y_gigs = self.get_unique_years()
-        y_gigs.sort()
-        years = []
-        n_artists = []
-        n_new_artists = []
-        all_artists = []
-        n_new_headliners = []
-
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-        col_grey   = '#CCCCCC'
-
-        for (y,c) in y_gigs:
-            y_artists = []
-            years.append(y)
-            n_artists.append(0)
-            n_new_artists.append(0)
-            n_new_headliners.append(0)
-            for g in c:
-                set_index = 0
-                for s in g.sets:
-                    if s.artist in y_artists:
-                        pass
-                    else:
-                        y_artists.append(s.artist)
-                        n_artists[-1] += 1
-
-                    if s.artist in all_artists:
-                        pass
-                    else:
-                        all_artists.append(s.artist)
-                        n_new_artists[-1] += 1
-                        if set_index == 0:
-                            n_new_headliners[-1] += 1
-                    set_index += 1
-        
-        ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_artists,        align='center', color=col_boxbg )
-        bar2 = ax.bar( ind, n_new_artists,    align='center', color=col_border )
-        bar3 = ax.bar( ind, n_new_headliners, align='center', color=col_grey )
-        plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0], bar3[0]), \
-                   ('Total artists', 'New artists', 'New headliners'), \
-                   'upper left')
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        #plt.title("Total artists seen per year")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        if show:
-            plt.show(block=False)
-        else:
-            fig.savefig('html/img/plot_artist_growth.png', bbox_inches='tight')
-            return 'plot_artist_growth.png'
-    def plot_month_growth(self,show=False):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-        months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        month_totals = [0] * 12
-        curr_totals = [0] * 12
-
-        year = datetime.today().year
-
-        for gig in self.get_past_gigs():
-            i = int(gig.date.strftime("%m"))
-            if gig.date.year != year:
-                curr_totals[i-1] += 1
-            month_totals[i-1] += 1
-
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-
-        fig, ax = plt.subplots()
-        ind = range(1,len(months)+1)
-
-        bar1 = ax.bar( ind, month_totals, align='center', color=col_border )
-        bar2 = ax.bar( ind, curr_totals, align='center', color=col_boxbg )
-        #plt.legend((bar1[0],bar2[0]), ('This year','Total'), 'upper left')
-        plt.xticks(ind,months)
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-        plt.xlim([0,len(ind)+1])
-
-        #plt.title("Month histogram")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        if show:
-            plt.show(block=False)
-        else:
-            fig.savefig('html/img/plot_month_growth.png', bbox_inches='tight')
-            return 'plot_month_growth.png'
-    def plot_days_growth(self,show=False):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-        day_totals = [0] * 7
-        for gig in self.get_past_gigs():
-            i = int(gig.date.strftime("%w"))
-            day_totals[i-1] += 1
-
-        fig, ax = plt.subplots()
-        ind = range(1,len(day_totals)+1)
-        bar1 = ax.bar( ind, day_totals, align='center' )
-        plt.xticks(ind,days)
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        plt.title("Gigs per day")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        if show:
-            plt.show(block=False)
-        else:
-            fig.savefig('html/img/plot_days_growth.png', bbox_inches='tight')
-            return 'plot_days_growth.png'
-    def plot_year_growth(self,show=False):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        fig, ax = plt.subplots()
-        y_gigs = self.get_unique_years(True)
-        y_gigs.sort()
-
-        yday = datetime.today().timetuple().tm_yday
-        years = []
-        total_counts = []
-        relative_counts = []
-        future_counts = []  # total + future
-
-        for (y,c) in y_gigs:
-            years.append(y)
-            relative_counts.append(0)
-            total_counts.append(0)
-            future_counts.append(0)
-            for g in c:
-                future_counts[-1] += 1
-                if not g.future:
-                    total_counts[-1] += 1
-                    if g.date.timetuple().tm_yday <= yday:
-                        relative_counts[-1] += 1
-            if y == datetime.today().year:
-                break
-
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-        col_grey   = '#CCCCCC'
-
-        ind = range(1,len(years)+1)
-        bar0 = ax.bar( ind, future_counts,   align='center', color=col_grey )
-        bar1 = ax.bar( ind, total_counts,    align='center', color=col_boxbg )
-        bar2 = ax.bar( ind, relative_counts, align='center', color=col_border )
-        plt.xticks(ind,[str(xx)[2:4] for xx in years])
-
-        plt.legend((bar1[0], bar2[0], bar0[0]), ('Total events', \
-            'Events up to %s' % datetime.today().strftime("%d %b"), \
-            'Projected total' ), 'upper left' )
-
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        #plt.title("Year Histogram")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        if show:
-            plt.show(block=False)
-        else:
-            fig.savefig('html/img/plot_year_growth.png', bbox_inches='tight')
-            return 'plot_year_growth.png'
-    def plot_venue_growth(self,show=False):
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-
-        self.n_graphs += 1
-
-        y_gigs = self.get_unique_years()
-        y_gigs.sort()
-        years = []
-        n_venues = []
-        n_new_venues = []
-        all_venues = []
-        all_cities = []
-        n_new_cities = []
-
-        for (y,c) in y_gigs:
-            y_venues = []
-            years.append(y)
-            n_venues.append(0)
-            n_new_venues.append(0)
-            n_new_cities.append(0)
-            for g in c:
-                if g.venue in y_venues:
-                    pass
-                else:
-                    y_venues.append(g.venue)
-                    n_venues[-1] += 1
-                    if g.city in all_cities:
-                        pass
-                    else:
-                        all_cities.append(g.city)
-                        n_new_cities[-1] += 1
-
-                if g.venue in all_venues:
-                    pass
-                else:
-                    all_venues.append(g.venue)
-                    n_new_venues[-1] += 1
-
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-        col_grey   = '#CCCCCC'
-        
-        ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_venues,     align='center', color=col_boxbg )
-        bar2 = ax.bar( ind, n_new_venues, align='center', color=col_border )
-        bar3 = ax.bar( ind, n_new_cities, align='center', color=col_grey )
-        plt.xticks(ind,[str(xx)[2:4] for xx in years])
-        plt.legend((bar1[0], bar2[0], bar3[0]), \
-                   ('Total venues', 'New venues', 'New cities'), \
-                   'upper left')
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        #plt.title("Total venues seen per year")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        if show:
-            plt.show(block=False)
-        else:
-            fig.savefig('html/img/plot_venue_growth.png', bbox_inches='tight')
-            return 'plot_venue_growth.png'
-    def plot_freq_dist(self,show=False):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        fig, ax = plt.subplots()
-        a_gigs = self.get_unique_artists()
-
-        freq = [ 0 ] * len(a_gigs[0][1] )
-
-        for (a,c) in a_gigs:
-            freq[ len(c) - 1 ] += 1
-
-        col_boxbg = '#153E7E'
-
-        ind = range(1,len(freq)+1)
-        bar1 = ax.bar( ind, freq, align='center', color=col_boxbg )
-        plt.xticks(ind, [ str(i+1) if freq[i] > 0 else "" for i in range(0,len(freq)) ] )
-        plt.legend((bar1[0],), ('Artist frequency distribution',), 'upper right')
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        #plt.title("Frequency Distribution of Artists")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-
-        if show:
-            plt.show(block=False)
-            plt.show()
-        else:
-            fig.savefig('html/img/plot_freq_dist.png', bbox_inches='tight')
-            return 'plot_freq_dist.png'
-    def plot_relative_progress(self,show=False):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        year = datetime.today().year
-        yday = datetime.today().timetuple().tm_yday
-
-        gig_counts = []
-        gig_years = []
-
-        gigs_by_year = self.get_unique_years()
-        gigs_by_year.sort()
-
-        for (y,c) in gigs_by_year:
-            gig_years.append(y)
-            gig_counts.append(0)
-            for g in c:
-                if g.date.timetuple().tm_yday <= yday:
-                    gig_counts[-1] += 1
-            
-        #print( "gig_counts: %s" % ",".join( str(x) for x in gig_counts ) )
-
-        fig, ax = plt.subplots()
-
-        col_boxbg = '#153E7E'
-
-        ind = range(1,len(gig_counts)+1)
-        bar1 = ax.bar( ind, gig_counts, align='center', color=col_boxbg )
-        plt.xticks(ind, [str(xx)[2:4] for xx in gig_years] )
-
-        plt.legend((bar1[0],), ('Events up to %s' % datetime.today().strftime("%d %b"),), 'upper left')
-
-        #plt.title("Relative Progress")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
-        plt.ylim([0,max(gig_counts)+1])
-        ax.set_axisbelow(True)
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        if show:
-            plt.show(block=False)
-            plt.show()
-        else:
-            fig.savefig('html/img/plot_relative_progress.png', bbox_inches='tight')
-            return 'plot_relative_progress.png'
-    def plot_total_progress(self,show=False):
-        import matplotlib.pyplot as plt
-        self.n_graphs += 1
-
-        gigs_by_year = self.get_unique_years()
-        gigs_by_year.sort()
-
-        running_total = 0
-        totals = []
-        dates = []
-        years = []
-
-        for (y,c) in gigs_by_year:
-            years.append(datetime.strptime(str(y),"%Y"))
-            for g in c:
-                running_total += 1
-                totals.append(running_total)
-                dates.append(g.date)
-            
-        #print( "gig_counts: %s" % ",".join( str(x) for x in gig_counts ) )
-        fig, ax = plt.subplots()
-
-        col_boxbg = '#153E7E'
-        line1 = plt.plot(dates,totals,color=col_boxbg) #,linewidth=2.0)
-        plt.xticks(years,[xx.strftime("%y") for xx in years])
-        plt.legend((line1[0],), ('Cumulative event count',), 'upper left')
-
-        ax.set_axisbelow(True)
-        ax.fill_between(dates, 0, totals, color=col_boxbg)
-
-        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-        plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
-                  datetime.strptime(str(years[-1].year+1),"%Y")])
-
-        if show:
-            plt.show(block=False)
-            plt.show()
-        else:
-            fig.savefig('html/img/plot_total_progress.png', bbox_inches='tight')
-            return 'plot_total_progress.png'
-    def plot_song_breakdown(self,artist,events,unique_songs,plot_fname):
-        import matplotlib.pyplot as plt
-
-        event_idx = list(range(1,len(events)+1))
-        new_songs = [0 for event in events]
-        
-        for song in unique_songs:
-            index = 0
-            for event in events:
-                if event in song['events']:
-                    new_songs[index] += 1
-                    break
-                index += 1
-
-        for i in range(1,len(events)):
-            new_songs[i] += new_songs[i-1]
-
-        #print(event_idx)
-        #print(new_songs)
-
-        fig, ax = plt.subplots()
-        ax.set_axisbelow(True)
-
-        line1 = plt.plot(event_idx,new_songs,marker='.')
-        #plt.legend((line1[0],), ('%s: unique song growth' % artist,), 'upper left')
-        plt.legend((line1[0],), ('Unique song count',), 'upper left')
-        #plt.xticks(event_idx)
-        plt.grid(b=True, which='both')
-        plt.xlim( 0, len(events)+1 )
-        #plt.ylim( 0, new_songs[-1] +1 )
-
-        #plt.show()
-        #print(plot_fname)
-        fig.savefig( plot_fname, bbox_inches='tight')
-        plt.close()
 
 class g_gig():
     def __init__(self, ident, date, venue):
