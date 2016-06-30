@@ -8,10 +8,10 @@ class g_html():
         self.head = head
 
         # optional extras:
-        self.do_covers = False          # mark covers
+        self.do_covers = True           # mark covers
         self.do_playlists = playlists   # add playlist links and index
         self.do_solo_sets = False       # mark solo sets
-        self.do_songcount = True      # count song occurrences (SLOW)
+        self.do_songcount = True        # count song occurrences (SLOW)
         self.do_graphs    = True
 
         # do the work:
@@ -64,11 +64,7 @@ class g_html():
             g_next = None
         return g_next
     def footnote_symbol(self,n):
-        #return '<sup>' + str(n) + '</sup>'
-        #return '[' + str(n) + ']'
-        #symbols = [ '^', '*', '#', '~', '@', '?', '?', '?', '?', '?']
-        symbols = [ '&deg', '&sup1;', '&sup2;', '&sup3;', '*', '&dagger;' ]
-        return symbols[ n % len(symbols) ]
+        return '<sup>' + str(n) + '</sup>'
     def make_flag_note(self, ftype, force_title = None, force_symbol = None ):
         if ftype == 'solo':
             return '<div class=flag title="Solo performance">&sect;</div>'
@@ -82,6 +78,9 @@ class g_html():
             #return '<div class=flag title="First time I\'ve seen it!">!</div>'
         elif ftype == 'guest':
             return '<div class=flag title="' + force_title + '">' + force_symbol + '</div>'
+        elif ftype == 'custom':
+            force_title = force_title[0].upper() + force_title[1:].lower()
+            return '<div class=flag title="' + force_title + '">*</div>'
         else:
             return ''
     def gig_setlist_string(self,gig,linkback = True, liszt = None, suffix = None ):
@@ -131,9 +130,14 @@ class g_html():
             cf_fname = gig.link + '_c' + self.id_of_city(vsplits[0]) + '.html'
             vg_fname = gig.link + '_v' + self.id_of_venue(gig.venue) + '.html'
             yg_fname = gig.link + '.html'
-        clink = '<a href=' + cf_fname + '>' + vsplits[0] + '</a>'
-        vlink = '<a href=' + vg_fname + '>' + " ".join(vsplits[1:]) + '</a>'
-        ylink = '<a href=' + yg_fname + '>' + gig.date.strftime("%Y") + '</a>' 
+
+        ccount = self.gig_data.gig_city_times(gig)
+        vcount = self.gig_data.gig_venue_times(gig)
+        ycount = self.gig_data.gig_year_times(gig)
+
+        clink = '<a href=' + cf_fname + ' title="Citycount: ' + str(ccount) + '">' + vsplits[0] + '</a>'
+        vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + str(vcount) + '">' + " ".join(vsplits[1:]) + '</a>'
+        ylink = '<a href=' + yg_fname + ' title="Yearcount: ' + str(ycount) + '">' + gig.date.strftime("%Y") + '</a>' 
         setlist_string = '<div class=sl_title>\n' + clink + ' ' + vlink + '<br>' + \
                     link_prev + link_next + ' ' + \
                     ordinal(day) + gig.date.strftime(" %B, ") + ylink + '</div>' + '\n'
@@ -160,7 +164,8 @@ class g_html():
             if linkback:
                 ag_fname = gig.link + '_a' + self.id_of_artist(g.artist) + '.html'
 
-            alink = '<a href=' + ag_fname + '>' + g.artist + '</a>'
+            acount = self.gig_data.gig_artist_times(gig,g.artist)
+            alink = '<a href=' + ag_fname + ' title="Artistcount: ' + str(acount) + '">' + g.artist + '</a>'
 
             if g.solo and self.do_solo_sets:
                alink += ' ' + self.make_flag_note('solo')
@@ -185,8 +190,9 @@ class g_html():
             if g.band:
                 band_links = []
                 for b in g.band:
+                    acount = self.gig_data.gig_artist_times(gig,b)
                     bg_fname = gig.link + '_a' + self.id_of_artist(b) + '.html'
-                    blink = '<a href=' + bg_fname + '>' + b + '</a>'
+                    blink = '<a href=' + bg_fname + ' title="' + str(acount) + '">' + b + '</a>'
                     band_links.append(blink)
                 band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + ']'
             setlist_string += band_string
@@ -216,16 +222,7 @@ class g_html():
 
                 for s in g.songs:
                     if self.do_songcount:
-                        # calculate how many times I have seen this artist perform this song:
-                        n_times = 0
-                        for usong in art_songs:
-                            if s.title == usong['title']:
-                                for e in usong['events']:
-                                    if e.date == gig.date:
-                                        n_times += 1
-                                        break
-                                    else:
-                                        n_times += 1
+                        n_times = self.gig_data.gig_song_times(gig,s,art_songs)
 
                     sn = s.title if s.title else '???'
                     if sn == '???':
@@ -250,13 +247,18 @@ class g_html():
                     if s.first_time:
                         setlist_string += self.make_flag_note('first_time')
                     if s.cover and self.do_covers:
+                        symbol = '&curren;'
+                        symbol = '*'
                         setlist_string += '<div class=flag title="' + s.cover + \
-                                          ' cover">&curren;</div>'
+                                          ' cover">' + symbol + '</div>'
                     for guest in s.guests:
                         if guest in gig.get_artists():
                             a_indx = gig.get_artists().index(guest)
                             setlist_string += ' ' + self.make_flag_note( 'guest', '+ ' + guest, 
                                                                    self.footnote_symbol(a_indx) )
+                    if s.custom:
+                        custom_text = ' / '.join(s.custom)
+                        setlist_string += self.make_flag_note( 'custom', custom_text )
                     if s.youtube:
                         setlist_string += self.make_youtube_link(s.youtube)
 
@@ -462,6 +464,15 @@ class g_html():
             '    font-family: "courier new", courier, monospace;',
             '    font-size: 14px;',
             '    }',
+            'sup, sub {',
+            '  vertical-align: baseline;',
+            '  position: relative;',
+            '  font-size: 8px;',
+            '  top: -0.4em;',
+            '}',
+            'sub {',
+            '  top: 0.4em;',
+            '}',
         ]
         with open( fname_html, 'w') as the_file:
             for l in lines:
@@ -900,9 +911,9 @@ class g_gigs():
             title = None
             if len(splits) > 1:
                 # set flags:
-                if 'unordered' in splits[1]:
+                if '[unordered]' in splits[1]:
                     this_set.ordered = False
-                if 'solo' in splits[1]:
+                if '[solo]' in splits[1]:
                     this_set.solo = True
                 # Comment out these two lines to suppress the band member processing
                 if re.match( '.*{.*', splits[1] ):
@@ -920,6 +931,17 @@ class g_gigs():
                 # song flags:
                 if '{' in splits[1]:
                     song.guests += re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                if '[' in splits[1]:
+                    #song.custom = re.findall( '\[([0-9A-Za-z- ]+)\]', splits[1])
+                    for x in re.findall( '\[([0-9A-Za-z- ]+)\]', splits[1]):
+                        if x == 'solo':
+                            song.solo = True
+                        elif x == 'debut':
+                            song.debut = True
+                        elif x == 'improv':
+                            song.improv = True
+                        else:
+                            song.custom.append(x)
                 if '<' in splits[1]:
                     m = re.match( '.*<(.*)>.*', splits[1] )
                     if m:
@@ -928,12 +950,12 @@ class g_gigs():
                     m = re.match( '.*(".*").*', splits[1])
                     if m:
                         song.quote = m.group(1)
-                if 'solo' in splits[1]:
-                    song.solo = True
-                if 'debut' in splits[1]:
-                    song.debut = True
-                if 'improv' in splits[1]:
-                    song.improv = True
+                # if '[solo]' in splits[1]:
+                #     song.solo = True
+                # if '[debut]' in splits[1]:
+                #     song.debut = True
+                # if '[improv]' in splits[1]:
+                #     song.improv = True
                 if '|' in splits[1]:
                     m = re.match( '.*\|(\w+)\|.*', splits[1] )
                     if m:
@@ -1019,6 +1041,7 @@ class g_gigs():
             if mblank:
                 last_blank = True
             elif mopen:
+                last_blank = False
                 level += 1
                 m1 = re.match('^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
                 date_regex = "%d-%b-%Y"
@@ -1050,8 +1073,6 @@ class g_gigs():
             elif level == 2:
                 self.process_song_line(line,this_set,last_blank)
                 last_blank = False
-            else:
-                pass
     def build_gig_data(self):
         for f in glob.glob(self.root + '/*.gigs'):
             self.get_data_from_file(f)
@@ -1453,6 +1474,56 @@ class g_gigs():
         self.print_fuzzy_matches(artists, 'Artists')
         self.print_fuzzy_matches(venues, 'Venues')
 
+    # Gig counts
+    def gig_artist_times(self,gig,artist):
+        # gig is the nth event of artist
+        artist_count = 0
+        for agig in self.all_gigs_of_artist(artist):
+            artist_count += 1
+            if gig.index == agig.index:
+                return artist_count
+        return 0
+    def gig_venue_times(self,gig):
+        # gig is the nth event at venue
+        venue_count = 0
+        for agig in self.all_gigs_of_venue(gig.venue):
+            venue_count += 1
+            if gig.index == agig.index:
+                return venue_count
+        return 0
+    def gig_city_times(self,gig):
+        # gig is the nth event in city
+        cities = self.unique_cities()
+        city_count = 0
+        for (this_city,gigs_past,gigs_future) in cities:
+            if this_city == gig.city:
+                for g in gigs_past:
+                    city_count += 1
+                    if g.index == gig.index:
+                        return city_count
+        return 0
+    def gig_year_times(self,gig):
+        # gig is the nth event of the year
+        year_count = 0
+        for (y,c) in self.get_unique_years():
+            if y == gig.date.year:
+                for g in c:
+                    year_count += 1
+                    if g.index == gig.index:
+                        return year_count
+        return 0
+    def gig_song_times(self,gig,song,artist_songs):
+        # gig is the nth time I have seen the song
+        # artist_songs is cached by the caller for performance
+        n_times = 0
+        for usong in artist_songs:
+            if song.title == usong['title']:
+                for e in usong['events']:
+                    n_times += 1
+                    if e.index == gig.index:
+                        return n_times
+        return 0
+
     # Plotting
     def plot_top_venue_growth(self,show=False):
         import matplotlib.pyplot as plt
@@ -1645,6 +1716,8 @@ class g_gigs():
                     total_counts[-1] += 1
                     if g.date.timetuple().tm_yday <= yday:
                         relative_counts[-1] += 1
+            if y == datetime.today().year:
+                break
 
         col_boxbg = '#153E7E'
         col_border = '#C9BE62'
@@ -1995,6 +2068,7 @@ class g_song():
         self.quote       = None
         self.cover       = None
         self.youtube     = None
+        self.custom      = []
 
 class g_query():
     def __init__(self,gig_data,args):
