@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 import sys, os, glob, re
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta, date
 
 class g_plot():
     def __init__(self, gig_data):
         self.gig_data = gig_data
         self.n_graphs = 0
+        self.colour1  = '#153E7E' # blue
+        self.colour2  = '#C9BE62' # yellow
+        self.colour3  = '#CCCCCC' # grey
+        self.year     = datetime.today().year
     def top_venue_growth(self,dest=None):
         self.n_graphs += 1
 
@@ -61,10 +65,6 @@ class g_plot():
         all_artists = []
         n_new_headliners = []
 
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-        col_grey   = '#CCCCCC'
-
         max_y_axis = 90
 
         for (y,c) in y_gigs:
@@ -94,14 +94,14 @@ class g_plot():
                     set_index += 1
         
         ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_artists,        align='center', color=col_boxbg )
-        bar2 = ax.bar( ind, n_new_artists,    align='center', color=col_border )
-        bar3 = ax.bar( ind, n_new_headliners, align='center', color=col_grey )
+        bar1 = ax.bar( ind, n_artists,        align='center', color=self.colour1 )
+        bar2 = ax.bar( ind, n_new_artists,    align='center', color=self.colour2 )
+        bar3 = ax.bar( ind, n_new_headliners, align='center', color=self.colour3 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         if not end_date:
             plt.legend((bar1[0], bar2[0], bar3[0]), \
-                       ('Total artists', 'New artists', 'New headliners'), \
+                       ('Total artists', '%d artists' % self.year, '%d headliners' % self.year), \
                        'upper left')
 
         ax.set_axisbelow(True)
@@ -122,28 +122,39 @@ class g_plot():
         months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
         month_totals = [0] * 12
         curr_totals = [0] * 12
+        year_months = []
 
-        year = datetime.today().year
+        for (y,c) in self.gig_data.get_unique_years():
+            y_totals = [0] * 12
+            for gig in c:
+                i = int(gig.date.strftime("%m"))
+                if gig.date.year == self.year:
+                    curr_totals[i-1] += 1
+                month_totals[i-1] += 1
+                y_totals[i-1] += 1
+            year_months.append(y_totals)
 
-        for gig in self.get_past_gigs():
-            i = int(gig.date.strftime("%m"))
-            if gig.date.year != year:
-                curr_totals[i-1] += 1
-            month_totals[i-1] += 1
-
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
+        month_maxima = []
+        for x in range(0,12):
+            month_maxima.append( max( [ y[x] for y in year_months ] ) )
 
         fig, ax = plt.subplots()
         ind = range(1,len(months)+1)
 
-        bar1 = ax.bar( ind, month_totals, align='center', color=col_border )
-        bar2 = ax.bar( ind, curr_totals, align='center', color=col_boxbg )
-        #plt.legend((bar1[0],bar2[0]), ('This year','Total'), 'upper left')
+        bar1 = ax.bar( ind, month_totals,  align='center', color=self.colour1 )
+        #bar2 = ax.bar( ind, month_maxima,  align='center', color=self.colour3 )
+        bar3 = ax.bar( ind, curr_totals,   align='center', color=self.colour2 )
+
         plt.xticks(ind,months)
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         plt.xlim([0,len(ind)+1])
+        # plt.legend( (bar1[0],bar3[0],bar2[0]), \
+        #             ('Events in month', '%d events' % self.year, 'Month max'), \
+        #             'upper left' )
+        plt.legend( (bar1[0],bar3[0]), \
+                    ('Events in month', '%d events' % self.year), \
+                    'upper left' )
 
         #plt.title("Month histogram")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
@@ -158,18 +169,21 @@ class g_plot():
 
         days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
         day_totals = [0] * 7
-        for gig in self.get_past_gigs():
+        curr_totals = [0] * 7
+        for gig in self.gig_data.get_past_gigs():
             i = int(gig.date.strftime("%w"))
+            if gig.date.year == self.year:
+                curr_totals[i-1] += 1
             day_totals[i-1] += 1
 
         fig, ax = plt.subplots()
         ind = range(1,len(day_totals)+1)
-        bar1 = ax.bar( ind, day_totals, align='center' )
+        bar1 = ax.bar( ind, day_totals, align='center', color=self.colour1 )
+        bar2 = ax.bar( ind, curr_totals, align='center', color=self.colour2 )
         plt.xticks(ind,days)
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-
-        plt.title("Gigs per day")
+        plt.legend((bar1[0], bar2[0]), ('Events in day','%d events' % self.year), 'upper left')
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
@@ -207,23 +221,24 @@ class g_plot():
                     total_counts[-1] += 1
                     if g.date.timetuple().tm_yday <= yday:
                         relative_counts[-1] += 1
-            if y == datetime.today().year:
+            if y == self.year:
                 break
-
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-        col_grey   = '#CCCCCC'
 
         ind = range(1,len(years)+1)
         if not end_date:
-            bar0 = ax.bar( ind, future_counts,   align='center', color=col_grey )
-        bar1 = ax.bar( ind, total_counts,    align='center', color=col_boxbg )
-        bar2 = ax.bar( ind, relative_counts, align='center', color=col_border )
+            bar0 = ax.bar( ind, future_counts,   align='center', color=self.colour3 )
+        bar1 = ax.bar( ind, total_counts,    align='center', color=self.colour1 )
+        bar2 = ax.bar( ind, relative_counts, align='center', color=self.colour2 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
+
+        today = datetime.today()
+        ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
+        datestr = str(ordinal(today.day)) + today.strftime(" %b")
+        plt.legend((bar1[0],), ('Events up to %s' % datestr,), 'upper left')
 
         if not end_date:
             plt.legend((bar1[0], bar2[0], bar0[0]), ('Total events', \
-                'Events up to %s' % datetime.today().strftime("%d %b"), \
+                'Events up to %s' % datestr, \
                 'Projected total' ), 'upper left' )
 
         ax.set_axisbelow(True)
@@ -281,21 +296,17 @@ class g_plot():
                     all_venues.append(g.venue)
                     n_new_venues[-1] += 1
 
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-        col_grey   = '#CCCCCC'
-        
         ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_venues,     align='center', color=col_boxbg )
-        bar2 = ax.bar( ind, n_new_venues, align='center', color=col_border )
-        bar3 = ax.bar( ind, n_new_cities, align='center', color=col_grey )
+        bar1 = ax.bar( ind, n_venues,     align='center', color=self.colour1 )
+        bar2 = ax.bar( ind, n_new_venues, align='center', color=self.colour2 )
+        bar3 = ax.bar( ind, n_new_cities, align='center', color=self.colour3 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
         if end_date:
             plt.ylim( [ 0, max_y_axis ] )
 
         if not end_date:
             plt.legend((bar1[0], bar2[0], bar3[0]), \
-                       ('Total venues', 'New venues', 'New cities'), \
+                       ('Total venues', '%d venues' % self.year, '%d cities' % self.year), \
                        'upper left')
 
         ax.set_axisbelow(True)
@@ -320,10 +331,8 @@ class g_plot():
         for (a,c) in a_gigs:
             freq[ len(c) - 1 ] += 1
 
-        col_boxbg = '#153E7E'
-
         ind = range(1,len(freq)+1)
-        bar1 = ax.bar( ind, freq, align='center', color=col_boxbg )
+        bar1 = ax.bar( ind, freq, align='center', color=self.colour1 )
         plt.xticks(ind, [ str(i+1) if freq[i] > 0 else "" for i in range(0,len(freq)) ] )
         plt.legend((bar1[0],), ('Artist frequency distribution',), 'upper right')
         ax.set_axisbelow(True)
@@ -341,7 +350,6 @@ class g_plot():
     def relative_progress(self,dest=None):
         self.n_graphs += 1
 
-        year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday
 
         gig_counts = []
@@ -361,13 +369,14 @@ class g_plot():
 
         fig, ax = plt.subplots()
 
-        col_boxbg = '#153E7E'
-
         ind = range(1,len(gig_counts)+1)
-        bar1 = ax.bar( ind, gig_counts, align='center', color=col_boxbg )
+        bar1 = ax.bar( ind, gig_counts, align='center', color=self.colour1 )
         plt.xticks(ind, [str(xx)[2:4] for xx in gig_years] )
 
-        plt.legend((bar1[0],), ('Events up to %s' % datetime.today().strftime("%d %b"),), 'upper left')
+        today = dateetime.today()
+        ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
+        datestr = str(ordinal(today.day)) + today.strftime(" %b")
+        plt.legend((bar1[0],), ('Events up to %s' % datestr,), 'upper left')
 
         #plt.title("Relative Progress")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
@@ -406,15 +415,14 @@ class g_plot():
         #print( "gig_counts: %s" % ",".join( str(x) for x in gig_counts ) )
         fig, ax = plt.subplots()
 
-        col_boxbg = '#153E7E'
-        line1 = plt.plot(dates,totals,color=col_boxbg) #,linewidth=2.0)
+        line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
         plt.xticks(years,[xx.strftime("%y") for xx in years])
 
         if not end_date:
             plt.legend((line1[0],), ('Cumulative event count',), 'upper left')
 
         ax.set_axisbelow(True)
-        ax.fill_between(dates, 0, totals, color=col_boxbg)
+        ax.fill_between(dates, 0, totals, color=self.colour1)
 
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
@@ -448,6 +456,7 @@ class g_plot():
 
         fig, ax = plt.subplots()
         ax.set_axisbelow(True)
+        ax.margins(0.05)
 
         line1 = plt.plot(event_idx,new_songs,marker='.')
         #plt.legend((line1[0],), ('%s: unique song growth' % artist,), 'upper left')
@@ -476,14 +485,12 @@ class g_plot():
             index.append(x)
             f_dist.append( counts.count(x) )
 
-        col_boxbg = '#153E7E'
-        bar1 = ax.bar( index, f_dist, align='center', color=col_boxbg )
+        bar1 = ax.bar( index, f_dist, align='center', color=self.colour1 )
         plt.xticks(index)
 
         if len(index) > 10:
             for label in ax.xaxis.get_ticklabels()[::2]:
                 label.set_visible(False)
-
 
         plt.legend( (bar1[0],), ('Freq dist',), 'upper right' )
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -494,6 +501,92 @@ class g_plot():
             plt.close()
         else:
             plt.show(block=False)
+    def activity(self,dest=None):
+        dates = [ x.date for x in self.gig_data.get_past_gigs() ]
+        dates.sort()
+
+        which = 'weeks'
+        which = 'months'
+        which = 'days'
+        which = 'years'
+
+        divisions = []
+        gigcounts = []
+
+        if which == 'days':
+            cur_day = dates[0]
+            last_day = dates[-1]
+
+            divisions = []
+            while cur_day <= last_day:
+                divisions.append(cur_day)
+                cur_day += timedelta(days=1)
+
+            gigcounts = [0] * len(divisions)
+            for d in dates:
+                pos = divisions.index(d)
+                gigcounts[pos] += 1
+        elif which == 'weeks':
+            weekstart = lambda d: d - timedelta(days=d.weekday())
+
+            one_week = timedelta(days=7)
+            cur_week = weekstart(dates[0])
+            last_week  = weekstart(dates[-1])
+
+            divisions = []
+            while cur_week <= last_week:
+                divisions.append(cur_week)
+                cur_week += one_week
+
+            gigcounts = [0] * len(divisions)
+            for d in dates:
+                pos = divisions.index(weekstart(d))
+                gigcounts[pos] += 1
+        elif which == 'months':
+            monthstart = lambda d: date( year=d.year, month=d.month, day=1 )
+            addmonth = lambda d: date( year = int(d.year + d.month / 12 ),
+                                       month = d.month % 12 + 1, day = 1 )
+
+            cur_month = monthstart(dates[0])
+            last_month = monthstart(dates[-1])
+
+            divisions = []
+            while cur_month <= last_month:
+                divisions.append(cur_month)
+                cur_month = addmonth(cur_month)
+            
+            gigcounts = [0] * len(divisions)
+            for d in dates:
+                pos = divisions.index(monthstart(d))
+                gigcounts[pos] += 1
+        elif which == 'years':
+            cur_year = dates[0].year
+            last_year = dates[-1].year
+
+            divisions = []
+            while cur_year <= last_year:
+                divisions.append(cur_year)
+                cur_year += 1
+
+            gigcounts = [0] * len(divisions)
+            for d in dates:
+                pos = divisions.index(d.year)
+                gigcounts[pos] += 1
+            
+        fig, ax = plt.subplots()
+        #bar1 = ax.bar(divisions, gigcounts, align='center', color=self.colour1 )
+        line1 = plt.plot(divisions, gigcounts, color=self.colour1)
+        ax.fill_between(divisions, 0, gigcounts, color=self.colour1)
+
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both')
+
+        if dest:
+            fig.savefig(dest, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
 
 class g_html():
     def __init__(self, gig_data, head, playlists = False):
@@ -1107,9 +1200,9 @@ class g_html():
                 else:
                     breakdown += '\n<br> \n' + '='*50
 
-                breakdown += '\n<pre>'
-                breakdown += 'Breakdown of %d songs across %d events (%.2f songs/event):<br> <br>' \
+                breakdown += '<br><br>Breakdown of %d songs across %d events (%.2f songs/event):<br>' \
                                 % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
+                breakdown += '\n<pre>'
 
                 for song in unique_songs:
                     event_string = ""
@@ -1246,22 +1339,20 @@ class g_html():
 
         self.plotter.year_growth('html/img/plot_year_growth.png')
         self.plotter.total_progress('html/img/plot_total_progress.png')
+        self.plotter.month_growth('html/img/plot_month_growth.png')
         self.plotter.artist_growth('html/img/plot_artist_growth.png')
         self.plotter.venue_growth('html/img/plot_venue_growth.png')
         #self.plotter.relative_progress('html/img/plot_relative_progress.png')
-        #self.plotter.month_growth('html/img/plot_month_growth.png')
-        #self.plotter.days_growth('html/img/plot_days_growth.png')
-        #self.plotter.top_venue_growth('html/img/plot_venue_growth.png')
+        self.plotter.days_growth('html/img/plot_days_growth.png')
         #self.plotter.freq_dist('html/img/plot_freq_dist.png')
 
         graphs.append('img/plot_year_growth.png')
         graphs.append('img/plot_total_progress.png')
+        graphs.append('img/plot_month_growth.png')
         graphs.append('img/plot_artist_growth.png')
         graphs.append('img/plot_venue_growth.png')
         #graphs.append('img/plot_relative_progress.png')
-        #graphs.append('img/plot_month_growth.png')
-        #graphs.append('img/plot_days_growth.png')
-        #graphs.append('img/plot_venue_growth.png')
+        graphs.append('img/plot_days_growth.png')
         #graphs.append('img/plot_freq_dist.png')
 
         string = '<br> <br> <center>\n'
@@ -1270,8 +1361,8 @@ class g_html():
         for graph in graphs:
             count += 1
             string += '<img src="' + graph + '" style="width:30%;"><nbsp>'
-            if count % 2 == 0:
-                string += '<br>'
+            #if count % 2 == 0:
+                #string += '<br>'
             string += '\n'
 
         string += '</center>\n'
@@ -1835,17 +1926,19 @@ class g_gigs():
         for i in range(1,len(gigs)):
             gap = gigs[i].date.toordinal() - gigs[i-1].date.toordinal() 
             gaps.append( [ gap, gigs[i-1], gigs[i] ] )
+        cur_gap = [ datetime.today().toordinal() - gigs[-1].date.toordinal(), 
+                    gigs[-1], None ]
         print( "\n  Current gap is %d days (since %s)." % \
-                (datetime.today().toordinal() - gigs[-1].date.toordinal(), 
-                gigs[-1].date.strftime("%d-%b-%Y")) )
+                ( cur_gap[0], cur_gap[1].date.strftime("%d-%b-%Y")) )
+        gaps.append(cur_gap)
         ngaps = 20
         gaps.sort(key=lambda x: -x[0])
         gaps = gaps[:ngaps]
         print( "\n  Longest gaps since 2010:\n" )
         for gap in gaps:
-            print( "   %s days (%s - %s)" % ( str(gap[0]).rjust(4), 
-                gap[1].date.strftime("%d-%b-%Y"), 
-                gap[2].date.strftime("%d-%b-%Y")) )
+            date1 = gap[1].date.strftime("%d-%b-%Y") if gap[1] else '           '
+            date2 = gap[2].date.strftime("%d-%b-%Y") if gap[2] else '           '
+            print( "   %s days (%s -> %s)" % ( str(gap[0]).rjust(4), date1, date2 ) )
     def longest_run(self):
         runs = []
         gigs = self.get_past_gigs()
@@ -2319,13 +2412,17 @@ if __name__ == "__main__":
     gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
     if arg1 == "-graphs":
-        gig_data.plot_year_growth(True)
-        gig_data.plot_artist_growth(True)
-        gig_data.plot_venue_growth(True)
-        #gig_data.plot_month_growth(True)
-        ##gig_data.plot_days_growth(True)
-        #gig_data.plot_top_venue_growth(True)
-        #gig_data.plot_freq_dist(True)
+        plotter = g_plot(gig_data)
+        plotter.activity()
+        sys.exit(0)
+        plotter.year_growth()
+        plotter.artist_growth()
+        plotter.venue_growth()
+        plotter.month_growth()
+        plotter.total_progress()
+        #plotter.relative_progress()
+        plotter.days_growth()
+        #plotter.freq_dist()
         sys.exit(0)
 
     if arg1 == "-progress":
@@ -2376,4 +2473,6 @@ if __name__ == "__main__":
         sys.exit(0)
 
     print(gig_data)
+else:
+    gig_data = g_gigs('/home/jpf/Documents/gigproc/')
 
