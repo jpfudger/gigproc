@@ -1,0 +1,75 @@
+#!/usr/bin/python3
+import argparse
+from gigproc import gigproc
+
+def proc_options():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument( '-graphs',    action='store_true' )
+    parser.add_argument( '-progress',  action='store_true' )
+    parser.add_argument( '-test',      action='store_true' )
+    parser.add_argument( '-play',      action='store_true' )
+    parser.add_argument( '-html',      action='store_true' )
+    parser.add_argument( '-runs',      action='store_true' )
+    parser.add_argument( '-growth',    action='store_true' )
+    parser.add_argument( '-fuzzy',     action='store_true' )
+    parser.add_argument( '-animate',   action='store_true' )
+    parser.add_argument( '-covers',    action='store_true' )
+    parser.add_argument( '-stats',     action='store_true' )
+    parser.add_argument( '-playlists', action='store_true' )
+    parser.add_argument( '-a', dest='artist', type=str, default=None )
+    parser.add_argument( '-v', dest='venue',  type=str, default=None )
+    parser.add_argument( '-s', dest='song',   type=str, default=None )
+    parser.add_argument( '-d', dest='date',   type=str, default=None )
+    parser.add_argument( '-i', dest='index',  type=int, default=None )
+
+    options = parser.parse_args()
+    return options
+
+gig_data = gigproc.GIG_gigs('/home/jpf/Documents/gigproc/gigs')
+
+if __name__ == "__main__":
+    options = proc_options()
+
+    if options.graphs:
+        plotter = gigproc.GIG_plot(gig_data)
+        #plotter.activity()
+        #plotter.year_growth()
+        #plotter.artist_growth()
+        #plotter.venue_growth()
+        #plotter.month_growth()
+        #plotter.total_progress()
+        #plotter.relative_progress()
+        #plotter.days_growth()
+        #plotter.freq_dist()
+        plotter.top_venue_growth(8)
+        plotter.top_venues(8)
+    elif options.progress:
+        gig_data.relative_progress()
+    elif options.test:
+        gig_data.songs_performed_by_multiple_artists()
+    elif options.play:
+        pls = gig_data.playlist_gigs[:]
+        print( "Recorded gigs: " + str(len(pls)) )
+        for p in pls:
+            print( p.date.strftime("%d-%b-%Y") + "  " + ", ".join(p.get_artists()) )
+    elif options.html:
+        html_generator = gigproc.GIG_html(gig_data,'./html/', options.playlists)
+    elif options.runs:
+        gig_data.longest_gap()
+        gig_data.longest_run()
+    elif options.growth:
+        gig_data.growth()
+    elif options.fuzzy:
+        gig_data.fuzzy_matcher()
+    elif options.animate:
+        gig_data.animate_growth()
+    elif options.covers:
+        gig_data.get_covers()
+    else:
+        query = gigproc.GIG_query(gig_data,options)
+        if query.empty:
+            print(gig_data)
+        else:
+            query.print_results()
+
