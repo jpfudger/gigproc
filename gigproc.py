@@ -1218,7 +1218,8 @@ class GIG_html():
                     name_str = '<a '
                     if match_id == gig.index:
                         name_str += 'class=highlight '
-                    acount = self.gig_data.gig_artist_times(gig,gig.sets[0].artist)
+                    artist = force_artist if force_artist else gig.sets[0].artist
+                    acount = self.gig_data.gig_artist_times(gig, artist)
                     title = 'title="Artistcount: ' + acount + '"' 
                     name_str += 'href=' + link + '.html ' + title + '>' + name_str2 + '</a>'
 
@@ -2536,3 +2537,4 @@ class GIG_query():
                 gig.print_short()
             print( '\n' )
         
+
