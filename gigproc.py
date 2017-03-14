@@ -40,7 +40,16 @@ class GIG_plot():
 
         ax.legend(vnames,'upper left')
         ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
-        ax.set_ylim(-1,len(venues[0][1])+1)
+        ax.set_ylim(0,len(venues[0][1])+1)
+
+        years = [ x.year for x in all_dates ] 
+        years = list(set(years))
+        years.sort()
+        years = list( range( years[0], years[-1]+1 ) )
+        labels = [ str(x)[2:4] for x in years ]
+        years = [ date(year=y, month=1, day=1) for y in years ]
+        plt.xticks( years, labels )
+
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
@@ -131,7 +140,7 @@ class GIG_plot():
                        ('Total artists', 'New artists', 'New headliners'), \
                        'upper left')
 
-        ax.set_axisbelow(True)
+        #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         if end_date:
             plt.ylim( [ 0, max_y_axis ] )
@@ -175,7 +184,7 @@ class GIG_plot():
         bar3 = ax.bar( ind, curr_totals,   align='center', color=self.colour2 )
 
         plt.xticks(ind,months)
-        ax.set_axisbelow(True)
+        #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         plt.xlim([0,len(ind)+1])
         # plt.legend( (bar1[0],bar3[0],bar2[0]), \
@@ -270,7 +279,7 @@ class GIG_plot():
                 'Events up to %s' % datestr, \
                 'Projected total' ), 'upper left' )
 
-        ax.set_axisbelow(True)
+        #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         if end_date:
             plt.ylim( [ 0, max_y_axis ] )
@@ -340,7 +349,7 @@ class GIG_plot():
                        ('Total venues', 'New venues', 'New cities'), \
                        'upper left')
 
-        ax.set_axisbelow(True)
+        #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
         plt.xlim( [0, len(years)+1] )
@@ -455,14 +464,14 @@ class GIG_plot():
         if not end_date:
             plt.legend((line1[0],), ('Cumulative event count',), 'upper left')
 
-        ax.set_axisbelow(True)
+        #ax.set_axisbelow(True)
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
                   datetime.strptime(str(years[-1].year+1),"%Y")])
-        if end_date:
-            plt.ylim( [ 0, max_y_axis ] )
+
+        plt.ylim( [ 0, 360 ] )
 
         if dest:
             fig.savefig(dest, bbox_inches='tight')
@@ -515,7 +524,7 @@ class GIG_plot():
 
         plt.xticks(months, [x.strftime(" %b") for x in months], ha='left')
         if running_total <= 10:
-            plt.yticks(range(1,11))
+            plt.yticks(range(0,50,5))
 
         #ax.set_axisbelow(True)
         ax.fill_between(dates, 0, totals, color=self.colour1)
@@ -2096,12 +2105,14 @@ class GIG_gigs():
     def relative_progress(self):
         year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday
-        yweek = yday % 7 if yday > 7 else 0
+        yweek = 7 % yday
         current_count = 0
         previous_counts = []
 
         gigs_by_year = self.get_unique_years()
         gigs_by_year.sort()
+
+        # need to add hour > 20 logic to this calculation:
 
         for (y,c) in gigs_by_year:
             if y == year:
