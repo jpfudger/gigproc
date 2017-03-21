@@ -1963,7 +1963,7 @@ class GIG_gigs():
         vengigs = []
         for gig in self.gigs:
             if not gig.future or inc_future:
-                if venue in gig.venue:
+                if venue == gig.venue:
                     vengigs.append(gig)
         
         vengigs.sort(key=lambda x: x.index)
