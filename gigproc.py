@@ -1891,6 +1891,7 @@ class GIG_gigs():
             for s in gig.sets:
                 # look for song in artist's main set:
 
+                guest = False
                 main_set = False
                 if re.search(artist, s.artist, re.IGNORECASE):
                     main_set = True
@@ -1898,12 +1899,15 @@ class GIG_gigs():
                     for b in s.band:
                         if re.search(artist, b, re.IGNORECASE):
                             main_set = True
+                            guest = True
                             break
 
                 if main_set:
                     for song in s.songs:
                         got = False
                         if not song.title: # Untitled
+                            continue
+                        if guest and song.solo: # solo performance cannot contain guest
                             continue
                         for got_song in raw_songs:
                             if got_song['title'] == song.title:
