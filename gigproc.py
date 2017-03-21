@@ -703,6 +703,7 @@ class GIG_html():
         self.do_solo_sets = False       # mark solo sets
         self.do_songcount = True        # count song occurrences (SLOW)
         self.do_graphs    = True
+        self.do_covers_list = True
 
         # do the work:
         self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(True) ]
@@ -939,7 +940,7 @@ class GIG_html():
                         setlist_string += self.make_flag_note('first_time')
                     if s.cover and self.do_covers:
                         symbol = '&curren;'
-                        symbol = '*'
+                        #symbol = '*'
                         setlist_string += '<div class=flag title="' + s.cover + \
                                           ' cover">' + symbol + '</div>'
                     for guest in s.guests:
@@ -1002,11 +1003,17 @@ class GIG_html():
     def make_stylesheet(self):
         fname_html = self.head + 'style.css'
 
-        col_maintext = 'gray'
-        col_mainbg = 'black'
-        col_boxbg = '#153E7E'
-        col_border = '#C9BE62'
-        col_highlight = '#990000'
+        col_gray   = 'gray'
+        col_black  = 'black'
+        col_blue   = '#153E7E'
+        col_yellow = '#C9BE62'
+        col_red    = '#990000'
+
+        col_maintext  = col_gray
+        col_mainbg    = col_black
+        col_boxbg     = col_blue
+        col_border    = col_yellow
+        col_highlight = col_red
 
         col_gigbg = col_mainbg
         col_setlbg = col_mainbg
@@ -1142,7 +1149,7 @@ class GIG_html():
             '    }',
             '.flag {',
             '    display: inline;',
-            '    color:' + col_boxbg + ';',
+            '    color:' + col_border + ';',
             '    }',
             '.greyflag {',
             '    display: inline;',
@@ -1501,7 +1508,9 @@ class GIG_html():
         if self.do_playlists:
             extras += [ 'Tapes' ]
         if self.do_graphs:
-            extras += [ 'Stats' ]
+            extras += [ 'Graphs' ]
+        if self.do_covers_list:
+            extras += [ 'Covers' ]
         self.years = extras + [ '' ] + self.years
 
         years_string   = self.make_years_string()
@@ -1547,9 +1556,14 @@ class GIG_html():
             self.make_file( 'tapes',     years_string_b,   bootlegs_string,  '' )
 
         if self.do_graphs:
-            years_string_g = self.make_years_string("Stats")
+            years_string_g = self.make_years_string("Graphs")
             graphs_string = self.make_graphs_index_string()
-            self.make_file( 'stats',     years_string_g,   graphs_string,  '' )
+            self.make_file( 'graphs',     years_string_g,   graphs_string,  '' )
+
+        if self.do_covers_list:
+            years_string_c = self.make_years_string("Covers")
+            covers_string = self.make_covers_string()
+            self.make_file( 'covers',    years_string_c,   covers_string,  '' )
 
         self.make_calendar()
 
@@ -1559,6 +1573,25 @@ class GIG_html():
         link += '&bullet;'
         link += '</a>'
         return link
+    def make_covers_string(self):
+        covers = self.gig_data.get_covers()
+        string = '\n<ol>'
+        for cover in covers:
+            string += '\n<li> %s (%d)' % ( cover['cover_artist'], cover['count'] )
+            string += '\n    <ul>'
+            songs = []
+            for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
+                versions = []
+                for a, g in zip(artists,gigs):
+                    link = '<a href=%s.html>%s</a>' % ( str(g.index), g.date.strftime('%d-%b-%Y') )
+                    versions.append( '[%s %s]' % ( link, a ) )
+                    versions.sort()
+                songs.append( '\n    <li> <b>%s</b> %s' % ( s, ( ', '.join(versions) )) )
+            songs.sort()
+            string += ''.join(songs)
+            string += '\n    </ul>'
+        string += '\n</ol>'
+        return string
 
 class GIG_gigs():
     def __init__(self,root):
@@ -2204,36 +2237,66 @@ class GIG_gigs():
 
         self.print_fuzzy_matches(artists, 'Artists')
         self.print_fuzzy_matches(venues, 'Venues')
-    def get_covers(self):
-        artists = []
-        csongs = []
+    def get_covers(self,verbose=False):
+        covers = []
 
         for g in self.gigs:
             for s in g.sets:
                 for song in s.songs:
                     if song.cover:
-                        event = '(%s, %s)' % (s.artist,g.date.strftime('%d-%b-%Y'))
-                        #print( song.cover.ljust(20) + song.title.ljust(35) + event )
-                        
-                        idx = None
-                        if song.cover in artists:
-                            idx = artists.index(song.cover)
+                        this_dict = None
+                        for cover in covers:
+                            if cover['cover_artist'] == song.cover:
+                                this_dict = cover
+                                break
+                        if this_dict == None:
+                            this_dict = { 'cover_artist': song.cover,
+                                          'count': 0,
+                                          'songs': [],
+                                          'artists': [],
+                                          'gigs': [],
+                                          }
+                            covers.append( this_dict )
+
+                        this_dict['count'] += 1
+
+                        if song.title in this_dict['songs']:
+                            idx = this_dict['songs'].index(song.title)
                         else:
-                            artists.append(song.cover)
-                            csongs.append([])
-                            idx = len(artists) - 1
-                        
-                        csongs[idx].append( song.title.ljust(37) + event)
+                            idx = len(this_dict['songs'])
+                            this_dict['songs'].append(song.title)
+                            this_dict['artists'].append([])
+                            this_dict['gigs'].append([])
 
-        zipped = [ [x[0], x[1]] for x in zip(artists,csongs) ]
-        zipped.sort(key=lambda x: len(x[1]) )
-        zipped.reverse()
+                        this_dict['artists'][idx].append(s.artist)
+                        this_dict['gigs'][idx].append(g)
 
-        for a,s in zipped:
-            print('%s (%d)' % (a,len(s)))
-            s.sort()
-            for song in s:
-                print( '  ' + song )
+        covers.sort(key=lambda x: x['count'])
+        covers.reverse()
+
+        if verbose:
+            for cover in covers:
+                print( '\n===== ' + cover['cover_artist'] + ' (%d)' % cover['count'] ) 
+                for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
+                    versions = []
+                    for a, g in zip(artists,gigs):
+                        link = g.date.strftime('%d-%b-%Y')
+                        versions.append( '[%s %s]' % ( link, a ) )
+                    versions.sort()
+                    print( '      ' + s )
+                    for v in versions:
+                        print( '        ' + v )
+
+        return covers
+    def get_untitled(self):
+        for g in self.gigs:
+            for s in g.sets:
+                for song in s.songs:
+                    if not song.title:
+                        print("=====")
+                        print(g.date.strftime("%Y-%b-%d"))
+                        quote = song.quote if song.quote else ""
+                        print(s.artist.ljust(30) + '"' + quote + '"')
                         
 
     # Gig counts
