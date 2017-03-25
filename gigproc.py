@@ -919,10 +919,9 @@ class GIG_html():
                     sn = s.title if s.title else '???'
                     if sn == '???':
                         if s.quote != None:
-                            sn = '<div title=' + s.quote + '>' + sn + '</div>'
+                            sn = '<div class=greyflag title=' + s.quote + '>' + sn + '</div>'
                     elif self.do_songcount:
                         sn = '<div class=greyflag title="Songcount: ' + song_times + '">' + sn + '</div>'
-                        #sn += ' [%d]' % n_times
                     if s.set_opener:
                         setlist_string += '\n<br><br>'
                     if s.medley:
