@@ -2300,7 +2300,20 @@ class GIG_gigs():
                         print(g.date.strftime("%Y-%b-%d"))
                         quote = song.quote if song.quote else ""
                         print(s.artist.ljust(30) + '"' + quote + '"')
-                        
+    def get_live_debuts(self):
+        debuts = []
+        for g in self.gigs:
+            for s in g.sets:
+                for song in s.songs:
+                    if song.debut:
+                        debuts.append( [ song.title, s.artist, g ] )
+
+        debuts.sort(key=lambda x: x[2].date)
+
+        for debut in debuts:
+            print( "%s %s : %s" % ( debut[1], debut[2].date.strftime("%Y-%b-%d"), debut[0] ) )
+
+        return debuts
 
     # Gig counts
     def gig_artist_times(self,gig,artist):
