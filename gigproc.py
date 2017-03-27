@@ -829,7 +829,10 @@ class GIG_html():
         clink = '<a href=' + cf_fname + ' title="Citycount: ' + ccount + '">' + vsplits[0] + '</a>'
         vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + vcount + '">' + " ".join(vsplits[1:]) + '</a>'
         ylink = '<a href=' + yg_fname + ' title="Yearcount: ' + ycount + '">' + gig.date.strftime("%Y") + '</a>' 
-        setlist_string = '<div class=sl_title>\n' + clink + ' ' + vlink + '<br>' + \
+        day_name = gig.date.strftime("%A")
+
+        setlist_string = '<div class=sl_title title="' + day_name+ '">\n' + \
+                    clink + ' ' + vlink + '<br>' + \
                     link_prev + link_next + ' ' + \
                     ordinal(day) + gig.date.strftime(" %B, ") + ylink + '</div>' + '\n'
 
