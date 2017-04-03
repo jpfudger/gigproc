@@ -1579,7 +1579,7 @@ class GIG_html():
         covers = self.gig_data.get_covers()
         string = '\n<ol>'
         for cover in covers:
-            string += '\n<li> %s (%d)' % ( cover['cover_artist'], cover['count'] )
+            string += '\n<li> <b>%s</b> (%d)' % ( cover['cover_artist'], cover['count'] )
             string += '\n    <ul>'
             songs = []
             for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
@@ -1588,10 +1588,11 @@ class GIG_html():
                     link = '<a href=%s.html>%s</a>' % ( str(g.index), g.date.strftime('%d-%b-%Y') )
                     versions.append( '[%s %s]' % ( link, a ) )
                     versions.sort()
-                songs.append( '\n    <li> <b>%s</b> %s' % ( s, ( ', '.join(versions) )) )
+                songs.append( '\n    <li> %s %s' % ( s, ( ', '.join(versions) )) )
             songs.sort()
             string += ''.join(songs)
             string += '\n    </ul>'
+            string += '\n    <br>'
         string += '\n</ol>'
         return string
 
