@@ -1839,7 +1839,7 @@ class GIG_gigs():
     def build_gig_data(self):
         for f in glob.glob(self.root + '/*.gigs'):
             self.get_data_from_file(f)
-        self.gigs.sort(key=lambda x: x.index)
+        self.gigs.sort(key=lambda x: x.date)
         self.identify_first_times()
         
     # Some utilities
