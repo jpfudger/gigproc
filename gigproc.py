@@ -471,7 +471,7 @@ class GIG_plot():
         plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
                   datetime.strptime(str(years[-1].year+1),"%Y")])
 
-        plt.ylim( [ 0, 360 ] )
+        plt.ylim( bottom=0 )
 
         if dest:
             fig.savefig(dest, bbox_inches='tight')
@@ -499,13 +499,13 @@ class GIG_plot():
 
         for g in gigs:
             running_total += 1
-            if 'Bob Dylan' in g.get_artists():
-                bob_totals.append(running_total)
-                bob_dates.append(g.date)
             if g.future:
                 future_dates.append(g.date)
                 future_totals.append(running_total)
             else:
+                if 'Bob Dylan' in g.get_artists():
+                    bob_totals.append(running_total)
+                    bob_dates.append(g.date)
                 totals.append(running_total)
                 dates.append(g.date)
                 future_dates = [ g.date ]
@@ -528,6 +528,11 @@ class GIG_plot():
 
         #ax.set_axisbelow(True)
         ax.fill_between(dates, 0, totals, color=self.colour1)
+
+        if len(future_dates) > 1:
+            plt.legend((line1[0],line2[0]), ('%d events' % year, 'Projected'), 'upper left')
+        else:
+            plt.legend((line1[0],), ('%d events' % year,), 'upper left')
 
         plt.xlim([ date(year=year, month=1, day=1), date(year=year, month=12, day=31) ])
         plt.ylim([0,45])
@@ -559,15 +564,21 @@ class GIG_plot():
         ax.set_axisbelow(True)
         ax.margins(0.05)
 
-        line1 = plt.plot(event_idx,new_songs,marker='.')
+        #line1 = plt.plot(event_idx,new_songs,marker='.')
 
         # plotting against date rather than index breaks something in plt:
-        #dates = [e.date.date() for e in events]
-        #line1 = plt.plot(dates,new_songs,marker='.')
+        dates = [e.date.date() for e in events]
+        line1 = plt.plot(dates,new_songs,marker='.')
 
-        plt.legend((line1[0],), ('Unique song count',), 'upper left')
+        plt.legend((line1[0],), ('Unique song count: ' + artist,), 'upper left')
+
+        # Ensure a tick for each year:
+        final_year = dates[-1].year + 1
+        years = list( range( dates[0].year, final_year+1 ) )
+        years = [ date( year=x, month=1, day=1 ) for x in years ]
+        plt.xticks(years, [ str(x.year)[2:4] for x in years ] )
+
         plt.grid(b=True, which='both')
-        plt.xlim( 0, len(events)+1 )
 
         if dest:
             fig.savefig( dest, bbox_inches='tight')
