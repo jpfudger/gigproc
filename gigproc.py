@@ -518,7 +518,7 @@ class GIG_plot():
         blobs = dates[:]
         blob_totals = totals[:]
 
-        if len(future_dates) > 0:
+        if len(future_dates) > 1:
             future_dates.append( date(year=year, month=12, day=31) )
             future_totals.append( future_totals[-1] )
 
