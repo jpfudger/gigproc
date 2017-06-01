@@ -142,8 +142,8 @@ class GIG_plot():
 
         #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-        if end_date:
-            plt.ylim( [ 0, max_y_axis ] )
+        #if end_date:
+            #plt.ylim( [ 0, max_y_axis ] )
 
         plt.xlim( [0, len(years)+1] )
 
@@ -515,11 +515,22 @@ class GIG_plot():
 
         fig, ax = plt.subplots()
 
+        blobs = dates[:]
+        blob_totals = totals[:]
+
+        if len(future_dates) > 0:
+            future_dates.append( date(year=year, month=12, day=31) )
+            future_totals.append( future_totals[-1] )
+
+        dates.insert(0, date(year=year, month=1, day=1) )
+        totals.insert(0,0)
+
         if len(dates) > 1:
             line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
         if len(future_dates) > 1:
             line2 = plt.plot(future_dates,future_totals,color=self.colour1,ls='--')
-        dots1 = plt.plot(dates,totals,color=self.colour2,marker='o',ls='')
+
+        dots1 = plt.plot(blobs,blob_totals,color=self.colour2,marker='o',ls='')
         dots2 = plt.plot(bob_dates,bob_totals,color=self.colour4,marker='o',ls='')
 
         plt.xticks(months, [x.strftime(" %b") for x in months], ha='left')
@@ -527,6 +538,14 @@ class GIG_plot():
             plt.yticks(range(0,50,5))
 
         #ax.set_axisbelow(True)
+
+        if len(future_dates) > 1:
+            dates.append( datetime.today() )
+            totals.append( totals[-1] )
+        else:
+            dates.append( date(year=year, month=12, day=31) )
+            totals.append( totals[-1] )
+
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
         if len(future_dates) > 1:
