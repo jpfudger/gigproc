@@ -1821,7 +1821,6 @@ class GIG_gigs():
                                     used_lines.append(line)
     def get_data_from_file(self,path):
         level = 0
-        n_processed = 0
         commented = False
         com_level = -1
         last_blank = False
@@ -1849,11 +1848,9 @@ class GIG_gigs():
                 if commented:
                     pass
                 elif m1:
-                    n_processed += 1
                     d = datetime.strptime( m1.group(1), date_regex )
-                    ident = d.strftime( "%y" ) + '{0:02d}'.format(n_processed)
                     v = self.process_venue_name( m1.group(2) )
-                    this_gig = GIG_gig( ident, d, v )
+                    this_gig = GIG_gig( d, v )
                 else:
                     a = self.process_artist_name( mopen.group(1) )
                     this_set = GIG_set(a)
@@ -1875,6 +1872,13 @@ class GIG_gigs():
         for f in glob.glob(self.root + '/*.gigs'):
             self.get_data_from_file(f)
         self.gigs.sort(key=lambda x: x.date)
+
+        # fill in gig index
+        for i,g in enumerate(self.gigs):
+            ident = g.date.strftime( "%y" ) + '{0:02d}'.format(i)
+            g.index = ident
+            g.link = str(ident)
+
         self.identify_first_times()
         
     # Some utilities
@@ -2464,8 +2468,8 @@ class GIG_gigs():
         # print('made anim_v.gif')
 
 class GIG_gig():
-    def __init__(self, ident, date, venue):
-        self.index  = ident
+    def __init__(self, date, venue):
+        self.index  = 0
         self.date   = date
         self.venue  = venue
         self.city   = venue.split()[0]
@@ -2473,7 +2477,7 @@ class GIG_gig():
         self.sets   = []
         today = datetime.today()
         self.future = date > today or ( date.date() == today.date() and today.hour < 20 )
-        self.link    = str(ident)
+        self.link    = ''
         self.citytimes = None
         self.venuetimes = None
         # self.img should really be the same as self.link 
