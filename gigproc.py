@@ -975,6 +975,11 @@ class GIG_html():
                         #symbol = '*'
                         setlist_string += '<div class=flag title="' + s.cover + \
                                           ' cover">' + symbol + '</div>'
+
+                    # ensure guest footnotes are in order of guest appearances
+                    s.guests.sort(key=lambda g: 
+                        gig.get_artists().index(g) if guest in gig.get_artists() else 9999 )
+
                     for guest in s.guests:
                         if guest in gig.get_artists():
                             a_indx = gig.get_artists().index(guest)
