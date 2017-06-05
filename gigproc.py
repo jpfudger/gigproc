@@ -1874,10 +1874,17 @@ class GIG_gigs():
         self.gigs.sort(key=lambda x: x.date)
 
         # fill in gig index
-        for i,g in enumerate(self.gigs):
-            ident = g.date.strftime( "%y" ) + '{0:02d}'.format(i)
+        i = 0
+        lyear = 0
+        for g in self.gigs:
+            year = g.date.year
+            if year != lyear:
+                i = 0
+                lyear = year
+            ident = str(year)[2:4] + '{0:02d}'.format(i)
             g.index = ident
             g.link = str(ident)
+            i += 1
 
         self.identify_first_times()
         
