@@ -527,6 +527,9 @@ class GIG_plot():
 
         if len(dates) > 1:
             line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
+        else:
+            return False
+
         if len(future_dates) > 1:
             line2 = plt.plot(future_dates,future_totals,color=self.colour1,ls='--')
 
