@@ -27,7 +27,7 @@ def proc_options():
     options = parser.parse_args()
     return options
 
-gig_data = gigproc.GIG_gigs('/home/jpf/python/gigproc/gigs')
+gig_data = gigproc.GIG_data('/home/jpf/python/gigproc/gigs')
 
 if __name__ == "__main__":
     options = proc_options()

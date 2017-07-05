@@ -556,8 +556,9 @@ class GIG_plot():
         else:
             plt.legend((line1[0],), ('%d events' % year,), 'upper left')
 
+        max_y_axis = 45
         plt.xlim([ date(year=year, month=1, day=1), date(year=year, month=12, day=31) ])
-        plt.ylim([0,45])
+        plt.ylim([0,max_y_axis])
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
         fig.savefig(dest, bbox_inches='tight')
@@ -1634,7 +1635,7 @@ class GIG_html():
         string += '\n</ol>'
         return string
 
-class GIG_gigs():
+class GIG_data():
     def __init__(self,root):
         self.root = root
         self.gigs = []
@@ -1884,7 +1885,7 @@ class GIG_gigs():
             if year != lyear:
                 i = 0
                 lyear = year
-            ident = str(year)[2:4] + '{0:02d}'.format(i)
+            ident = str(year)[2:4] + '{0:02d}'.format(i+1)
             g.index = ident
             g.link = str(ident)
             i += 1
