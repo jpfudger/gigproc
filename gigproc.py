@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import sys, os, glob, re
+import sys, os, glob, re, time
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, date
 
@@ -729,6 +729,7 @@ class GIG_html():
     def __init__(self, gig_data, head, playlists = False):
         self.gig_data = gig_data
         self.head = head
+        self.time = time.clock()
         self.plotter = GIG_plot(gig_data)
 
         # optional extras:
@@ -745,6 +746,9 @@ class GIG_html():
         if self.do_playlists:
             gig_data.fill_in_playlist_links()
         self.generate_html_files()
+
+        self.time = time.clock() - self.time
+        print("Generated html/plots in %.2f seconds" % self.time)
 
     # HTML Generation
     def id_of_artist(self,artist):
@@ -879,7 +883,7 @@ class GIG_html():
             if self.do_songcount:
                 # Calculate the number of times I have seen the song.
                 # This is very slow. We need to cache the song data.
-                art_songs = self.gig_data.unique_songs_of_artist(g.artist)
+                art_songs = self.gig_data.get_unique_songs_of_artist(g.artist)
 
             playlist_link = ''
             if self.do_playlists and g.playlist:
@@ -1348,7 +1352,7 @@ class GIG_html():
 
             breakdown = ''
             if len(c) > 1:
-                unique_songs = self.gig_data.unique_songs_of_artist(a)
+                unique_songs = self.gig_data.get_unique_songs_of_artist(a)
 
                 events = [ x for x in c ]
                 events.sort(key=lambda x: x.index)
@@ -1647,9 +1651,13 @@ class GIG_data():
         self.unique_venues_inc_future = None   # cached
         self.unique_years = None    # cached
         self.unique_years_inc_future = None    # cached
+        self.unique_songs_of_artist = {} # cached
         self.playlist_gigs = []
 
+        self.time = time.clock()
         self.build_gig_data()
+        self.time = time.clock() - self.time
+        print("Generated gig data in %.2f seconds" % self.time)
     def __str__(self):
         # print summary of gig data
         nmax      = 30
@@ -1776,7 +1784,7 @@ class GIG_data():
         return name
     def identify_first_times(self):
         for (a,c) in self.get_unique_artists():
-            for song in self.unique_songs_of_artist(a):
+            for song in self.get_unique_songs_of_artist(a):
                 first_id = min( [ x.index for x in song['events'] ] )
                 for g in self.gigs:
                     if g.index == first_id:
@@ -1894,7 +1902,7 @@ class GIG_data():
         
     # Some utilities
     def artist_stats(self,artist):
-        unique_songs = self.unique_songs_of_artist(artist)
+        unique_songs = self.get_unique_songs_of_artist(artist)
         
         raw_events = []
         for song in unique_songs:
@@ -1936,59 +1944,63 @@ class GIG_data():
         raw_songs = [ x for x in raw_songs if len(x['artists']) > 1 ]
         for song in raw_songs:
             print( song['title'].ljust(30) + ' ' + ', '.join(song['artists']) )
-    def unique_songs_of_artist(self,a):
-        # this is quite slow. it could be cached!
-        raw_songs = []
-        artist = a + '$'
-        for gig in self.gigs:
-            for s in gig.sets:
-                # look for song in artist's main set:
+    def get_unique_songs_of_artist(self,a):
+        try:
+            usoa = self.unique_songs_of_artist[a]
+            return usoa
+        except KeyError:
+            usoa = []
+            artist = a + '$'
+            for gig in self.gigs:
+                for s in gig.sets:
+                    # look for song in artist's main set:
 
-                guest = False
-                main_set = False
-                if re.search(artist, s.artist, re.IGNORECASE):
-                    main_set = True
-                elif s.band:
-                    for b in s.band:
-                        if re.search(artist, b, re.IGNORECASE):
-                            main_set = True
-                            guest = True
-                            break
+                    guest = False
+                    main_set = False
+                    if re.search(artist, s.artist, re.IGNORECASE):
+                        main_set = True
+                    elif s.band:
+                        for b in s.band:
+                            if re.search(artist, b, re.IGNORECASE):
+                                main_set = True
+                                guest = True
+                                break
 
-                if main_set:
-                    for song in s.songs:
-                        got = False
-                        if not song.title: # Untitled
-                            continue
-                        if guest and song.solo: # solo performance cannot contain guest
-                            continue
-                        for got_song in raw_songs:
-                            if got_song['title'] == song.title:
-                                got_song['events'].append(gig)
-                                got = True
-                        if not got:
-                            raw_songs.append( { 'title': song.title, 'events': [gig], 'obj': song } )
-                else:
-                    # look for song in other sets for which the artist is flagged:
-
-                    for song in s.songs:
-                        flagged = False
-                        for guest in song.guests:
-                            if re.search( artist, guest, re.IGNORECASE ):
-                                flagged = True
-                        if flagged:
+                    if main_set:
+                        for song in s.songs:
                             got = False
-                            for got_song in raw_songs:
+                            if not song.title: # Untitled
+                                continue
+                            if guest and song.solo: # solo performance cannot contain guest
+                                continue
+                            for got_song in usoa:
                                 if got_song['title'] == song.title:
                                     got_song['events'].append(gig)
                                     got = True
                             if not got:
-                                raw_songs.append( { 'title': song.title, 'events': [gig], 'obj': song } )
+                                usoa.append( { 'title': song.title, 'events': [gig], 'obj': song } )
+                    else:
+                        # look for song in other sets for which the artist is flagged:
 
-        raw_songs = [ x for x in raw_songs if x['title'] ] # shouldn't be necessary
-        raw_songs.sort(key=lambda x: (-len(x['events']),x['title']), reverse=True)
-        raw_songs.reverse()
-        return raw_songs
+                        for song in s.songs:
+                            flagged = False
+                            for guest in song.guests:
+                                if re.search( artist, guest, re.IGNORECASE ):
+                                    flagged = True
+                            if flagged:
+                                got = False
+                                for got_song in usoa:
+                                    if got_song['title'] == song.title:
+                                        got_song['events'].append(gig)
+                                        got = True
+                                if not got:
+                                    usoa.append( { 'title': song.title, 'events': [gig], 'obj': song } )
+
+            usoa = [ x for x in usoa if x['title'] ] # shouldn't be necessary
+            usoa.sort(key=lambda x: (-len(x['events']),x['title']), reverse=True)
+            usoa.reverse()
+            self.unique_songs_of_artist[a] = usoa
+            return usoa
     def get_past_gigs(self):
         if not self.past_gigs:
             self.past_gigs = []
@@ -2286,7 +2298,7 @@ class GIG_data():
         artists = self.get_unique_artists()
         artists = [ x[0] for x in artists ]
         for a in artists:
-            songs = self.unique_songs_of_artist(a)
+            songs = self.get_unique_songs_of_artist(a)
             songs = [ x['title'] for x in songs ]
             self.print_fuzzy_matches(songs,a)
         venues = self.get_unique_venues()
