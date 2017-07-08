@@ -1581,6 +1581,8 @@ class GIG_html():
 
             self.make_file( str(y), years_string_h, gigs_string, plot_string )
             for gig in self.gig_data.gigs:
+                if gig.future:
+                    continue
                 if gig.date.year == y:
                     setlist_string = self.gig_setlist_string(gig)
                     gigs_string_h = self.build_gigs_string( self.gig_data.gigs, y, 
