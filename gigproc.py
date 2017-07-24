@@ -38,7 +38,7 @@ class GIG_plot():
                     counts[i] += 1
             plt.plot(all_dates,counts,linewidth=2)
 
-        ax.legend(vnames,'upper left')
+        ax.legend(vnames,loc='upper left')
         ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
         ax.set_ylim(0,len(venues[0][1])+1)
 
@@ -138,7 +138,7 @@ class GIG_plot():
         if not end_date:
             plt.legend((bar1[0], bar2[0], bar3[0]), \
                        ('Total artists', 'New artists', 'New headliners'), \
-                       'upper left')
+                       loc='upper left')
 
         #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -189,10 +189,10 @@ class GIG_plot():
         plt.xlim([0,len(ind)+1])
         # plt.legend( (bar1[0],bar3[0],bar2[0]), \
         #             ('Events in month', '%d events' % self.year, 'Month max'), \
-        #             'upper left' )
+        #             loc='upper left' )
         plt.legend( (bar1[0],bar3[0]), \
                     ('Events in month', '%d events' % self.year), \
-                    'upper left' )
+                    loc='upper left' )
 
         #plt.title("Month histogram")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
@@ -221,7 +221,9 @@ class GIG_plot():
         plt.xticks(ind,days)
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-        plt.legend((bar1[0], bar2[0]), ('Events in day','%d events' % self.year), 'upper left')
+        plt.legend( (bar1[0], bar2[0]), 
+                    ('Events in day','%d events' % self.year), 
+                    loc='upper left')
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
@@ -272,12 +274,12 @@ class GIG_plot():
         today = datetime.today()
         ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
         datestr = str(ordinal(today.day)) + today.strftime(" %b")
-        plt.legend((bar1[0],), ('Events up to %s' % datestr,), 'upper left')
+        plt.legend((bar1[0],), ('Events up to %s' % datestr,), loc='upper left')
 
         if not end_date:
             plt.legend((bar1[0], bar2[0], bar0[0]), ('Total events', \
                 'Events up to %s' % datestr, \
-                'Projected total' ), 'upper left' )
+                'Projected total' ), loc='upper left' )
 
         #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -347,7 +349,7 @@ class GIG_plot():
         if not end_date:
             plt.legend((bar1[0], bar2[0], bar3[0]), \
                        ('Total venues', 'New venues', 'New cities'), \
-                       'upper left')
+                       loc='upper left')
 
         #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -376,7 +378,7 @@ class GIG_plot():
         ind = range(1,len(freq)+1)
         bar1 = ax.bar( ind, freq, align='center', color=self.colour1 )
         plt.xticks(ind, [ str(i+1) if freq[i] > 0 else "" for i in range(0,len(freq)) ] )
-        plt.legend((bar1[0],), ('Artist frequency distribution',), 'upper right')
+        plt.legend((bar1[0],), ('Artist frequency distribution',), loc='upper right')
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
@@ -418,7 +420,7 @@ class GIG_plot():
         today = datetime.today()
         ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
         datestr = str(ordinal(today.day)) + today.strftime(" %b")
-        plt.legend((bar1[0],), ('Events up to %s' % datestr,), 'upper left')
+        plt.legend((bar1[0],), ('Events up to %s' % datestr,), loc='upper left')
 
         #plt.title("Relative Progress")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
@@ -462,7 +464,7 @@ class GIG_plot():
         plt.xticks(years,[xx.strftime("%y") for xx in years])
 
         if not end_date:
-            plt.legend((line1[0],), ('Cumulative event count',), 'upper left')
+            plt.legend((line1[0],), ('Cumulative event count',), loc='upper left')
 
         #ax.set_axisbelow(True)
         ax.fill_between(dates, 0, totals, color=self.colour1)
@@ -552,9 +554,11 @@ class GIG_plot():
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
         if len(future_dates) > 1:
-            plt.legend((line1[0],line2[0]), ('%d events' % year, 'Projected'), 'upper left')
+            plt.legend( (line1[0],line2[0]), 
+                        ('%d events' % year, 'Projected'), 
+                        loc='upper left')
         else:
-            plt.legend((line1[0],), ('%d events' % year,), 'upper left')
+            plt.legend((line1[0],), ('%d events' % year,), loc='upper left')
 
         max_y_axis = 45
         plt.xlim([ date(year=year, month=1, day=1), date(year=year, month=12, day=31) ])
@@ -593,7 +597,7 @@ class GIG_plot():
         dates = [e.date.date() for e in events]
         line1 = plt.plot(dates,new_songs,marker='.')
 
-        plt.legend((line1[0],), ('Unique song count: ' + artist,), 'upper left')
+        plt.legend((line1[0],), ('Unique song count: ' + artist,), loc='upper left')
 
         # Ensure a tick for each year:
         final_year = dates[-1].year + 1
@@ -629,7 +633,7 @@ class GIG_plot():
             for label in ax.xaxis.get_ticklabels()[::2]:
                 label.set_visible(False)
 
-        plt.legend( (bar1[0],), ('Freq dist',), 'upper right' )
+        plt.legend( (bar1[0],), ('Freq dist',), loc='upper right' )
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
