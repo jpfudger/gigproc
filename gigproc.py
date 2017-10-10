@@ -728,6 +728,58 @@ class GIG_plot():
         else:
             plt.show(block=False)
             plt.show()
+    def general_plot(self,gigs,dest,title):
+        self.n_graphs += 1
+
+        dates_future = []
+        totals_future = []
+        dates = []
+        totals = []
+
+        for gig in gigs:
+            if gig.future:
+                dates_future.append(gig.date)
+                if len(totals_future) == 0:
+                    totals_future.append(1)
+                else:
+                    totals_future.append( totals_future[-1] + 1 )
+            else:
+                dates.append(gig.date)
+                if len(totals) == 0:
+                    totals.append(1)
+                else:
+                    totals.append( totals[-1] + 1 )
+
+        dates_future.insert( 0, dates[-1] )
+        totals_future.insert( 0, 0 )
+        totals_future = [ (x + totals[-1]) for x in totals_future ]
+
+        years = [ d.year for d in (dates + dates_future) ]
+        years = list(set(years))
+        years.sort()
+
+        fig, ax = plt.subplots()
+
+        line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
+        line2 = plt.plot(dates_future,totals_future,color=self.colour1,ls='--')
+        plt.xticks(years,[str(xx)[2:] for xx in years])
+        plt.legend((line1[0],), (title,), loc='upper left')
+
+        ax.fill_between(dates, 0, totals, color=self.colour1)
+
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        plt.xlim([datetime.strptime(str(years[0]),"%Y"),
+                  datetime.strptime(str(years[-1]),"%Y")])
+
+        plt.ylim( bottom=0 )
+
+        if dest:
+            fig.savefig(dest, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
 
 class GIG_html():
     def __init__(self, gig_data, head, playlists = False):
@@ -1430,9 +1482,19 @@ class GIG_html():
 
             all_vgigs = self.gig_data.all_gigs_of_venue(v,True) # need to include future gigs here!
             venue_string = self.build_gigs_string( all_vgigs, None, vfname, v )
-            self.make_file( vfname, years_string_v, venue_string, '' )
+
+            vplot_link = ''
+            # Plot venue growth:
+            # if len(c) > 3:
+            #     plot_fname = 'html/img/' + vfname + '.png'
+            #     self.plotter.general_plot(c,plot_fname,"Venue growth: " + v)
+            #     vplot_link = '<img src="img/%s.png">' % vfname
+
+            self.make_file( vfname, years_string_v, venue_string, vplot_link )
 
             for gig in c:
+                if gig.future:
+                    break
                 suffix = '_' + vfname
                 link = gig.link + suffix
                 venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
@@ -1473,7 +1535,15 @@ class GIG_html():
             all_cgigs = gigs_past + gigs_future;
 
             city_string = self.build_gigs_string( all_cgigs, None, cfname, city )
-            self.make_file( cfname, years_string_v, city_string, '' )
+
+            cplot_link = ''
+            # Plot city growth
+            # if len(gigs_past) > 3:
+            #     plot_fname = 'html/img/' + cfname + '.png'
+            #     self.plotter.general_plot(gigs_past+gigs_future,plot_fname,"City growth: " + city)
+            #     cplot_link = '<img src="img/%s.png">' % cfname
+
+            self.make_file( cfname, years_string_v, city_string, cplot_link )
 
             for gig in all_cgigs:
                 suffix = '_' + cfname
@@ -1491,7 +1561,6 @@ class GIG_html():
                         '.' + self.sp(1) + '</td><td>' + clink
             
             n_gigs_for_last_city = len(gigs_past)
-
 
         venues_string += '</table>'
         return venues_string
@@ -1522,7 +1591,7 @@ class GIG_html():
         self.plotter.venue_growth('html/img/plot_venue_growth.png')
         #self.plotter.relative_progress('html/img/plot_relative_progress.png')
         #self.plotter.days_growth('html/img/plot_days_growth.png')
-        self.plotter.top_venue_growth(8,'html/img/plot_top_venue_growth.png')
+        self.plotter.top_venue_growth(5,'html/img/plot_top_venue_growth.png')
         #self.plotter.freq_dist('html/img/plot_freq_dist.png')
 
         graphs.append('img/plot_year_growth.png')
