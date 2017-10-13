@@ -545,8 +545,9 @@ class GIG_plot():
         #ax.set_axisbelow(True)
 
         if len(future_dates) > 1:
-            dates.append( datetime.today() )
-            totals.append( totals[-1] )
+            pass
+            #dates.append( datetime.today() )
+            #totals.append( totals[-1] )
         else:
             dates.append( date(year=year, month=12, day=31) )
             totals.append( totals[-1] )
