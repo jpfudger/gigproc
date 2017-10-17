@@ -1853,11 +1853,15 @@ class GIG_data():
         return name
     def process_artist_name(self,n):
         # strip comments and remove definite articles
-        name = n
-        name = re.sub( '\s*---.*', '', name )
-        name = name.strip()
-        name = re.sub( '^The\s+', '', name )
-        return name
+        names = []
+        splits = n.split('+')
+        for split in splits:
+            name = split
+            name = re.sub( '\s*---.*', '', name )
+            name = name.strip()
+            name = re.sub( '^The\s+', '', name )
+            names.append(name)
+        return names
     def identify_first_times(self):
         for (a,c) in self.get_unique_artists():
             for song in self.get_unique_songs_of_artist(a):
@@ -2630,7 +2634,7 @@ class GIG_gig():
         # which is usually all we need...
 
         for a in addarts:
-            this_set = GIG_set(a)
+            this_set = GIG_set([a])
             this_set.guest_only = True
             self.sets.insert(1,this_set)
 
@@ -2642,7 +2646,7 @@ class GIG_gig():
                 band_artists.append(b)
 
         for b in band_artists:
-            this_set = GIG_set(b)
+            this_set = GIG_set([b])
             this_set.band_only = True
             self.sets.insert(1,this_set)
     def get_artists(self):
@@ -2654,8 +2658,9 @@ class GIG_gig():
         return "%s %s   %s" % (self.sets[0].artist.ljust(20), self.date.strftime("%d-%b-%Y (%a)"), self.venue )
 
 class GIG_set():
-    def __init__(self, artist):
-        self.artist     = artist
+    def __init__(self, artists):
+        self.artists    = artists
+        self.artist     = artists[0]
         self.songs      = []
         self.band       = []
         # flags
