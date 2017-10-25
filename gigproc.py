@@ -1317,7 +1317,11 @@ class GIG_html():
                 if force_artist != None and force_artist != name_str:
                     name_str = '<i>' + force_artist + '</i>'
 
-                if force_artist != None:
+                # This is a good idea, but for "featured" artists it can mean
+                # that their name does not appear on their own page, 
+                # because it gets overwritten by the set artist.
+                # Switch it off for now.
+                if False and force_artist != None:
                     # force_artist => only for artist giglist
                     for s in gig.sets:
                         # list band rather than band member!
@@ -1344,7 +1348,6 @@ class GIG_html():
                 if gig.future:
                     gigs_string += self.row( [ '', name_str, date_str, gig.venue ], 'rlll' )
                 else:
-
                     ccount = self.gig_data.gig_city_times(gig)
                     vcount = self.gig_data.gig_venue_times(gig)
                     venue_str  = '<div class=greyflag title="Citycount: '+ccount+'">'+ gig.city+'</div>'
@@ -2652,6 +2655,7 @@ class GIG_gig():
     def get_artists(self):
         if not self.artists:
             self.artists = [ x.artist for x in self.sets ]
+            self.artists = list(set(self.artists))
         return self.artists
     def stub(self):
         # short printer
