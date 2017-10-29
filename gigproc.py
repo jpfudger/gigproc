@@ -2654,8 +2654,10 @@ class GIG_gig():
             self.sets.insert(1,this_set)
     def get_artists(self):
         if not self.artists:
-            self.artists = [ x.artist for x in self.sets ]
-            self.artists = list(set(self.artists))
+            self.artists = []
+            for s in self.sets:
+                if not s.artist in self.artists:
+                    self.artists.append(s.artist)
         return self.artists
     def stub(self):
         # short printer
