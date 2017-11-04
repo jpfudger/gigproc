@@ -9,9 +9,10 @@ from gigproc.gigplot import GIG_plot
 from gigproc.gightml import GIG_html
 
 class GIG_data():
-    def __init__(self,root):
-        self.root = root
-        self.gigs = []
+    def __init__(self,root,verbose=False):
+        self.root      = root
+        self.verbose   = verbose
+        self.gigs      = []
         self.past_gigs = []
 
         self.unique_artists = None  # cached
@@ -26,7 +27,8 @@ class GIG_data():
         self.time = time.clock()
         self.build_gig_data()
         self.time = time.clock() - self.time
-        print("Generated gig data in %.2f seconds" % self.time)
+        if self.verbose:
+            print("Generated gig data in %.2f seconds" % self.time)
     def __str__(self):
         # print summary of gig data
         nmax      = 30
