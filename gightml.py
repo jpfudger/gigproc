@@ -415,7 +415,7 @@ class GIG_html():
             '.cf {*zoom:1;}',
             '',
             '.yr {',
-            '    width: 60px;',
+            '    width: 70px;',
             '    left: 0;',
             '    text-align: center;',
             '    background-color:' + col_boxbg + ';',
@@ -852,6 +852,9 @@ class GIG_html():
             lines.append( '<td style="padding: 5px">%s</td>' % day )
         lines.append( '</tr>' )
 
+        col_red   = ' #641E16'
+        col_empty = col_red
+
         for date, gigs in zip(cal_dates,cal_gigs):
             if date.day == 1:
                 if date.month > 1:
@@ -863,20 +866,25 @@ class GIG_html():
                 links = []
                 for i,g in enumerate(gigs):
                     link = str(g.date.year)
+                    headliner = g.get_artists()[0]
                     if not g.future:
-                        link = '<a href=%s.html>%s</a>' % ( str(g.index), link )
+                        link = '<a href=%s.html title="%s">%s</a>' % ( str(g.index), headliner, link )
+                        links.append(link)
                         future = False
-                    links.append(link)
+                    else:
+                        link = '<div title="%s">%s</div>' % ( headliner, link )
+                        links.append(link)
+                        break # don't include multiple future gigs on a single date
 
                 if future:
-                    lines.append('<td bgcolor="#990000" style="padding: 3px">')
+                    lines.append('<td bgcolor="%s" style="padding: 3px">' % col_empty)
                 else:
                     lines.append('<td style="padding: 3px">')
 
                 lines.append("<br>".join(links))
                 lines.append('</td>')
             else:
-                lines.append('<td bgcolor="#990000" style="padding: 3px">')
+                lines.append('<td bgcolor="%s" style="padding: 3px">' % col_empty)
                 lines.append('</td>')
 
         lines.append('</tr>')
