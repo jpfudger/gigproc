@@ -796,6 +796,7 @@ class GIG_html():
         self.do_songcount = True        # count song occurrences (SLOW)
         self.do_graphs    = True
         self.do_covers_list = True
+        self.do_calendar  = True
 
         # do the work:
         self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(True) ]
@@ -1620,9 +1621,27 @@ class GIG_html():
 
         string += '</center>\n'
         return string
-    def make_calendar(self):
+    def make_calendar_string(self):
         # get future gigs
-        pass
+        cal_dates, cal_gigs = self.gig_data.calendar()
+
+        lines = []
+
+        for date, gigs in zip(cal_dates,cal_gigs):
+            line = '<br>'
+            if date.day == 1:
+                line += '<br>'
+            line += date.strftime( "%b %d : " )
+            links = []
+            for g in gigs:
+                link = str(g.date.year)
+                if not g.future:
+                    link = '<a href=%s.html>%s</a>' % ( str(g.index), link )
+                links.append(link)
+            line += " + ".join(links)
+            lines.append(line)
+
+        return "\n".join(lines)
     def generate_html_files(self):
         self.make_stylesheet()
 
@@ -1633,6 +1652,8 @@ class GIG_html():
             extras += [ 'Graphs' ]
         if self.do_covers_list:
             extras += [ 'Covers' ]
+        if self.do_calendar:
+            extras += [ 'Calendar' ]
         self.years = extras + [ '' ] + self.years
 
         years_string   = self.make_years_string()
@@ -1689,7 +1710,10 @@ class GIG_html():
             covers_string = self.make_covers_string()
             self.make_file( 'covers',    years_string_c,   covers_string,  '' )
 
-        self.make_calendar()
+        if self.do_calendar:
+            years_string_c = self.make_years_string("Calendar")
+            calendar_string = self.make_calendar_string()
+            self.make_file( 'calendar', years_string_c, calendar_string, '' )
 
         return
     def make_youtube_link(self,yt):
@@ -2095,6 +2119,43 @@ class GIG_data():
         for gigs in self.gigs:
             if gigs.future:
                 return gigs
+    def calendar(self,verbose=False,month=None):
+        start = datetime(2016,1,1) # leap year
+
+        gig_days = 0
+
+        dates = []
+        gigs = []
+        date_gig_counts = []
+
+        for date in ( start + timedelta(days=n) for n in range(366) ):
+            if month and date.month != month:
+                continue
+
+            dates.append(date)
+            gigs.append([])
+
+            years = []
+            for gig in self.gigs:
+                if gig.date.month == date.month and gig.date.day == date.day:
+                    if not gig.future:
+                        years.append(gig.date.year)
+                    gigs[-1].append(gig)
+
+            artists = ''
+            if years:
+                gig_days += 1
+                artists = ', '.join([str(x) for x in years])
+
+            date_gig_counts.append( len(years) )
+
+            if verbose:
+                print(date.strftime("%b %d") + " : " + artists)
+
+        if verbose:
+            print("\nGig days: %d/366 = %.1f%%" % (gig_days, gig_days/3.66))
+
+        return dates, gigs
 
     # Queries on gig data:
     def all_gigs_of_artist(self,artist,inc_future=False):
