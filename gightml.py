@@ -845,21 +845,42 @@ class GIG_html():
         # get future gigs
         cal_dates, cal_gigs = self.gig_data.calendar()
 
-        lines = []
+        lines = [ '<table border=1 cellpadding=2>' ]
+        lines.append( '<tr>' )
+        lines.append( '<td style="padding: 5px"></td>' )
+        for day in range(1,32):
+            lines.append( '<td style="padding: 5px">%s</td>' % day )
+        lines.append( '</tr>' )
 
         for date, gigs in zip(cal_dates,cal_gigs):
-            line = '<br>'
             if date.day == 1:
-                line += '<br>'
-            line += date.strftime( "%b %d : " )
-            links = []
-            for g in gigs:
-                link = str(g.date.year)
-                if not g.future:
-                    link = '<a href=%s.html>%s</a>' % ( str(g.index), link )
-                links.append(link)
-            line += " + ".join(links)
-            lines.append(line)
+                if date.month > 1:
+                    lines.append('</tr>')
+                lines.append('<tr>')
+                lines.append('<td style="padding: 5px">%s</td>' % date.strftime("%B"))
+            if len(gigs) > 0:
+                future = True
+                links = []
+                for i,g in enumerate(gigs):
+                    link = str(g.date.year)
+                    if not g.future:
+                        link = '<a href=%s.html>%s</a>' % ( str(g.index), link )
+                        future = False
+                    links.append(link)
+
+                if future:
+                    lines.append('<td bgcolor="#990000" style="padding: 3px">')
+                else:
+                    lines.append('<td style="padding: 3px">')
+
+                lines.append("<br>".join(links))
+                lines.append('</td>')
+            else:
+                lines.append('<td bgcolor="#990000" style="padding: 3px">')
+                lines.append('</td>')
+
+        lines.append('</tr>')
+        lines.append('</table>')
 
         return "\n".join(lines)
     def generate_html_files(self):
