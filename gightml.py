@@ -790,20 +790,34 @@ class GIG_html():
         venues_string += '</table>'
         return venues_string
     def make_bootlegs_index_string(self):
-        playlist_gigs = self.gig_data.playlist_gigs
         string = '\n<ul>'
         y = ""
-        for p in playlist_gigs:
-            if y != p.date.strftime("%Y"):
-                string += '\n <br>' # '========'
-            y = p.date.strftime("%Y")
+
+        for g in self.gig_data.gigs:
             links = []
-            for s in p.sets:
+            for s in g.sets:
                 if s.playlist:
                     link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
                     links.append(link)
-            string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + \
-                    '</div> &nbsp;' + " + ".join(links) + ' (' + p.venue + ')'
+            if links:
+                if y != g.date.strftime("%Y"):
+                    string += '\n <br>'
+                y = g.date.strftime("%Y")
+                string += '\n  <br> <div class=date>%s</div> &nbsp;%s (%s)' % \
+                            ( g.date.strftime("%Y-%b-%d"), " + ".join(links), g.venue )
+
+        # for p in playlist_gigs:
+        #     if y != p.date.strftime("%Y"):
+        #         string += '\n <br>' # '========'
+        #     y = p.date.strftime("%Y")
+        #     links = []
+        #     for s in p.sets:
+        #         if s.playlist:
+        #             link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
+        #             links.append(link)
+        #     string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + \
+        #             '</div> &nbsp;' + " + ".join(links) + ' (' + p.venue + ')'
+
         string += '\n</ul>'
         return string
     def make_graphs_index_string(self):

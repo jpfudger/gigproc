@@ -95,6 +95,12 @@ class GIG_data():
                 # Comment out these two lines to suppress the band member processing
                 if re.match( '.*{.*', splits[1] ):
                    this_set.band += re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                if '@' in splits[1]:
+                    path = line.split('@')[1].strip()
+                    path = r'/home/jpf/Music/' + path
+                    this_set.playlist = path
+                    if not os.path.exists(path):
+                        print(path)
         else:
             # process song flags and append
             if re.match( '\?+', title ):
@@ -174,14 +180,19 @@ class GIG_data():
     def fill_in_playlist_links(self):
         fname = self.root + '/playlists'
         lines = []
-        with open(fname) as f:
-            for l in f.read().splitlines():
-                if True or os.path.exists(l):
-                    lines.append(l)
+        try:
+            with open(fname) as f:
+                for l in f.read().splitlines():
+                    if True or os.path.exists(l):
+                        lines.append(l)
+        except FileNotFoundError:
+            pass
         if len(lines) > 0:
             used_lines = []
             for g in self.gigs:
                 for s in [ x for x in g.sets if not x.band_only ]:
+                    if s.playlist:
+                        continue
                     date_string = g.date.strftime("%Y.%m.%d")
                     artist_words = s.artist.lower().split(' ')
                     for line in lines:
