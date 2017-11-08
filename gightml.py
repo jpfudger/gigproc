@@ -859,34 +859,62 @@ class GIG_html():
         # get future gigs
         cal_dates, cal_gigs = self.gig_data.calendar()
 
-        lines = [ '<table border=1 cellpadding=2>' ]
-        lines.append( '<tr>' )
-        lines.append( '<td style="padding: 5px"></td>' )
-        for day in range(1,32):
-            lines.append( '<td style="padding: 5px">%s</td>' % day )
-        lines.append( '</tr>' )
+        lines = []
 
         col_red   = ' #641E16'
         col_empty = col_red
+
+        month_days = [ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
+        month_day_counts = []
+        month_day_percentages = []
+
+        for date, gigs in zip(cal_dates,cal_gigs):
+            if date.day == 1:
+                month_day_counts.append(0)
+            if len(gigs) > 0:
+                future = True
+                for g in gigs:
+                    if not g.future:
+                        future = False
+                if not future:
+                    month_day_counts[-1] += 1
+
+        total_coverage = 100 * sum(month_day_counts) / sum(month_days)
+        #lines.append('Total coverage: %d days = %.2f%%' % (sum(month_day_counts), total_coverage ))
+        #lines.append('<br><br>')
+
+        for i, m in enumerate(month_day_counts):
+            pc = 100 * month_day_counts[i] / month_days[i]
+            month_day_percentages.append(pc)
+
+        lines.append( '<table border=1 cellpadding=2>' )
+        lines.append( '<tr>' )
+        lines.append( '<td style="padding: 5px">%.1f%%</td>' % total_coverage )
+        for day in range(1,32):
+            lines.append( '<td style="padding: 5px">%s</td>' % day )
+        lines.append( '</tr>' )
 
         for date, gigs in zip(cal_dates,cal_gigs):
             if date.day == 1:
                 if date.month > 1:
                     lines.append('</tr>')
                 lines.append('<tr>')
-                lines.append('<td style="padding: 5px">%s</td>' % date.strftime("%B"))
+                m_index = int(date.strftime("%m")) - 1
+                m_percent = month_day_percentages[m_index]
+                div = '<div title="%.1f%% coverage">%s</div>' % ( m_percent, date.strftime("%B") )
+                lines.append('<td style="padding: 5px">%s</td>' % div)
             if len(gigs) > 0:
                 future = True
                 links = []
                 for i,g in enumerate(gigs):
                     link = str(g.date.year)
-                    headliner = g.get_artists()[0]
+                    info = g.get_artists()[0] + ', ' + g.city
                     if not g.future:
-                        link = '<a href=%s.html title="%s">%s</a>' % ( str(g.index), headliner, link )
+                        link = '<a href=%s.html title="%s">%s</a>' % ( str(g.index), info, link )
                         links.append(link)
                         future = False
                     else:
-                        link = '<div title="%s">%s</div>' % ( headliner, link )
+                        link = '<div title="%s">%s</div>' % ( info, link )
                         links.append(link)
                         break # don't include multiple future gigs on a single date
 
