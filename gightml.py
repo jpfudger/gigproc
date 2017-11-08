@@ -1029,10 +1029,12 @@ class GIG_html():
             for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
                 versions = []
                 for a, g in zip(artists,gigs):
-                    link = '<a href=%s.html>%s</a>' % ( str(g.index), g.date.strftime('%d-%b-%Y') )
-                    versions.append( '[%s %s]' % ( link, a ) )
+                    info = a + ', ' + g.venue
+                    link = '<a href=%s.html title="%s">%s</a>' \
+                            % ( str(g.index), info, g.date.strftime('%d-%b-%Y') )
+                    versions.append( '%s' % link )
                     versions.sort()
-                songs.append( '\n    <li> %s %s' % ( s, ( ', '.join(versions) )) )
+                songs.append( '\n    <li> ' + s + ' (' + (', '.join(versions)) + ')' )
             songs.sort()
             string += ''.join(songs)
             string += '\n    </ul>'
