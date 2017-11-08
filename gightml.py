@@ -3,11 +3,13 @@ import time
 from gigproc.gigplot import GIG_plot
 
 class GIG_html():
-    def __init__(self, gig_data, head, playlists = False):
+    def __init__(self, gig_data, head, playlists=False, plots=True):
         self.gig_data = gig_data
         self.head = head
         self.time = time.clock()
-        self.plotter = GIG_plot(gig_data)
+        self.plotter = None
+        if plots:
+            self.plotter = GIG_plot(gig_data)
 
         # optional extras:
         self.do_covers = True           # mark covers
@@ -640,10 +642,12 @@ class GIG_html():
 
                 if len(c) > 3:
                     plot_fname = 'html/img/' + afname + '.png'
-                    self.plotter.song_breakdown(a,events,unique_songs,plot_fname)
+                    if self.plotter:
+                        self.plotter.song_breakdown(a,events,unique_songs,plot_fname)
                     breakdown += '\n<br>\n<img class=png src="img/' + afname + '.png"><br>\n'
                     #plot_fname2 = 'html/img/' + afname + '_fd.png'
-                    #self.plotter.song_freq_dist(unique_songs,plot_fname2)
+                    #if self.plotter:
+                        #self.plotter.song_freq_dist(unique_songs,plot_fname2)
                     #breakdown += '\n<br>\n<img class=png src="img/' + afname + '_fd.png"><br>\n'
                 else:
                     breakdown += '\n<br> \n' + '='*50
@@ -712,7 +716,8 @@ class GIG_html():
             # Plot venue growth:
             # if len(c) > 3:
             #     plot_fname = 'html/img/' + vfname + '.png'
-            #     self.plotter.general_plot(c,plot_fname,"Venue growth: " + v)
+            #     if self.plotter:
+            #         self.plotter.general_plot(c,plot_fname,"Venue growth: " + v)
             #     vplot_link = '<img src="img/%s.png">' % vfname
 
             self.make_file( vfname, years_string_v, venue_string, vplot_link )
@@ -765,7 +770,8 @@ class GIG_html():
             # Plot city growth
             # if len(gigs_past) > 3:
             #     plot_fname = 'html/img/' + cfname + '.png'
-            #     self.plotter.general_plot(gigs_past+gigs_future,plot_fname,"City growth: " + city)
+            #     if self.plotter:
+            #         self.plotter.general_plot(gigs_past+gigs_future,plot_fname,"City growth: " + city)
             #     cplot_link = '<img src="img/%s.png">' % cfname
 
             self.make_file( cfname, years_string_v, city_string, cplot_link )
@@ -823,15 +829,16 @@ class GIG_html():
     def make_graphs_index_string(self):
         graphs = []
 
-        self.plotter.year_growth('html/img/plot_year_growth.png')
-        self.plotter.total_progress('html/img/plot_cumulative.png')
-        self.plotter.month_growth('html/img/plot_month_growth.png')
-        self.plotter.artist_growth('html/img/plot_artist_growth.png')
-        self.plotter.venue_growth('html/img/plot_venue_growth.png')
-        #self.plotter.relative_progress('html/img/plot_relative_progress.png')
-        #self.plotter.days_growth('html/img/plot_days_growth.png')
-        self.plotter.top_venue_growth(5,'html/img/plot_top_venue_growth.png')
-        #self.plotter.freq_dist('html/img/plot_freq_dist.png')
+        if self.plotter:
+            self.plotter.year_growth('html/img/plot_year_growth.png')
+            self.plotter.total_progress('html/img/plot_cumulative.png')
+            self.plotter.month_growth('html/img/plot_month_growth.png')
+            self.plotter.artist_growth('html/img/plot_artist_growth.png')
+            self.plotter.venue_growth('html/img/plot_venue_growth.png')
+            #self.plotter.relative_progress('html/img/plot_relative_progress.png')
+            #self.plotter.days_growth('html/img/plot_days_growth.png')
+            self.plotter.top_venue_growth(5,'html/img/plot_top_venue_growth.png')
+            #self.plotter.freq_dist('html/img/plot_freq_dist.png')
 
         graphs.append('img/plot_year_growth.png')
         graphs.append('img/plot_cumulative.png')
@@ -960,7 +967,7 @@ class GIG_html():
 
             plot_string = ''
             year_plot_path = 'img/plot_%s.jpg' % str(y)
-            if self.plotter.total_progress_by_year('html/' + year_plot_path,y):
+            if self.plotter and self.plotter.total_progress_by_year('html/' + year_plot_path,y):
                 plot_string += '<img class=yearplot src="%s">' % year_plot_path
 
             # Set the index page to the date of the next future gig:
