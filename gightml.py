@@ -92,6 +92,12 @@ class GIG_html():
             return '<div class=flag title="' + force_title + '">*</div>'
         else:
             return ''
+    def cover_artist_label(self,artist):
+        artist = artist.replace(' ','')
+        artist = artist.replace('-','')
+        artist = artist.replace("'",'')
+        artist = artist.replace('&','')
+        return artist
     def gig_setlist_string(self,gig,linkback = True, liszt = None, suffix = None ):
         # linkback means whether to add artist/venue links
         ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
@@ -261,8 +267,9 @@ class GIG_html():
                     if s.cover and self.do_covers:
                         symbol = '&curren;'
                         #symbol = '*'
-                        setlist_string += '<div class=flag title="' + s.cover + \
-                                          ' cover">' + symbol + '</div>'
+                        cover_label = self.cover_artist_label(s.cover)
+                        setlist_string += '<a href="covers.html#%s" title="%s">%s</a>' % \
+                                            ( cover_label, s.cover + ' cover', symbol )
 
                     # ensure guest footnotes are in order of guest appearances
                     s.guests.sort(key=lambda g: 
@@ -1023,6 +1030,7 @@ class GIG_html():
         covers = self.gig_data.get_covers()
         string = '\n<ol>'
         for cover in covers:
+            string += '<a name="%s">' % self.cover_artist_label(cover['cover_artist'])
             string += '\n<li> <b>%s</b> (%d)' % ( cover['cover_artist'], cover['count'] )
             string += '\n    <ul>'
             songs = []
