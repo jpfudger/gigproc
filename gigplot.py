@@ -527,8 +527,6 @@ class GIG_plot():
 
         if len(dates) > 1:
             line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
-        else:
-            return False
 
         if len(future_dates) > 1:
             line2 = plt.plot(future_dates,future_totals,color=self.colour1,ls='--')
@@ -552,12 +550,14 @@ class GIG_plot():
 
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
-        if len(future_dates) > 1:
+        if len(dates) > 1 and len(future_dates) > 1:
             plt.legend( (line1[0],line2[0]), 
                         ('%d events' % year, 'Projected'), 
                         loc='upper left')
-        else:
+        elif len(dates) > 1:
             plt.legend((line1[0],), ('%d events' % year,), loc='upper left')
+        elif len(future_dates) > 1:
+            plt.legend((line2[0],), ('Projected',), loc='upper left')
 
         max_y_axis = 45
         plt.xlim([ date(year=year, month=1, day=1), date(year=year, month=12, day=31) ])
