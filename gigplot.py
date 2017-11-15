@@ -557,7 +557,7 @@ class GIG_plot():
         elif len(dates) > 1:
             plt.legend((line1[0],), ('%d events' % year,), loc='upper left')
         elif len(future_dates) > 1:
-            plt.legend((line2[0],), ('Projected',), loc='upper left')
+            plt.legend((line2[0],), ('%d projection' % year,), loc='upper left')
 
         max_y_axis = 45
         plt.xlim([ date(year=year, month=1, day=1), date(year=year, month=12, day=31) ])
