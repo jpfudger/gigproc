@@ -8,12 +8,21 @@ from datetime import datetime, timedelta, date
 from gigproc.gigplot import GIG_plot
 from gigproc.gightml import GIG_html
 
+class GIG_artist():
+    def __init__(self,name,index):
+        self.name  = name
+        self.index = index
+        self.gigs  = []
+
 class GIG_data():
     def __init__(self,root,verbose=False):
         self.root      = root
         self.verbose   = verbose
         self.gigs      = []
         self.past_gigs = []
+        self.artists   = []
+
+        self.last_artist_index = 0
 
         self.unique_artists = None  # cached
         self.unique_artists_inc_future = None  # cached
@@ -60,6 +69,18 @@ class GIG_data():
         string += '\n'
 
         return string
+
+    def find_artist(self,name):
+        artist = None
+        for a in self.artists:
+            if a.name == name:
+                artist = a
+                break
+        if not artist:
+            self.last_artist_index += 1
+            artist = GIG_artist(name, self.last_artist_index)
+            self.artists.append(artist)
+        return artist
 
     # Functions to build gig data:
     def process_song_line(self,line,this_set,opener):
@@ -162,7 +183,10 @@ class GIG_data():
             name = name.strip()
             name = re.sub( '^The\s+', '', name )
             names.append(name)
-        return names
+
+        artists = [ self.find_artist(n) for n in names ]
+
+        return artists
     def identify_first_times(self):
         for (a,c) in self.get_unique_artists():
             for song in self.get_unique_songs_of_artist(a):
@@ -251,13 +275,15 @@ class GIG_data():
                     this_gig = GIG_gig( d, v )
                 else:
                     a = self.process_artist_name( mopen.group(1) )
+                    for artist in a:
+                        artist.gigs.append(this_gig)
                     this_set = GIG_set(a)
                     this_gig.append_set(this_set)
             elif mclose:
                 last_blank = False
                 level -= 1
                 if level == 0 and not commented:
-                    this_gig.add_dummy_sets_for_guests()
+                    this_gig.add_dummy_sets_for_guests(self)
                     self.gigs.append(this_gig)
                     this_gig = None
                 if commented and com_level == level:
@@ -957,7 +983,7 @@ class GIG_gig():
         print( ' {0:8s} {1:15s} {2:30s} {3:20s}' . format( ident, date, venue, artists) )
     def append_set(self,s):
         self.sets.append(s)
-    def add_dummy_sets_for_guests(self):
+    def add_dummy_sets_for_guests(self,data):
         # Adds empty sets for song guests
         # If guests appear in a songflag but not in a set of their own, we must
         # add a dummy set (marked "guest_only") to ensure they are included in
@@ -977,7 +1003,8 @@ class GIG_gig():
         # which is usually all we need...
 
         for a in addarts:
-            this_set = GIG_set([a])
+            aa = data.find_artist(a)
+            this_set = GIG_set([aa])
             this_set.guest_only = True
             self.sets.insert(1,this_set)
 
@@ -989,7 +1016,8 @@ class GIG_gig():
                 band_artists.append(b)
 
         for b in band_artists:
-            this_set = GIG_set([b])
+            bb = data.find_artist(b)
+            this_set = GIG_set([bb])
             this_set.band_only = True
             self.sets.insert(1,this_set)
     def get_artists(self):
@@ -1006,7 +1034,7 @@ class GIG_gig():
 class GIG_set():
     def __init__(self, artists):
         self.artists    = artists
-        self.artist     = artists[0]
+        self.artist     = artists[0].name
         self.songs      = []
         self.band       = []
         # flags
