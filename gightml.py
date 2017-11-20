@@ -162,14 +162,14 @@ class GIG_html():
 
         # artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
 
-        main_artists = [ s.artist for s in gig.sets if not s.guest_only ]
+        main_artists = [ s.artists[0].name for s in gig.sets if not s.guest_only ]
 
         for g in gig.sets:
             art_songs = []
             if self.do_songcount:
                 # Calculate the number of times I have seen the song.
                 # This is very slow. We need to cache the song data.
-                art_songs = self.gig_data.get_unique_songs_of_artist(g.artist)
+                art_songs = self.gig_data.get_unique_songs_of_artist(g.artists[0].name)
 
             playlist_link = ''
             if self.do_playlists and g.playlist:
@@ -180,10 +180,11 @@ class GIG_html():
                 continue
             ag_fname = ''
             if linkback:
-                ag_fname = gig.link + '_a' + self.id_of_artist(g.artist) + '.html'
+                ag_fname = gig.link + '_a' + self.id_of_artist(g.artists[0].name) + '.html'
 
-            acount = self.gig_data.gig_artist_times(gig,g.artist)
-            alink = '<a href=' + ag_fname + ' title="Artistcount: ' + acount + '">' + g.artist + '</a>'
+            acount = self.gig_data.gig_artist_times(gig,g.artists[0].name)
+            alink = '<a href=%s title="Artistcount: %s">%s</a>' \
+                % ( ag_fname, acount, g.artists[0].name )
 
             if g.solo and self.do_solo_sets:
                alink += ' ' + self.make_flag_note('solo')
@@ -191,8 +192,8 @@ class GIG_html():
                 alink = '(' + alink + ')'
 
             asymbol = ''
-            if g.artist in gig_guests:
-                asymbol = self.footnote_symbol( gig.get_artists().index(g.artist) )
+            if g.artists[0].name in gig_guests:
+                asymbol = self.footnote_symbol( gig.get_artists().index(g.artists[0].name) )
 
             if g.guest_only:
                 continue
@@ -542,7 +543,7 @@ class GIG_html():
                 date_str = '<div class=date>' + day + \
                             gig.date.strftime(" %b %Y") + '</div>'
 
-                name_str = gig.sets[0].artist
+                name_str = gig.sets[0].artists[0].name
 
                 if force_artist != None and force_artist != name_str:
                     name_str = '<i>' + force_artist + '</i>'
@@ -555,11 +556,11 @@ class GIG_html():
                     # force_artist => only for artist giglist
                     for s in gig.sets:
                         # list band rather than band member!
-                        if s.band_only and s.artist == force_artist:
+                        if s.band_only and s.artists[0].name == force_artist:
                             for ss in gig.sets:
-                                if not ss.band_only and s.artist in ss.band:
-                                    #name_str = '<i>' + ss.artist + '</i>'
-                                    name_str = ss.artist
+                                if not ss.band_only and s.artists[0].name in ss.band:
+                                    #name_str = '<i>' + ss.artists[0].name + '</i>'
+                                    name_str = ss.artists[0].name
                                     break
 
                 if not gig.future:
@@ -570,7 +571,7 @@ class GIG_html():
                     name_str = '<a '
                     if match_id == gig.index:
                         name_str += 'class=highlight '
-                    artist = force_artist if force_artist else gig.sets[0].artist
+                    artist = force_artist if force_artist else gig.sets[0].artists[0].name
                     acount = self.gig_data.gig_artist_times(gig, artist)
                     title = 'title="Artistcount: ' + acount + '"' 
                     name_str += 'href=' + link + '.html ' + title + '>' + name_str2 + '</a>'
@@ -810,7 +811,7 @@ class GIG_html():
             links = []
             for s in g.sets:
                 if s.playlist:
-                    link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
+                    link = '<a href="' + s.playlist + '">' + s.artists[0].name + '</a>'
                     links.append(link)
             if links:
                 if y != g.date.strftime("%Y"):
@@ -826,7 +827,7 @@ class GIG_html():
         #     links = []
         #     for s in p.sets:
         #         if s.playlist:
-        #             link = '<a href="' + s.playlist + '">' + s.artist + '</a>'
+        #             link = '<a href="' + s.playlist + '">' + s.artists[0].name + '</a>'
         #             links.append(link)
         #     string += '\n  <br> <div class=date>' + p.date.strftime("%Y-%b-%d") + \
         #             '</div> &nbsp;' + " + ".join(links) + ' (' + p.venue + ')'

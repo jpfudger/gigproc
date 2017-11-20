@@ -112,16 +112,16 @@ class GIG_plot():
                     continue
                 set_index = 0
                 for s in g.sets:
-                    if s.artist in y_artists:
+                    if s.artists[0].name in y_artists:
                         pass
                     else:
-                        y_artists.append(s.artist)
+                        y_artists.append(s.artists[0].name)
                         n_artists[-1] += 1
 
-                    if s.artist in all_artists:
+                    if s.artists[0].name in all_artists:
                         pass
                     else:
-                        all_artists.append(s.artist)
+                        all_artists.append(s.artists[0].name)
                         n_new_artists[-1] += 1
                         if set_index == 0:
                             n_new_headliners[-1] += 1

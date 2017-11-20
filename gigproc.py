@@ -196,7 +196,7 @@ class GIG_data():
                         for s in g.sets:
                             try:
                                 pos = s.songs.index(song['title'])
-                                if s.artist == a or a in s.songs[pos].guests:
+                                if s.artists[0].name == a or a in s.songs[pos].guests:
                                     s.songs[pos].first_time = True
                                     break
                             except ValueError:
@@ -218,7 +218,7 @@ class GIG_data():
                     if s.playlist:
                         continue
                     date_string = g.date.strftime("%Y.%m.%d")
-                    artist_words = s.artist.lower().split(' ')
+                    artist_words = s.artists[0].name.lower().split(' ')
                     for line in lines:
                         if line in used_lines:
                             pass
@@ -343,7 +343,7 @@ class GIG_data():
             for s in g.sets:
                 for song in s.songs:
                     if song.title:
-                        artists = [ s.artist ] # + song.guests
+                        artists = [ s.artists[0].name ] # + song.guests
                         try:
                             i = [ x['title'] for x in raw_songs ].index(song.title)
                             for a in artists:
@@ -369,7 +369,7 @@ class GIG_data():
 
                     guest = False
                     main_set = False
-                    if re.search(artist, s.artist, re.IGNORECASE):
+                    if re.search(artist, s.artists[0].name, re.IGNORECASE):
                         main_set = True
                     elif s.band:
                         for b in s.band:
@@ -599,7 +599,7 @@ class GIG_data():
     def artist_is_support(self,a):
         support_only = True
         for gig in self.gigs:
-            if gig.sets[0].artist == a:
+            if gig.sets[0].artists[0].name == a:
                 support_only = False 
                 break
         return support_only
@@ -713,11 +713,11 @@ class GIG_data():
                     all_venues.append(g.venue)
 
                 for s in g.sets:
-                    if s.artist in all_artists:
+                    if s.artists[0].name in all_artists:
                         pass
                     else:
                         n_new_artists += 1
-                        all_artists.append(s.artist)
+                        all_artists.append(s.artists[0].name)
 
             n_venues.append(n_new_venues)
             n_artists.append(n_new_artists)
@@ -786,7 +786,7 @@ class GIG_data():
                             this_dict['artists'].append([])
                             this_dict['gigs'].append([])
 
-                        this_dict['artists'][idx].append(s.artist)
+                        this_dict['artists'][idx].append(s.artists[0].name)
                         this_dict['gigs'][idx].append(g)
 
         covers.sort(key=lambda x: x['count'])
@@ -814,14 +814,14 @@ class GIG_data():
                         print("=====")
                         print(g.date.strftime("%Y-%b-%d"))
                         quote = song.quote if song.quote else ""
-                        print(s.artist.ljust(30) + '"' + quote + '"')
+                        print(s.artists[0].name.ljust(30) + '"' + quote + '"')
     def get_live_debuts(self):
         debuts = []
         for g in self.gigs:
             for s in g.sets:
                 for song in s.songs:
                     if song.debut:
-                        debuts.append( [ song.title, s.artist, g ] )
+                        debuts.append( [ song.title, s.artists[0].name, g ] )
 
         debuts.sort(key=lambda x: x[2].date)
 
@@ -834,7 +834,7 @@ class GIG_data():
     def gig_artist_times(self,gig,artist):
         # gig is the nth event of artist
         for s in gig.sets:
-            if s.artist == artist:
+            if s.artists[0].name == artist:
                 if not s.artisttimes:
                     artist_count = 0
                     total = 0
@@ -965,7 +965,7 @@ class GIG_gig():
         string += "\n    Date: " + self.date.strftime('%A %d %B, %Y')
         string += "\n   Venue: " + self.venue
         for s in self.sets:
-            string += "\n  Artist: " + s.artist
+            string += "\n  Artist: " + s.artists[0].name
             for song in s.songs:
                 string += "\n          > " + song.title if song.title else "???"
         string += "\n"
@@ -973,7 +973,7 @@ class GIG_gig():
     def print_short(self):
         date = self.date.strftime('%d-%b-%Y')
         venue = self.venue
-        artist_list = [ s.artist for s in self.sets ]
+        artist_list = [ s.artists[0].name for s in self.sets ]
         artists = artist_list[0]
         if len(artist_list) > 1:
             artists += ' + ' + artist_list[1]
@@ -990,7 +990,7 @@ class GIG_gig():
         # the artist statistics.
 
         addarts = []
-        artists = [ x.artist for x in self.sets ]
+        artists = [ x.artists[0].name for x in self.sets ]
 
         for s in self.sets:
             for song in s.songs:
@@ -1024,8 +1024,8 @@ class GIG_gig():
         if not self.artists:
             self.artists = []
             for s in self.sets:
-                if not s.artist in self.artists:
-                    self.artists.append(s.artist)
+                if not s.artists[0].name in self.artists:
+                    self.artists.append(s.artists[0].name)
         return self.artists
     def stub(self):
         # short printer
@@ -1034,7 +1034,6 @@ class GIG_gig():
 class GIG_set():
     def __init__(self, artists):
         self.artists    = artists
-        self.artist     = artists[0].name
         self.songs      = []
         self.band       = []
         # flags
