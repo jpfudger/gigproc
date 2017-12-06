@@ -15,6 +15,7 @@ class GIG_html():
         self.do_covers = True           # mark covers
         self.do_playlists = playlists   # add playlist links and index
         self.do_solo_sets = False       # mark solo sets
+        self.do_requests  = False       # mark requested songs
         self.do_songcount = True        # count song occurrences (SLOW)
         self.do_graphs    = True
         self.do_covers_list = True
@@ -90,6 +91,8 @@ class GIG_html():
         elif ftype == 'custom':
             force_title = force_title[0].upper() + force_title[1:].lower()
             return '<div class=flag title="' + force_title + '">*</div>'
+        elif ftype == 'request':
+            return '<div class=flag title="Audience request">&reg;</div>'
         else:
             return ''
     def cover_artist_label(self,artist):
@@ -261,6 +264,8 @@ class GIG_html():
                         setlist_string += self.make_flag_note('improv')
                     if s.solo:
                         setlist_string += self.make_flag_note('solo')
+                    if s.request and self.do_requests:
+                        setlist_string += self.make_flag_note('request')
                     if s.debut:
                         setlist_string += self.make_flag_note('debut')
                     if s.first_time:
@@ -895,6 +900,7 @@ class GIG_html():
                     month_day_counts[-1] += 1
 
         total_coverage = 100 * sum(month_day_counts) / sum(month_days)
+        total_fraction = "%d/%d" % ( sum(month_day_counts), sum(month_days) )
         #lines.append('Total coverage: %d days = %.2f%%' % (sum(month_day_counts), total_coverage ))
         #lines.append('<br><br>')
 
@@ -904,7 +910,8 @@ class GIG_html():
 
         lines.append( '<table border=1 cellpadding=2>' )
         lines.append( '<tr>' )
-        lines.append( '<td style="padding: 5px">%.1f%%</td>' % total_coverage )
+        lines.append( '<td style="padding: 5px"><div title="%s">%.1f%%</div></td>' % \
+                ( total_fraction, total_coverage ) )
         for day in range(1,32):
             lines.append( '<td style="padding: 5px">%s</td>' % day )
         lines.append( '</tr>' )

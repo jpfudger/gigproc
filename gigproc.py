@@ -148,6 +148,8 @@ class GIG_data():
                             song.debut = True
                         elif x == 'improv':
                             song.improv = True
+                        elif x == 'request':
+                            song.request = True
                         else:
                             song.custom.append(x)
                 if '<' in splits[1]:
@@ -1057,6 +1059,7 @@ class GIG_song():
         self.set_opener  = False
         self.debut       = False
         self.improv      = False
+        self.request     = False
         self.quote       = None
         self.cover       = None
         self.youtube     = None
