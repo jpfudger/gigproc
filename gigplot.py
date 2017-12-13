@@ -8,7 +8,7 @@ class GIG_plot():
         self.colour1  = '#153E7E' # blue
         self.colour2  = '#C9BE62' # yellow
         self.colour3  = '#CCCCCC' # grey
-        self.colour4  = 'red'     # red
+        self.colour4  = '#8B0000' # red
         self.year     = datetime.today().year
     def top_venue_growth(self,top_n=5,dest=None):
         self.n_graphs += 1
@@ -242,6 +242,7 @@ class GIG_plot():
         years = []
         total_counts = []
         relative_counts = []
+        dylan_counts = []
         future_counts = []  # total + future
 
         max_y_axis = 45
@@ -249,12 +250,16 @@ class GIG_plot():
         for (y,c) in y_gigs:
             years.append(y)
             relative_counts.append(0)
+            dylan_counts.append(0)
             total_counts.append(0)
             future_counts.append(0)
             for g in c:
                 if end_date and g.date > end_date:
                     continue
                 future_counts[-1] += 1
+                if 'Bob Dylan' in g.get_artists():
+                    dylan_counts[-1] += 1
+
                 if not g.future:
                     total_counts[-1] += 1
                     if g.date.timetuple().tm_yday <= yday:
@@ -264,20 +269,23 @@ class GIG_plot():
 
         ind = range(1,len(years)+1)
         if not end_date:
-            bar0 = ax.bar( ind, future_counts,   align='center', color=self.colour3 )
-        bar1 = ax.bar( ind, total_counts,    align='center', color=self.colour1 )
-        bar2 = ax.bar( ind, relative_counts, align='center', color=self.colour2 )
+            bar_future = ax.bar( ind, future_counts,  align='center', color=self.colour3 )
+        bar_tot = ax.bar( ind, total_counts,          align='center', color=self.colour1 )
+        bar_rel = ax.bar( ind, relative_counts,       align='center', color=self.colour2 )
+        bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', color=self.colour4 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         today = datetime.today()
         ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
         datestr = str(ordinal(today.day)) + today.strftime(" %b")
-        plt.legend((bar1[0],), ('Events up to %s' % datestr,), loc='upper left')
+        plt.legend((bar_tot[0],), ('Events up to %s' % datestr,), loc='upper left')
 
         if not end_date:
-            plt.legend((bar1[0], bar2[0], bar0[0]), ('Total events', \
+            plt.legend((bar_tot[0], bar_rel[0], bar_future[0], bar_dyl[0]), ('Total events', \
                 'Events up to %s' % datestr, \
-                'Projected total' ), loc='upper left' )
+                'Projected total',
+                'Dylan events',
+                ), loc='upper left' )
 
         #ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
