@@ -608,17 +608,30 @@ class GIG_html():
         elif str(h) == str(y):
             return True
     def make_years_string(self,highlight_year=None):
+        # years will include extras (artists, venues, etc.)
         years_string = ''
+        year_gigs = self.gig_data.get_unique_years(False)
         for y in self.years:
             if y == '':
                 years_string += '\n<br>'
             else:
+                title = ''
+                try:
+                    # count gigs and add hover title
+                    y_num = int(y)
+                    n_events = 0
+                    for gy,gc in year_gigs:
+                        if gy == y_num: n_events = len(gc)
+                    title = ' title="%d events"' % n_events
+                except ValueError:
+                    pass
+
                 if y[-1] == '0':
                     years_string += '\n<br>'
                 years_string += '\n<div class=yr> <a '
                 if self.is_highlight_year( highlight_year, y ):
                     years_string += 'class=highlight '
-                years_string += 'href=' + str(y).lower() + '.html>' + str(y) + '</a> </div>'
+                years_string += 'href=' + str(y).lower() + '.html' + title + '>' + str(y) + '</a> </div>'
         return years_string
     def make_artist_index_string(self,years_string_a):
         all_artists = self.gig_data.get_unique_artists()
