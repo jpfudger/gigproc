@@ -9,7 +9,7 @@ class GIG_plot():
         self.colour2  = '#C9BE62' # yellow
         self.colour3  = '#CCCCCC' # grey
         self.colour4  = '#8B0000' # red
-        self.year     = datetime.today().year
+        self.year     = gig_data.next_gig().date.year
     def top_venue_growth(self,top_n=5,dest=None):
         self.n_graphs += 1
 
@@ -257,13 +257,13 @@ class GIG_plot():
                 if end_date and g.date > end_date:
                     continue
                 future_counts[-1] += 1
-                if 'Bob Dylan' in g.get_artists():
-                    dylan_counts[-1] += 1
 
                 if not g.future:
                     total_counts[-1] += 1
                     if g.date.timetuple().tm_yday <= yday:
                         relative_counts[-1] += 1
+                    if 'Bob Dylan' in g.get_artists():
+                        dylan_counts[-1] += 1
             if y == self.year:
                 break
 
@@ -271,7 +271,7 @@ class GIG_plot():
         if not end_date:
             bar_future = ax.bar( ind, future_counts,  align='center', color=self.colour3 )
         bar_tot = ax.bar( ind, total_counts,          align='center', color=self.colour1 )
-        bar_rel = ax.bar( ind, relative_counts,       align='center', color=self.colour2 )
+        bar_rel = ax.bar( ind, relative_counts, 0.6,  align='center', color=self.colour2 )
         bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', color=self.colour4 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
@@ -281,7 +281,7 @@ class GIG_plot():
         plt.legend((bar_tot[0],), ('Events up to %s' % datestr,), loc='upper left')
 
         if not end_date:
-            plt.legend((bar_tot[0], bar_rel[0], bar_future[0], bar_dyl[0]), ('Total events', \
+            plt.legend((bar_tot[0], bar_rel[0], bar_dyl[0], bar_future[0]), ('Total events', \
                 'Events up to %s' % datestr, \
                 'Projected total',
                 'Dylan events',

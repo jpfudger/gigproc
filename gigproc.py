@@ -463,6 +463,10 @@ class GIG_data():
             print("\nGig days: %d/366 = %.1f%%" % (gig_days, gig_days/3.66))
 
         return dates, gigs
+    def next_gig(self):
+        for g in self.gigs:
+            if g.future:
+                return g
 
     # Queries on gig data:
     def all_gigs_of_artist(self,artist,inc_future=False):
@@ -1031,7 +1035,9 @@ class GIG_gig():
         return self.artists
     def stub(self):
         # short printer
-        return "%s %s   %s" % (self.sets[0].artist.ljust(20), self.date.strftime("%d-%b-%Y (%a)"), self.venue )
+        headliner = self.sets[0].artists[0].name
+        date = self.date.strftime("%d-%b-%Y (%a)")
+        return "%s %s   %s" % (headliner.ljust(20), date, self.venue )
 
 class GIG_set():
     def __init__(self, artists):
