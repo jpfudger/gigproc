@@ -51,7 +51,7 @@ class GIG_plot():
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
-        plt.title("Venue Growth (Top %d)" % top_n)
+        #plt.title("Venue Growth (Top %d)" % top_n)
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
@@ -283,8 +283,8 @@ class GIG_plot():
         if not end_date:
             plt.legend((bar_tot[0], bar_rel[0], bar_dyl[0], bar_future[0]), ('Total events', \
                 'Events up to %s' % datestr, \
-                'Projected total',
                 'Dylan events',
+                'Projected total',
                 ), loc='upper left' )
 
         #ax.set_axisbelow(True)
