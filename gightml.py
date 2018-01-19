@@ -943,15 +943,15 @@ class GIG_html():
                 links = []
                 for i,g in enumerate(gigs):
                     link = str(g.date.year)
-                    info = g.get_artists()[0] + ', ' + g.city
+                    info = g.get_artists()[0] + ', ' + g.venue + ' (' + g.date.strftime('%A') + ')'
                     if not g.future:
                         link = '<a href=%s.html title="%s">%s</a>' % ( str(g.index), info, link )
                         links.append(link)
                         future = False
                     else:
-                        link = '<div title="%s">%s</div>' % ( info, link )
+                        link = '<div style="display: inline" title="%s">%s</div>' % ( info, link )
                         links.append(link)
-                        break # don't include multiple future gigs on a single date
+                        # break # don't include multiple future gigs on a single date
 
                 if future:
                     lines.append('<td bgcolor="%s" style="padding: 3px">' % col_empty)
