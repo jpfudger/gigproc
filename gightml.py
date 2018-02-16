@@ -346,12 +346,14 @@ class GIG_html():
         col_blue   = '#153E7E'
         col_yellow = '#C9BE62'
         col_red    = '#990000'
+        col_dark_red = '#641E16'
 
         col_maintext  = col_gray
         col_mainbg    = col_black
         col_boxbg     = col_blue
         col_border    = col_yellow
         col_highlight = col_red
+        col_empty     = col_dark_red
 
         col_gigbg = col_mainbg
         col_setlbg = col_mainbg
@@ -475,6 +477,19 @@ class GIG_html():
             'table {',
             '    font-size: 1.7ex;',
             '    border-collapse: collapse',
+            '    }',
+            'td.calendar {',
+            '    padding: 3px;',
+            '    border: 1px solid ' + col_maintext + ';',
+            '    }',
+            'td.calendar_empty {',
+            '    padding: 3px;',
+            '    border: 1px solid ' + col_maintext + ';',
+            '    background-color: ' + col_empty + ';',
+            '    }',
+            'td.calendar_wide {',
+            '    padding: 5px;',
+            '    border: 1px solid ' + col_maintext + ';',
             '    }',
             '.date {',
             '    font-weight: bold;',
@@ -894,9 +909,6 @@ class GIG_html():
 
         lines = []
 
-        col_red   = ' #641E16'
-        col_empty = col_red
-
         month_days = [ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
         month_day_counts = []
         month_day_percentages = []
@@ -921,12 +933,12 @@ class GIG_html():
             pc = 100 * month_day_counts[i] / month_days[i]
             month_day_percentages.append(pc)
 
-        lines.append( '<table border=1 cellpadding=2>' )
+        lines.append( '<table cellpadding=2>' )
         lines.append( '<tr>' )
-        lines.append( '<td style="padding: 5px"><div title="%s">%.1f%%</div></td>' % \
+        lines.append( '<td class="calendar_wide"><div title="%s">%.1f%%</div></td>' % \
                 ( total_fraction, total_coverage ) )
         for day in range(1,32):
-            lines.append( '<td style="padding: 5px">%s</td>' % day )
+            lines.append( '<td class="calendar_wide">%s</td>' % day )
         lines.append( '</tr>' )
 
         for date, gigs in zip(cal_dates,cal_gigs):
@@ -937,7 +949,7 @@ class GIG_html():
                 m_index = int(date.strftime("%m")) - 1
                 m_percent = month_day_percentages[m_index]
                 div = '<div title="%.1f%% coverage">%s</div>' % ( m_percent, date.strftime("%B") )
-                lines.append('<td style="padding: 5px">%s</td>' % div)
+                lines.append('<td class="calendar_wide">%s</td>' % div)
             if len(gigs) > 0:
                 future = True
                 links = []
@@ -954,14 +966,14 @@ class GIG_html():
                         # break # don't include multiple future gigs on a single date
 
                 if future:
-                    lines.append('<td bgcolor="%s" style="padding: 3px">' % col_empty)
+                    lines.append('<td class="calendar_empty">')
                 else:
-                    lines.append('<td style="padding: 3px">')
+                    lines.append('<td class="calendar">')
 
                 lines.append("<br>".join(links))
                 lines.append('</td>')
             else:
-                lines.append('<td bgcolor="%s" style="padding: 3px">' % col_empty)
+                lines.append('<td class="calendar_empty">')
                 lines.append('</td>')
 
         lines.append('</tr>')
