@@ -938,7 +938,7 @@ class GIG_html():
         lines.append( '<td class="calendar_wide"><div title="%s">%.1f%%</div></td>' % \
                 ( total_fraction, total_coverage ) )
         for day in range(1,32):
-            lines.append( '<td class="calendar_wide">%s</td>' % day )
+            lines.append( '<td align="center" class="calendar_wide">%s</td>' % day )
         lines.append( '</tr>' )
 
         for date, gigs in zip(cal_dates,cal_gigs):
