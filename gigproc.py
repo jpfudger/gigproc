@@ -203,46 +203,62 @@ class GIG_data():
                                     break
                             except ValueError:
                                 pass
-    def fill_in_playlist_links(self):
+    def load_playlists(self):
         fname = self.root + '/playlists'
-        lines = []
-        try:
-            with open(fname) as f:
-                for l in f.read().splitlines():
-                    if True or os.path.exists(l):
-                        lines.append(l)
-        except FileNotFoundError:
-            pass
-        if len(lines) > 0:
-            used_lines = []
+        playlists = []
+        with open(fname) as f:
+            for line in f.readlines():
+                playlist = {}
+                splits = line.split('---')
+                path = splits[0].strip()
+                if path.startswith('~'):
+                    path = os.path.expanduser(path)
+                playlist["path"] = path
+                playlist["artist"] = None
+                playlist["artist_alt"] = None
+                if len(splits) > 1:
+                    playlist["artist"] = splits[1].strip()
+                else:
+                    splits = path.split('/')
+                    playlist["artist"] = splits[5]
+                    if ',' in splits[5]:
+                        names = splits[5].split(',')
+                        if len(names) == 2:
+                            playlist["artist_alt"] = names[1].strip() + " " + names[0].strip()
+                            #print(playlist["artist_alt"])
+
+                playlists.append(playlist)
+        return playlists
+    def fill_in_playlist_links(self):
+        playlists = self.load_playlists()
+        if playlists:
             for g in self.gigs:
                 for s in [ x for x in g.sets if not x.band_only ]:
                     if s.playlist:
                         continue
                     date_string = g.date.strftime("%Y.%m.%d")
-                    artist_words = s.artists[0].name.lower().split(' ')
-                    for line in lines:
-                        if line in used_lines:
-                            pass
-                        elif not date_string in line:
-                            pass
-                        else:
-                            checked_all_names = True
-                            if len(artist_words) == 2 and artist_words[1] == 'dylan':
-                                checked_all_names = 'dylan' in line.lower()
-                                pass
-                            else:
-                                for aw in artist_words:
-                                    if aw.lower() == 'the':
-                                        pass
-                                    elif not aw in line.lower():
-                                        checked_all_names = False
-                                        break
-                            if checked_all_names:
-                                s.playlist = line
-                                if len(self.playlist_gigs) == 0 or self.playlist_gigs[-1] != g:
-                                    self.playlist_gigs.append(g)
-                                    used_lines.append(line)
+                    artist = s.artists[0].name
+                    #print(date_string + ' [%s]' % artist)
+                    #print(artist)
+                    #candidates = [ x for x in playlists if date_string in x["path"] ]
+                    for i, pl in enumerate(playlists):
+                        if not date_string in pl["path"]:
+                            continue
+                        #print(pl)
+                        if pl["artist"] and pl["artist"] == artist:
+                            s.playlist = pl["path"]
+                            del playlists[i]
+                        elif pl["artist_alt"] and pl["artist_alt"] == artist:
+                            s.playlist = pl["path"]
+                            del playlists[i]
+                        elif artist in pl["path"]:
+                            s.playlist = pl["path"]
+                            del playlists[i]
+
+        # Print playlists which have not been matched to a set:
+        #for pl in playlists:
+            #print(pl)
+
     def get_data_from_file(self,path):
         level = 0
         commented = False
