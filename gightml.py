@@ -514,7 +514,7 @@ class GIG_html():
             '.png {',
             '    width: 35em;', #500px;', #30%;',
             '    }',
-            'pre {',
+            '.breakdown {',
             '    font-family: "courier new", courier, monospace;',
             '    font-size: 14px;',
             '    }',
@@ -695,7 +695,9 @@ class GIG_html():
 
                 breakdown += '<br><br>Breakdown of %d songs across %d events (%.2f songs/event):<br>' \
                                 % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
-                breakdown += '\n<pre>'
+                breakdown += '\n<div class=breakdown>'
+                breakdown += '\n<table>'
+                breakdown += '\n<br>'
 
                 for song in unique_songs:
                     event_string = ""
@@ -709,13 +711,19 @@ class GIG_html():
                             event_string += '-'
                     songtitle = song['title']
                     if song['obj'].cover:
-                        songtitle += ' *'
-                        # adding a hover title upsets the plain text alignment
-                        #greyflag = '<div class=greyflag title="' + song['obj'].cover + '">*</div>'
-                        #songtitle += ' ' + greyflag
-                    breakdown += '<br>{0:3d} {1:50s} {2:30s}' \
-                        . format( len(song['events']), songtitle, event_string )
-                breakdown += '\n</pre>'
+                        #adding a hover title upsets the plain text alignment
+                        symbol = '&curren;'
+                        #symbol = '*'
+                        cover_label = self.cover_artist_label(song['obj'].cover)
+                        songtitle += ' <a href="covers.html#%s" title="%s">%s</a>' % \
+                                            ( cover_label, song['obj'].cover + ' cover', symbol )
+
+                    songcount = str(len(song['events']))
+                    breakdown += self.row( [ songcount + '&nbsp;', songtitle + '&nbsp;', event_string ], 'rll' )
+                    #breakdown += '<br>{0:3d} {1:50s} {2:30s}' \
+                        #. format( len(song['events']), songtitle, event_string )
+                breakdown += '\n</table>'
+                breakdown += '\n</div>'
 
             self.make_file( afname, years_string_a, artist_string + breakdown, '' )
 
