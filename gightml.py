@@ -718,6 +718,8 @@ class GIG_html():
                         cover_label = self.cover_artist_label(song['obj'].cover)
                         songtitle += ' <a href="covers.html#%s" title="%s">%s</a>' % \
                                             ( cover_label, song['obj'].cover + ' cover', symbol )
+                    if song['obj'].improv:
+                        songtitle += ' ' + self.make_flag_note('improv')
 
                     songcount = str(len(song['events']))
                     breakdown += self.row( [ songcount + self.sp(1), songtitle + self.sp(2), event_string ], 'rll' )
