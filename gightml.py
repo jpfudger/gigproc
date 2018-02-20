@@ -695,12 +695,12 @@ class GIG_html():
 
                 breakdown += '<br><br>Breakdown of %d songs across %d events (%.2f songs/event):<br>' \
                                 % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
-                breakdown += '\n<div class=breakdown>'
+
                 breakdown += '\n<table>'
                 breakdown += '\n<br>'
 
                 for song in unique_songs:
-                    event_string = ""
+                    event_string = "<div class=breakdown>"
                     for event in events:
                         if event in song['events']:
                             #event_string += 'X'
@@ -709,6 +709,7 @@ class GIG_html():
                             event_string += '<div class=greyflag title="' + title + '">X</div>'
                         else:
                             event_string += '-'
+                    event_string += "</div>"
                     songtitle = song['title']
                     if song['obj'].cover:
                         #adding a hover title upsets the plain text alignment
@@ -719,11 +720,10 @@ class GIG_html():
                                             ( cover_label, song['obj'].cover + ' cover', symbol )
 
                     songcount = str(len(song['events']))
-                    breakdown += self.row( [ songcount + '&nbsp;', songtitle + '&nbsp;', event_string ], 'rll' )
+                    breakdown += self.row( [ songcount + self.sp(1), songtitle + self.sp(2), event_string ], 'rll' )
                     #breakdown += '<br>{0:3d} {1:50s} {2:30s}' \
                         #. format( len(song['events']), songtitle, event_string )
                 breakdown += '\n</table>'
-                breakdown += '\n</div>'
 
             self.make_file( afname, years_string_a, artist_string + breakdown, '' )
 
