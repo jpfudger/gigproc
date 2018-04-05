@@ -370,6 +370,74 @@ class GIG_plot():
             plt.close()
         else:
             plt.show(block=False)
+    def h_index(self,dest=None):
+        gigs = self.gig_data.gigs[:]
+
+        h_dates = []
+        h_values = []
+        f_h_dates = []
+        f_h_values = []
+
+        artist_counts = {}
+
+        for gig in gigs:
+            for a in gig.get_artists():
+                if a in artist_counts:
+                    artist_counts[a] += 1
+                else:
+                    artist_counts[a] = 1
+
+            l = list(artist_counts.items())
+            l.sort(key=lambda x: x[1])
+            l.reverse()
+
+            # calculate h for this subset
+            current_h = 0
+            for i, (a, c) in enumerate(l):
+                if c >= i+1:
+                    current_h = i+1
+                else:
+                    break
+
+            if len(h_values) == 0 or current_h != h_values[-1]:
+
+                if gig.future:
+                    if len(f_h_values) == 0:
+                        f_h_values.append(h_values[-1])
+                        f_h_dates.append(h_dates[-1])
+                    f_h_values.append(current_h)
+                    f_h_dates.append(gig.date)
+                else:
+                    h_values.append(current_h)
+                    h_dates.append(gig.date)
+
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+
+        line1 = plt.plot(h_dates,h_values,color=self.colour1) #,linewidth=2.0)
+        line2 = plt.plot(f_h_dates,f_h_values,color=self.colour1,ls='--') #,linewidth=2.0)
+        dots1 = plt.plot(h_dates,h_values,color=self.colour2,marker='o',ls='')
+
+        years = [ date(y[0],1,1) for y in self.gig_data.get_unique_years() ]
+        plt.xticks(years,[xx.strftime("%y") for xx in years])
+
+        plt.legend((line1[0],line2[0]), ('Evolution of h-index','Projected'), loc='upper left')
+
+        ax.set_axisbelow(True)
+
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
+                  datetime.strptime(str(years[-1].year+1),"%Y")])
+
+        plt.ylim( bottom=0, top=10 )
+
+        if dest:
+            fig.savefig(dest, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
     def freq_dist(self,dest=None):
         self.n_graphs += 1
 
@@ -602,7 +670,8 @@ class GIG_plot():
 
         # plotting against date rather than index breaks something in plt:
         dates = [e.date.date() for e in events]
-        line1 = plt.plot(dates,new_songs,marker='.')
+        line1 = plt.plot(dates,new_songs)
+        dots1 = plt.plot(dates,new_songs,color=self.colour2,marker='o',ls='')
 
         plt.legend((line1[0],), ('Unique song count: ' + artist,), loc='upper left')
 

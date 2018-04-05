@@ -888,8 +888,9 @@ class GIG_html():
             self.plotter.artist_growth('html/img/plot_artist_growth.png')
             self.plotter.venue_growth('html/img/plot_venue_growth.png')
             #self.plotter.relative_progress('html/img/plot_relative_progress.png')
-            #self.plotter.days_growth('html/img/plot_days_growth.png')
+            self.plotter.days_growth('html/img/plot_days_growth.png')
             self.plotter.top_venue_growth(5,'html/img/plot_top_venue_growth.png')
+            self.plotter.h_index('html/img/plot_h_index.png')
             #self.plotter.freq_dist('html/img/plot_freq_dist.png')
 
         graphs.append('img/plot_year_growth.png')
@@ -898,9 +899,10 @@ class GIG_html():
         graphs.append('img/plot_artist_growth.png')
         graphs.append('img/plot_venue_growth.png')
         #graphs.append('img/plot_relative_progress.png')
-        #graphs.append('img/plot_days_growth.png')
+        graphs.append('img/plot_days_growth.png')
         graphs.append('img/plot_top_venue_growth.png')
         #graphs.append('img/plot_freq_dist.png')
+        graphs.append('img/plot_h_index.png')
 
         string = '<br> <br> <center>\n'
         count = 0
