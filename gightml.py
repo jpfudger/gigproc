@@ -727,6 +727,7 @@ class GIG_html():
                         #. format( len(song['events']), songtitle, event_string )
                 breakdown += '\n</table>'
 
+            breakdown += '\n<br>'
             self.make_file( afname, years_string_a, artist_string + breakdown, '' )
 
             for gig in c:
