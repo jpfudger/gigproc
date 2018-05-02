@@ -299,6 +299,9 @@ class GIG_html():
         return setlist_string
     def make_file( self, filename, years_string, gigs_string, setlist_string, img = ""):
         # writes lines to file
+        if filename == "":
+            print("Refusing to write an untitled html file")
+            return
         fname_html = self.head + filename + '.html'
         img_string = ''
         if os.path.isfile('./html/' + img):
@@ -888,8 +891,8 @@ class GIG_html():
             self.plotter.artist_growth('html/img/plot_artist_growth.png')
             self.plotter.venue_growth('html/img/plot_venue_growth.png')
             #self.plotter.relative_progress('html/img/plot_relative_progress.png')
-            self.plotter.days_growth('html/img/plot_days_growth.png')
-            self.plotter.top_venue_growth(5,'html/img/plot_top_venue_growth.png')
+            #self.plotter.days_growth('html/img/plot_days_growth.png')
+            #self.plotter.top_venue_growth(5,'html/img/plot_top_venue_growth.png')
             self.plotter.h_index('html/img/plot_h_index.png')
             #self.plotter.freq_dist('html/img/plot_freq_dist.png')
 
@@ -899,8 +902,8 @@ class GIG_html():
         graphs.append('img/plot_artist_growth.png')
         graphs.append('img/plot_venue_growth.png')
         #graphs.append('img/plot_relative_progress.png')
-        graphs.append('img/plot_days_growth.png')
-        graphs.append('img/plot_top_venue_growth.png')
+        #graphs.append('img/plot_days_growth.png')
+        #graphs.append('img/plot_top_venue_growth.png')
         #graphs.append('img/plot_freq_dist.png')
         graphs.append('img/plot_h_index.png')
 

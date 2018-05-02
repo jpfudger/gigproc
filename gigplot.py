@@ -271,8 +271,8 @@ class GIG_plot():
         if not end_date:
             bar_future = ax.bar( ind, future_counts,  align='center', color=self.colour3 )
         bar_tot = ax.bar( ind, total_counts,          align='center', color=self.colour1 )
-        bar_rel = ax.bar( ind, relative_counts, 0.6,  align='center', color=self.colour2 )
-        bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', color=self.colour4 )
+        bar_rel = ax.bar( ind, relative_counts,       align='center', color=self.colour2 )
+        #bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', color=self.colour4 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         today = datetime.today()
@@ -281,9 +281,11 @@ class GIG_plot():
         plt.legend((bar_tot[0],), ('Events up to %s' % datestr,), loc='upper left')
 
         if not end_date:
-            plt.legend((bar_tot[0], bar_rel[0], bar_dyl[0], bar_future[0]), ('Total events', \
+            plt.legend((bar_tot[0], bar_rel[0], 
+                #bar_dyl[0], 
+                bar_future[0]), ('Total events', \
                 'Events up to %s' % datestr, \
-                'Dylan events',
+                #'Dylan events',
                 'Projected total',
                 ), loc='upper left' )
 
@@ -422,7 +424,7 @@ class GIG_plot():
         years = [ date(y[0],1,1) for y in self.gig_data.get_unique_years() ]
         plt.xticks(years,[xx.strftime("%y") for xx in years])
 
-        plt.legend((line1[0],line2[0]), ('Evolution of h-index','Projected'), loc='upper left')
+        plt.legend((line1[0],line2[0]), ('Artist h-index','Projected'), loc='upper left')
 
         ax.set_axisbelow(True)
 
