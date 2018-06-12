@@ -602,6 +602,7 @@ class GIG_plot():
 
         dates.insert(0, date(year=year, month=1, day=1) )
         totals.insert(0,0)
+        line1 = None
 
         if len(dates) > 1:
             line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
@@ -628,11 +629,11 @@ class GIG_plot():
 
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
-        if len(dates) > 1 and len(future_dates) > 1:
+        if len(dates) > 1 and len(future_dates) > 1 and line1:
             plt.legend( (line1[0],line2[0]), 
                         ('%d events' % year, 'Projected'), 
                         loc='upper left')
-        elif len(dates) > 1:
+        elif len(dates) > 1 and line1:
             plt.legend((line1[0],), ('%d events' % year,), loc='upper left')
         elif len(future_dates) > 1:
             plt.legend((line2[0],), ('%d projection' % year,), loc='upper left')
