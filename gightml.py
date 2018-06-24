@@ -1079,7 +1079,7 @@ class GIG_html():
         covers = self.gig_data.get_covers()
         string = '\n<ol>'
         for cover in covers:
-            string += '<a name="%s">' % self.cover_artist_label(cover['cover_artist'])
+            string += '<a name="%s"></a>' % self.cover_artist_label(cover['cover_artist'])
             string += '\n<li> <b>%s</b> (%d)' % ( cover['cover_artist'], cover['count'] )
             string += '\n    <ul>'
             songs = []
