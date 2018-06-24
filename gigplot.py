@@ -649,7 +649,9 @@ class GIG_plot():
         return True
     def song_breakdown(self,artist,events,unique_songs,dest=None):
         event_idx = list(range(1,len(events)+1))
-        new_songs = [0 for event in events]
+        new_songs = [0] * len(events)
+        support_new_songs = []
+        support_dates = []
         
         for song in unique_songs:
             index = 0
@@ -661,6 +663,11 @@ class GIG_plot():
 
         for i in range(1,len(events)):
             new_songs[i] += new_songs[i-1]
+
+        for i in range(0,len(events)):
+            if events[i].get_artists()[0] != artist:
+                support_new_songs.append(new_songs[i])
+                support_dates.append(events[i].date.date())
 
         #print(event_idx)
         #print(new_songs)
@@ -675,6 +682,7 @@ class GIG_plot():
         dates = [e.date.date() for e in events]
         line1 = plt.plot(dates,new_songs)
         dots1 = plt.plot(dates,new_songs,color=self.colour2,marker='o',ls='')
+        dots2 = plt.plot(support_dates,support_new_songs,color=self.colour1,marker='o',ls='')
 
         plt.legend((line1[0],), ('Unique song count: ' + artist,), loc='upper left')
 
