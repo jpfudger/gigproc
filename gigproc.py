@@ -811,8 +811,8 @@ class GIG_data():
                         this_dict['artists'][idx].append(s.artists[0].name)
                         this_dict['gigs'][idx].append(g)
 
-        covers.sort(key=lambda x: x['count'])
-        covers.reverse()
+        covers = sorted(covers, key=lambda x: x['cover_artist'], reverse=False )
+        covers = sorted(covers, key=lambda x: x['count'], reverse=True )
 
         if verbose:
             for cover in covers:
