@@ -14,7 +14,7 @@ class GIG_html():
         # optional extras:
         self.do_covers = True           # mark covers
         self.do_playlists = playlists   # add playlist links and index
-        self.do_solo_sets = False       # mark solo sets
+        self.do_solo_sets = True        # mark solo sets
         self.do_requests  = False       # mark requested songs
         self.do_songcount = True        # count song occurrences (SLOW)
         self.do_graphs    = True
@@ -706,10 +706,19 @@ class GIG_html():
                     event_string = "<div class=breakdown>"
                     for event in events:
                         if event in song['events']:
-                            #event_string += 'X'
+                            symbol = 'X'
+                            for s in event.sets:
+                                if a in [x.name for x in s.artists]:
+                                    for ss in s.songs:
+                                        if ss.title == song['title']:
+                                            if ss.solo:
+                                                symbol = 'S'
+                                            if s.solo and not ss.guests:
+                                                symbol = 'S'
+                                            break
                             title = song['title'] + ' / ' + event.venue + \
                                                     ' / ' + event.date.strftime("%d %b %Y")
-                            event_string += '<div class=greyflag title="' + title + '">X</div>'
+                            event_string += '<div class=greyflag title="%s">%s</div>' % ( title, symbol )
                         else:
                             event_string += '-'
                     event_string += "</div>"
