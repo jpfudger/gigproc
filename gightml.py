@@ -289,8 +289,6 @@ class GIG_html():
                     if s.custom:
                         custom_text = ' / '.join(s.custom)
                         setlist_string += self.make_flag_note( 'custom', custom_text )
-                    if s.youtube:
-                        setlist_string += self.make_youtube_link(s.youtube)
 
                 setlist_string += '\n</' + list_tag + '>'
             else:
@@ -1079,11 +1077,6 @@ class GIG_html():
             self.make_file( 'calendar', years_string_c, calendar_string, '' )
 
         return
-    def make_youtube_link(self,yt):
-        link = '<a href="http://www.youtube.com/watch?v=' + yt + '">'
-        link += '&bullet;'
-        link += '</a>'
-        return link
     def make_covers_string(self):
         covers = self.gig_data.get_covers()
         string = '\n<ol>'

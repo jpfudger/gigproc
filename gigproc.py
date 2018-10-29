@@ -166,10 +166,6 @@ class GIG_data():
                 #     song.debut = True
                 # if '[improv]' in splits[1]:
                 #     song.improv = True
-                if '|' in splits[1]:
-                    m = re.match( '.*\|(\w+)\|.*', splits[1] )
-                    if m:
-                        song.youtube = m.group(1)
             this_set.append_song(song)
     def process_venue_name(self,name):
         # This does nothing, but it would be nice to sort out underscores.
@@ -1084,7 +1080,6 @@ class GIG_song():
         self.request     = False
         self.quote       = None
         self.cover       = None
-        self.youtube     = None
         self.custom      = []
         self.count       = 0
 
