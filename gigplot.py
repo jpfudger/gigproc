@@ -521,7 +521,7 @@ class GIG_plot():
         dates = []
         years = []
 
-        max_y_axis = 420
+        max_y_axis = 450
 
         for (y,c) in gigs_by_year:
             # running_total += 1 # comment this out for cumulative annual count
