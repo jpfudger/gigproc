@@ -287,6 +287,10 @@ class GIG_data():
                     d = datetime.strptime( m1.group(1), date_regex )
                     v = self.process_venue_name( m1.group(2) )
                     this_gig = GIG_gig( d, v )
+                elif not this_gig:
+                    # This can happen when the regex doesn't match (e.g. due to a missing "]"), 
+                    # so we misinterpret a set as an event. 
+                    raise ValueError("Malformed line? : " + line)
                 else:
                     a = self.process_artist_name( mopen.group(1) )
                     for artist in a:
