@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, date
 
-def get_artist_bios():
+def get_artist_bios(root):
     bios = {}
     lines = []
-    with open('artist_data') as f:
+    path = root + '/artist_data'
+    with open(path) as f:
         lines = f.readlines()
 
     for line in lines:
@@ -912,7 +913,7 @@ class GIG_plot():
             plt.show(block=False)
             plt.show()
     def artist_demographics(self,dest_ages=None,dest_av=None,dest_genders=None):
-        bios = get_artist_bios()
+        bios = get_artist_bios(self.gig_data.root)
         gigs_by_year = self.gig_data.get_unique_years()
         gigs_by_year.sort()
 
