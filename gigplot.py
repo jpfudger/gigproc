@@ -1,6 +1,36 @@
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, date
 
+def get_artist_bios():
+    bios = {}
+    lines = []
+    with open('artist_data') as f:
+        lines = f.readlines()
+
+    for line in lines:
+        bio = {
+            'dob'    : None,
+            'gender' : None,
+            'dod'    : None,
+            }
+        splits = line.split(':')
+        splits = [ x.strip() for x in splits ]
+
+        artist = splits[0]
+
+        if len(splits) > 1 and splits[1]:
+            bio['dob'] = datetime.strptime( splits[1], '%Y-%m-%d').date()
+
+        if len(splits) > 2 and splits[2]:
+            bio['gender'] = splits[2]
+
+        if len(splits) > 3 and splits[3]:
+            bio['dod'] = datetime.strptime( splits[3], '%Y-%m-%d').date()
+
+        bios[artist] = bio
+
+    return bios
+
 class GIG_plot():
     def __init__(self, gig_data):
         self.gig_data = gig_data
@@ -128,9 +158,12 @@ class GIG_plot():
                     set_index += 1
         
         ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_artists,        align='center', color=self.colour1 )
-        bar2 = ax.bar( ind, n_new_artists,    align='center', color=self.colour2 )
-        bar3 = ax.bar( ind, n_new_headliners, align='center', color=self.colour3 )
+        bar1 = ax.bar( ind, n_artists, align='center', \
+                color=self.colour1, edgecolor=self.colour1 )
+        bar2 = ax.bar( ind, n_new_artists, align='center', \
+                       color=self.colour2, edgecolor=self.colour1 )
+        bar3 = ax.bar( ind, n_new_headliners, align='center', \
+                       color=self.colour3, edgecolor=self.colour1 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         if not end_date:
@@ -138,7 +171,7 @@ class GIG_plot():
                        ('Total artists', 'New artists', 'New headliners'), \
                        loc='upper left')
 
-        #ax.set_axisbelow(True)
+        ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         #if end_date:
             #plt.ylim( [ 0, max_y_axis ] )
@@ -177,12 +210,15 @@ class GIG_plot():
         fig, ax = plt.subplots()
         ind = range(1,len(months)+1)
 
-        bar1 = ax.bar( ind, month_totals,  align='center', color=self.colour1 )
-        #bar2 = ax.bar( ind, month_maxima,  align='center', color=self.colour3 )
-        bar3 = ax.bar( ind, curr_totals,   align='center', color=self.colour2 )
+        bar1 = ax.bar( ind, month_totals,  align='center', \
+                       color=self.colour1, edgecolor=self.colour1 )
+        #bar2 = ax.bar( ind, month_maxima,  align='center', \
+        #               color=self.colour3, edgecolor=self.colour1 )
+        bar3 = ax.bar( ind, curr_totals,   align='center', \
+                       color=self.colour2, edgecolor=self.colour1 )
 
         plt.xticks(ind,months)
-        #ax.set_axisbelow(True)
+        ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         plt.xlim([0,len(ind)+1])
         # plt.legend( (bar1[0],bar3[0],bar2[0]), \
@@ -269,10 +305,14 @@ class GIG_plot():
 
         ind = range(1,len(years)+1)
         if not end_date:
-            bar_future = ax.bar( ind, future_counts,  align='center', color=self.colour3 )
-        bar_tot = ax.bar( ind, total_counts,          align='center', color=self.colour1 )
-        bar_rel = ax.bar( ind, relative_counts,       align='center', color=self.colour2 )
-        #bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', color=self.colour4 )
+            bar_future = ax.bar( ind, future_counts, align='center', \
+                                 color=self.colour3, edgecolor=self.colour1 )
+        bar_tot = ax.bar( ind, total_counts, align='center', \
+                          color=self.colour1, edgecolor=self.colour1 )
+        bar_rel = ax.bar( ind, relative_counts, align='center', \
+                          color=self.colour2, edgecolor=self.colour1 )
+        #bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', \
+        #                  color=self.colour4, edgecolor=self.colour1 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         today = datetime.today()
@@ -289,7 +329,7 @@ class GIG_plot():
                 'Projected total',
                 ), loc='upper left' )
 
-        #ax.set_axisbelow(True)
+        ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         if end_date:
             plt.ylim( [ 0, max_y_axis ] )
@@ -347,9 +387,12 @@ class GIG_plot():
                     n_new_venues[-1] += 1
 
         ind = range(1,len(years)+1)
-        bar1 = ax.bar( ind, n_venues,     align='center', color=self.colour1 )
-        bar2 = ax.bar( ind, n_new_venues, align='center', color=self.colour2 )
-        bar3 = ax.bar( ind, n_new_cities, align='center', color=self.colour3 )
+        bar1 = ax.bar( ind, n_venues, align='center', \
+                       color=self.colour1, edgecolor=self.colour1 )
+        bar2 = ax.bar( ind, n_new_venues, align='center', \
+                       color=self.colour2, edgecolor=self.colour1 )
+        bar3 = ax.bar( ind, n_new_cities, align='center', \
+                       color=self.colour3, edgecolor=self.colour1 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
         if end_date:
             plt.ylim( [ 0, max_y_axis ] )
@@ -359,7 +402,7 @@ class GIG_plot():
                        ('Total venues', 'New venues', 'New cities'), \
                        loc='upper left')
 
-        #ax.set_axisbelow(True)
+        ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
         plt.xlim( [0, len(years)+1] )
@@ -419,7 +462,7 @@ class GIG_plot():
 
         line1 = plt.plot(h_dates,h_values,color=self.colour1) #,linewidth=2.0)
         line2 = plt.plot(f_h_dates,f_h_values,color=self.colour1,ls='--') #,linewidth=2.0)
-        dots1 = plt.plot(h_dates,h_values,color=self.colour2,marker='o',ls='')
+        dots1 = plt.plot(h_dates,h_values,color=self.colour2,marker='o',ls='',markeredgewidth=1,markeredgecolor=self.colour1)
 
         years = [ date(y[0],1,1) for y in self.gig_data.get_unique_years() ]
         plt.xticks(years,[xx.strftime("%y") for xx in years])
@@ -490,7 +533,8 @@ class GIG_plot():
         fig, ax = plt.subplots()
 
         ind = range(1,len(gig_counts)+1)
-        bar1 = ax.bar( ind, gig_counts, align='center', color=self.colour1 )
+        bar1 = ax.bar( ind, gig_counts, align='center', \
+                       color=self.colour1, edgecolor=self.colour1 )
         plt.xticks(ind, [str(xx)[2:4] for xx in gig_years] )
 
         today = datetime.today()
@@ -542,7 +586,7 @@ class GIG_plot():
         if not end_date:
             plt.legend((line1[0],), ('Cumulative event count',), loc='upper left')
 
-        #ax.set_axisbelow(True)
+        ax.set_axisbelow(True)
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -610,14 +654,14 @@ class GIG_plot():
         if len(future_dates) > 1:
             line2 = plt.plot(future_dates,future_totals,color=self.colour1,ls='--')
 
-        dots1 = plt.plot(blobs,blob_totals,color=self.colour2,marker='o',ls='')
-        dots2 = plt.plot(bob_dates,bob_totals,color=self.colour4,marker='o',ls='')
+        dots1 = plt.plot(blobs,blob_totals,color=self.colour2,marker='o',ls='',markeredgewidth=1,markeredgecolor=self.colour1)
+        dots2 = plt.plot(bob_dates,bob_totals,color=self.colour4,marker='o',ls='',markeredgewidth=1,markeredgecolor=self.colour1)
 
         plt.xticks(months, [x.strftime(" %b") for x in months], ha='left')
         if running_total <= 10:
             plt.yticks(range(0,50,5))
 
-        #ax.set_axisbelow(True)
+        ax.set_axisbelow(True)
 
         if len(future_dates) > 1:
             pass
@@ -681,7 +725,7 @@ class GIG_plot():
         # plotting against date rather than index breaks something in plt:
         dates = [e.date.date() for e in events]
         line1 = plt.plot(dates,new_songs)
-        dots1 = plt.plot(dates,new_songs,color=self.colour2,marker='o',ls='')
+        dots1 = plt.plot(dates,new_songs,color=self.colour2,marker='o',ls='',markeredgewidth=1,markeredgecolor=self.colour1)
         dots2 = plt.plot(support_dates,support_new_songs,color=self.colour1,marker='o',ls='')
 
         plt.legend((line1[0],), ('Unique song count: ' + artist,), loc='upper left')
@@ -867,4 +911,168 @@ class GIG_plot():
         else:
             plt.show(block=False)
             plt.show()
+    def artist_demographics(self,dest_ages=None,dest_av=None,dest_genders=None):
+        bios = get_artist_bios()
+        gigs_by_year = self.gig_data.get_unique_years()
+        gigs_by_year.sort()
+
+        ages = {}
+        ages_bob = {}
+        average_ages = {}
+        genders = {}
+
+        for (y,c) in gigs_by_year:
+            total_age = 0    
+            n_artists = 0
+            gender_totals = [0,0]
+            for g in c:
+                date = g.date.date()
+                artist = g.sets[0].artists[0].name
+                age = None
+                gender = None
+                if artist in bios:
+                    bio = bios[artist]
+                    if bio['dob']:
+                        dob = bio['dob']
+                        age = date.year - dob.year - ((date.month, date.day) < (dob.month, dob.day))
+                    if bio['gender']:
+                        gender = bio['gender']
+
+                if age:
+                    total_age += age
+                    n_artists += 1
+                    #print("%s (%d)" % (artist, age))
+                    age = str(age)
+                    if not age in ages:
+                        ages[age] = 0
+                    ages[age] += 1
+
+                    if artist == "Bob Dylan":
+                        if not age in ages_bob:
+                            ages_bob[age] = 0
+                        ages_bob[age] += 1
+                if gender:
+                    if gender == 'male':
+                        gender_totals[0] += 1
+                    elif gender == 'female':
+                        gender_totals[1] += 1
+                    
+            if n_artists > 0:
+                average_ages[str(y)] = total_age / n_artists
+                genders[str(y)] = gender_totals
+            else:
+                average_ages[str(y)] = 0
+                genders[str(y)] = [0,0]
+
+        #print(ages)
+        #print(ages_bob)
+        #print(average_ages)
+        #print(genders)
+
+        if ages and ages_bob:
+            alist = [ int(a) for a in ages.keys() ]
+            alist.sort()
+            
+            graph_ages = list(range(min(alist),max(alist)+1))
+
+            graph_freq = []
+            graph_freq_bob = []
+
+            for age in graph_ages:
+                if str(age) in ages:
+                    graph_freq.append(ages[str(age)])
+                else:
+                    graph_freq.append(0)
+
+                if str(age) in ages_bob:
+                    graph_freq_bob.append(ages_bob[str(age)])
+                else:
+                    graph_freq_bob.append(0)
+
+            fig, ax = plt.subplots()
+            ax.set_axisbelow(True)
+            bar1 = ax.bar(graph_ages, graph_freq, width=1, align='center', \
+                          color=self.colour1, edgecolor=self.colour1)
+            bar2 = ax.bar(graph_ages, graph_freq_bob, width=1, align='center', \
+                          color=self.colour2, edgecolor=self.colour1)
+            plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+            plt.legend( (bar1[0],bar2[0]), \
+                        ('Ages of headline artists', 'Ages of Bob Dylan'), \
+                        loc='upper left' )
+
+            if dest_ages:
+                fig.savefig(dest_ages, bbox_inches='tight')
+                plt.close()
+            else:
+                plt.show(block=False)
+                plt.show()
+
+        if average_ages:
+            yr_list = [ int(a) for a in average_ages.keys() ]
+            yr_list.sort()
+
+            av_ages = []
+
+            for y in yr_list:
+                if str(y) in average_ages.keys():
+                    av_ages.append( average_ages[ str(y) ] )
+                else:
+                    av_ages.append( 0 )
+
+            #print(yr_list)
+            #print(av_ages)
+
+            fig, ax = plt.subplots()
+            ax.set_axisbelow(True)
+            line1 = plt.plot(yr_list, av_ages, color=self.colour1)
+            plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+            plt.xticks(yr_list,[str(xx)[2:] for xx in yr_list])
+
+            #plt.legend( (bar2[0],bar1[0]), \
+                        #('Ages of headline artists', 'Ages of Bob Dylan'), \
+                        #loc='upper left' )
+
+            if dest_av:
+                fig.savefig(dest_av, bbox_inches='tight')
+                plt.close()
+            else:
+                plt.show(block=False)
+                plt.show()
+
+        if genders:
+            yr_list = [ int(a) for a in genders.keys() ]
+            yr_list.sort()
+
+            n_male = []
+            n_female = []
+
+            for y in yr_list:
+                if str(y) in genders.keys():
+                    n_male.append(   genders[ str(y) ][0] )
+                    n_female.append( genders[ str(y) ][1] )
+                else:
+                    n_male.append(   0 )
+                    n_female.append( 0 )
+
+            width = 0.35
+            fig, ax = plt.subplots()
+            ax.set_axisbelow(True)
+            bar1 = plt.bar([y-width/2 for y in yr_list], n_male,   width, color=self.colour1)
+            bar2 = plt.bar([y+width/2 for y in yr_list], n_female, width, color=self.colour2, \
+                           edgecolor=self.colour1)
+            plt.xticks(yr_list,[str(xx)[2:] for xx in yr_list])
+            plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+            plt.legend( (bar1[0],bar2[0]), \
+                        ('Male headliners', 'Female headliners'), \
+                        loc='upper left' )
+
+            if dest_genders:
+                fig.savefig(dest_genders, bbox_inches='tight')
+                plt.close()
+            else:
+                plt.show(block=False)
+                plt.show()
+            
 

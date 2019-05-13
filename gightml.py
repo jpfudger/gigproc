@@ -894,25 +894,30 @@ class GIG_html():
         if self.plotter:
             self.plotter.year_growth('html/img/plot_year_growth.png')
             self.plotter.total_progress('html/img/plot_cumulative.png')
-            self.plotter.month_growth('html/img/plot_month_growth.png')
+            #self.plotter.month_growth('html/img/plot_month_growth.png')
             self.plotter.artist_growth('html/img/plot_artist_growth.png')
             self.plotter.venue_growth('html/img/plot_venue_growth.png')
             #self.plotter.relative_progress('html/img/plot_relative_progress.png')
             #self.plotter.days_growth('html/img/plot_days_growth.png')
-            #self.plotter.top_venue_growth(5,'html/img/plot_top_venue_growth.png')
+            #self.plotter.top_venue_growth(9,'html/img/plot_top_venue_growth.png')
             self.plotter.h_index('html/img/plot_h_index.png')
             #self.plotter.freq_dist('html/img/plot_freq_dist.png')
+            self.plotter.artist_demographics('html/img/plot_ages.png', \
+                                     'html/img/plot_average_ages.png', \
+                                     'html/img/plot_genders.png' )
 
         graphs.append('img/plot_year_growth.png')
-        graphs.append('img/plot_cumulative.png')
-        graphs.append('img/plot_month_growth.png')
+        #graphs.append('img/plot_month_growth.png')
         graphs.append('img/plot_artist_growth.png')
         graphs.append('img/plot_venue_growth.png')
+        graphs.append('img/plot_cumulative.png')
         #graphs.append('img/plot_relative_progress.png')
         #graphs.append('img/plot_days_growth.png')
         #graphs.append('img/plot_top_venue_growth.png')
         #graphs.append('img/plot_freq_dist.png')
-        graphs.append('img/plot_h_index.png')
+        #graphs.append('img/plot_h_index.png')
+        graphs.append('img/plot_ages.png')
+        graphs.append('img/plot_genders.png')
 
         string = '<br> <br> <center>\n'
         count = 0
