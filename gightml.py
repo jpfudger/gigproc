@@ -143,9 +143,8 @@ class GIG_html():
         cf_fname = ''
         vg_fname = ''
         yg_fname = ''
-        vsplits = gig.venue.split()
         if linkback:
-            cf_fname = gig.link + '_c' + self.id_of_city(vsplits[0]) + '.html'
+            cf_fname = gig.link + '_c' + self.id_of_city(gig.city) + '.html'
             vg_fname = gig.link + '_v' + self.id_of_venue(gig.venue) + '.html'
             yg_fname = gig.link + '.html'
 
@@ -153,8 +152,8 @@ class GIG_html():
         vcount = self.gig_data.gig_venue_times(gig)
         ycount = self.gig_data.gig_year_times(gig)
 
-        clink = '<a href=' + cf_fname + ' title="Citycount: ' + ccount + '">' + vsplits[0] + '</a>'
-        vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + vcount + '">' + " ".join(vsplits[1:]) + '</a>'
+        clink = '<a href=' + cf_fname + ' title="Citycount: ' + ccount + '">' + gig.city + '</a>'
+        vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + vcount + '">' + gig.venue_nocity + '</a>'
         ylink = '<a href=' + yg_fname + ' title="Yearcount: ' + ycount + '">' + gig.date.strftime("%Y") + '</a>' 
         day_name = gig.date.strftime("%A")
 

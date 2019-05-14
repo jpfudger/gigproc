@@ -167,10 +167,6 @@ class GIG_data():
                 # if '[improv]' in splits[1]:
                 #     song.improv = True
             this_set.append_song(song)
-    def process_venue_name(self,name):
-        # This does nothing, but it would be nice to sort out underscores.
-        #new_name = re.sub( r'_', '&nbsp;', name)
-        return name
     def process_artist_name(self,n):
         # strip comments and remove definite articles
         names = []
@@ -285,7 +281,7 @@ class GIG_data():
                     pass
                 elif m1:
                     d = datetime.strptime( m1.group(1), date_regex )
-                    v = self.process_venue_name( m1.group(2) )
+                    v = m1.group(2)
                     this_gig = GIG_gig( d, v )
                 elif not this_gig:
                     # This can happen when the regex doesn't match (e.g. due to a missing "]"), 
@@ -965,9 +961,10 @@ class GIG_gig():
     def __init__(self, date, venue):
         self.index  = 0
         self.date   = date
-        self.venue  = venue
-        self.city   = venue.split()[0]
-        self.venue_nocity = " ".join(venue.split()[1:])
+        self.venue  = venue.replace('_',' ')
+        self.city   = venue.split()[0].replace('_',' ')
+        self.country = None
+        self.venue_nocity = " ".join(venue.split()[1:]).replace('_',' ')
         self.sets   = []
         today = datetime.today()
         self.future = date > today or ( date.date() == today.date() and today.hour < 20 )
@@ -1171,4 +1168,3 @@ class GIG_query():
                 gig.print_short()
             print( '\n' )
         
-
