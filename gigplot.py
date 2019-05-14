@@ -886,23 +886,32 @@ class GIG_plot():
         totals_future.insert( 0, 0 )
         totals_future = [ (x + totals[-1]) for x in totals_future ]
 
-        years = [ d.year for d in (dates + dates_future) ]
-        years = list(set(years))
+        years = []
+        if dates_future:
+            years = range( dates[0].year, dates_future[-1].year +2 )
+        else:
+            years = range( dates[0].year, dates[-1].year +2 )
+        years = list(set(list(years)))
         years.sort()
+        years = [ date(year=y,month=1,day=1) for y in years ]
+
 
         fig, ax = plt.subplots()
 
         line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
         line2 = plt.plot(dates_future,totals_future,color=self.colour1,ls='--')
-        plt.xticks(years,[str(xx)[2:] for xx in years])
+        dots1 = plt.plot(dates,totals,color=self.colour2,marker='o',ls='',\
+                         markeredgewidth=1,markeredgecolor=self.colour1)
+
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         plt.legend((line1[0],), (title,), loc='upper left')
+        plt.xticks(years,[str(y.year)[2:] for y in years])
 
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-        plt.xlim([datetime.strptime(str(years[0]),"%Y"),
-                  datetime.strptime(str(years[-1]),"%Y")])
+        plt.xlim([years[0], years[-1]])
 
         plt.ylim( bottom=0 )
 

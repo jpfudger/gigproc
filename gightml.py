@@ -776,11 +776,11 @@ class GIG_html():
 
             vplot_link = ''
             # Plot venue growth:
-            # if len(c) > 3:
-            #     plot_fname = 'html/img/' + vfname + '.png'
-            #     if self.plotter:
-            #         self.plotter.general_plot(c,plot_fname,"Venue growth: " + v)
-            #     vplot_link = '<img src="img/%s.png">' % vfname
+            if len(c) > 3:
+                plot_fname = 'html/img/' + vfname + '.png'
+                if self.plotter:
+                    self.plotter.general_plot(c, plot_fname, v)
+                vplot_link = '<img src="img/%s.png">' % vfname
 
             self.make_file( vfname, years_string_v, venue_string, vplot_link )
 
