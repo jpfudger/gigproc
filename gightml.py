@@ -185,8 +185,11 @@ class GIG_html():
                 ag_fname = gig.link + '_a' + self.id_of_artist(g.artists[0].name) + '.html'
 
             acount = self.gig_data.gig_artist_times(gig,g.artists[0].name)
-            alink = '<a href=%s title="Artistcount: %s">%s</a>' \
-                % ( ag_fname, acount, g.artists[0].name )
+            title = "Artistcount: %s" % acount
+            age = g.artists[0].age(gig.date)
+            if age: title += '&#10;' + 'Age: %d' % age
+
+            alink = '<a href=%s title="%s">%s</a>' % ( ag_fname, title, g.artists[0].name )
 
             if g.solo and self.do_solo_sets:
                alink += ' ' + self.make_flag_note('solo')
@@ -213,7 +216,8 @@ class GIG_html():
                 for b in g.band:
                     acount = self.gig_data.gig_artist_times(gig,b)
                     bg_fname = gig.link + '_a' + self.id_of_artist(b) + '.html'
-                    blink = '<a href=' + bg_fname + ' title="Artistcount: ' + acount + '">' + b + '</a>'
+                    title = "Artistcount: %s" % acount
+                    blink = '<a href=' + bg_fname + ' title="' + title + '">' + b + '</a>'
                     band_links.append(blink)
                 band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + ']'
             setlist_string += band_string
@@ -230,7 +234,8 @@ class GIG_html():
                     a_indx = gig.get_artists().index(guest)
                     ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
                     acount = self.gig_data.gig_artist_times(gig,guest)
-                    glink = '<a href=' + ag_fname + ' title="Artistcount: ' + acount + '">' + guest + '</a>'
+                    title = "Artistcount: %s" % acount
+                    glink = '<a href=' + ag_fname + ' title="' + title + '">' + guest + '</a>'
                     setlist_string += '\n<br>' + self.sp(3) + '[Guesting ' + glink + ' '
                     setlist_string += self.make_flag_note( 'guest', '+ ' + guest, 
                                                             self.footnote_symbol(a_indx) )
@@ -593,8 +598,8 @@ class GIG_html():
                         name_str += 'class=highlight '
                     artist = force_artist if force_artist else gig.sets[0].artists[0].name
                     acount = self.gig_data.gig_artist_times(gig, artist)
-                    title = 'title="Artistcount: ' + acount + '"' 
-                    name_str += 'href=' + link + '.html ' + title + '>' + name_str2 + '</a>'
+                    title = "Artistcount: %s" % acount
+                    name_str += 'href=' + link + '.html title="' + title + '">' + name_str2 + '</a>'
 
                 if gig.future:
                     gigs_string += self.row( [ '', name_str, date_str, gig.venue ], 'rlll' )

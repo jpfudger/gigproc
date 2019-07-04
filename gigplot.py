@@ -1,37 +1,6 @@
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, date
 
-def get_artist_bios(root):
-    bios = {}
-    lines = []
-    path = root + '/artist_data'
-    with open(path) as f:
-        lines = f.readlines()
-
-    for line in lines:
-        bio = {
-            'dob'    : None,
-            'gender' : None,
-            'dod'    : None,
-            }
-        splits = line.split(':')
-        splits = [ x.strip() for x in splits ]
-
-        artist = splits[0]
-
-        if len(splits) > 1 and splits[1]:
-            bio['dob'] = datetime.strptime( splits[1], '%Y-%m-%d').date()
-
-        if len(splits) > 2 and splits[2]:
-            bio['gender'] = splits[2]
-
-        if len(splits) > 3 and splits[3]:
-            bio['dod'] = datetime.strptime( splits[3], '%Y-%m-%d').date()
-
-        bios[artist] = bio
-
-    return bios
-
 class GIG_plot():
     def __init__(self, gig_data):
         self.gig_data = gig_data
@@ -922,7 +891,6 @@ class GIG_plot():
             plt.show(block=False)
             plt.show()
     def artist_demographics(self,dest_ages=None,dest_av=None,dest_genders=None):
-        bios = get_artist_bios(self.gig_data.root)
         gigs_by_year = self.gig_data.get_unique_years()
         gigs_by_year.sort()
 
@@ -937,27 +905,20 @@ class GIG_plot():
             gender_totals = [0,0]
             for g in c:
                 date = g.date.date()
-                artist = g.sets[0].artists[0].name
-                age = None
-                gender = None
-                if artist in bios:
-                    bio = bios[artist]
-                    if bio['dob']:
-                        dob = bio['dob']
-                        age = date.year - dob.year - ((date.month, date.day) < (dob.month, dob.day))
-                    if bio['gender']:
-                        gender = bio['gender']
+                artist = g.sets[0].artists[0]
+                age = artist.age(date)
+                gender = artist.gender()
 
                 if age:
                     total_age += age
                     n_artists += 1
-                    #print("%s (%d)" % (artist, age))
+                    #print("%s (%d)" % (artist.name, age))
                     age = str(age)
                     if not age in ages:
                         ages[age] = 0
                     ages[age] += 1
 
-                    if artist == "Bob Dylan":
+                    if artist.name == "Bob Dylan":
                         if not age in ages_bob:
                             ages_bob[age] = 0
                         ages_bob[age] += 1

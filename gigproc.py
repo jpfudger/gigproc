@@ -13,6 +13,20 @@ class GIG_artist():
         self.name  = name
         self.index = index
         self.gigs  = []
+        self.biog  = {}
+
+    def age(self, date):
+        age = None
+        if self.biog and self.biog['dob']:
+            dob = self.biog['dob']
+            age = date.year - dob.year - ((date.month, date.day) < (dob.month, dob.day))
+        return age
+
+    def gender(self):
+        gender = None
+        if self.biog and self.biog['gender']:
+            gender = self.biog['gender']
+        return gender
 
 class GIG_data():
     def __init__(self,root,verbose=False):
@@ -22,6 +36,7 @@ class GIG_data():
         self.past_gigs = []
         self.artists   = []
 
+        self.artist_bios = {}
         self.last_artist_index = 0
 
         self.unique_artists = None  # cached
@@ -70,6 +85,40 @@ class GIG_data():
 
         return string
 
+    def get_artist_bios(self,name):
+        if not self.artist_bios:
+            lines = []
+            path = self.root + '/artist_data'
+            with open(path) as f:
+                lines = f.readlines()
+
+            for line in lines:
+                bio = {
+                    'dob'    : None,
+                    'gender' : None,
+                    'dod'    : None,
+                    }
+                splits = line.split(':')
+                splits = [ x.strip() for x in splits ]
+
+                artist = splits[0]
+
+                if len(splits) > 1 and splits[1]:
+                    bio['dob'] = datetime.strptime( splits[1], '%Y-%m-%d').date()
+
+                if len(splits) > 2 and splits[2]:
+                    bio['gender'] = splits[2]
+
+                if len(splits) > 3 and splits[3]:
+                    bio['dod'] = datetime.strptime( splits[3], '%Y-%m-%d').date()
+
+                self.artist_bios[artist] = bio
+
+        biog = {}
+        if name in self.artist_bios.keys():
+            biog = self.artist_bios[name]
+
+        return biog
     def find_artist(self,name):
         artist = None
         for a in self.artists:
@@ -79,6 +128,7 @@ class GIG_data():
         if not artist:
             self.last_artist_index += 1
             artist = GIG_artist(name, self.last_artist_index)
+            artist.biog = self.get_artist_bios(name)
             self.artists.append(artist)
         return artist
 
