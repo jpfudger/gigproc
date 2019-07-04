@@ -137,8 +137,8 @@ class GIG_html():
                 if suffix != None:
                     fname_next += suffix
             
-            link_prev = '<a href=' + fname_prev + '.html>&lt;</a>'
-            link_next = '<a href=' + fname_next + '.html>&gt;</a>'
+            #link_prev = '<a href=' + fname_prev + '.html>&lt;</a>'
+            #link_next = '<a href=' + fname_next + '.html>&gt;</a>'
 
         cf_fname = ''
         vg_fname = ''
