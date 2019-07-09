@@ -635,6 +635,24 @@ class GIG_data():
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
+    def get_unique_countries(self,inc_future=False):
+        countries = {}
+        path = self.root + '/venue_data'
+        v_countries = {}
+        with open(path) as f:
+            for line in f.readlines():
+                splits = line.split('#')
+                if len(splits) == 2:
+                    v_countries[splits[0].strip()] = splits[1].strip()
+        for (city, gigs_past, gigs_future) in self.unique_cities():
+            if city in v_countries.keys():
+                country = v_countries[city]
+                if not country in countries.keys():
+                    countries[country] = []
+                countries[country] += gigs_past
+                if inc_future:
+                    countries[country] += gigs_future
+        return countries
     def generate_unique_years(self,inc_future=False):
         years = []
         ygigs = []

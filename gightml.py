@@ -187,7 +187,13 @@ class GIG_html():
             acount = self.gig_data.gig_artist_times(gig,g.artists[0].name)
             title = "Artistcount: %s" % acount
             age = g.artists[0].age(gig.date)
-            if age: title += '&#10;' + 'Age: %d' % age
+            if age: 
+                title += '&#10;' + 'Age: %d' % age
+                gender = g.artists[0].gender()
+                if gender == 'male':
+                    title += ' (M)'
+                elif gender == 'female':
+                    title += ' (F)'
 
             alink = '<a href=%s title="%s">%s</a>' % ( ag_fname, title, g.artists[0].name )
 
@@ -814,8 +820,12 @@ class GIG_html():
             if len(gigs_past) > 0:
                 n_cities += 1
 
-        venues_string += '\n<br> <br> ' + '='*50 + '\n<br><br>' + str(n_cities) + ' cities:' \
-                + '<br>\n<table>'
+        countries = self.gig_data.get_unique_countries()
+        all_countries = list(countries.keys())
+        all_countries.sort()
+
+        venues_string += '\n<br>%d cities (in %d countries):<br><br>\n<table>' \
+                % ( n_cities, len(all_countries) )
 
         n_gigs_for_last_city = 0
         counter = 0
@@ -854,12 +864,23 @@ class GIG_html():
             elif len(gigs_past) == n_gigs_for_last_city:
                 venues_string += ', ' + clink
             else:
-                venues_string += '</td></tr>\b<tr><td align=right valign=top>' + str(len(gigs_past)) + \
-                        '.' + self.sp(1) + '</td><td>' + clink
+                if n_gigs_for_last_city != None:
+                    venues_string += '</td></tr>'
+
+                venues_string += '\n<tr><td align=right valign=top>%d.%s</td><td>%s' \
+                        % ( len(gigs_past), self.sp(1), clink )
             
             n_gigs_for_last_city = len(gigs_past)
 
-        venues_string += '</table>'
+        venues_string += '</td></tr></table>'
+
+        # table of countries:
+        # venues_string += "\n<br>%d countries:" % len(all_countries)
+        # venues_string += '\n<ul>'
+        # for country in all_countries:
+        #     venues_string += "<li>%s (%d)" % (country, len(countries[country]))
+        # venues_string += '</ul>'
+
         return venues_string
     def make_bootlegs_index_string(self):
         string = '\n<ul>'
