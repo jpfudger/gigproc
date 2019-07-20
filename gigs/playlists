@@ -86,9 +86,12 @@
 ~/Music/D/Dylan, Bob/Bootlegs/2017/2017.04.30 [London]/2017.04.30 [London].m3u
 ~/Music/D/Dylan, Bob/Bootlegs/2017/2017.05.05 [Nottingham]/2017.05.05 [Nottingham].m3u
 ~/Music/D/Dylan, Bob/Bootlegs/2017/2017.05.09 [London]/2017.05.09 [London].m3u
-~/Music/D/Dylan, Bob/Bootlegs/2018/2018.11.29 [NYC]/2018.11.29 [NYC].m3u
-~/Music/D/Dylan, Bob/Bootlegs/2018/2018.11.30 [NYC]/2018.11.30 [NYC].m3u
+~/Music/D/Dylan, Bob/Bootlegs/2018/2018.11.29 [New York]/2018.11.29 [New York].m3u
+~/Music/D/Dylan, Bob/Bootlegs/2018/2018.11.30 [New York]/2018.11.30 [New York].m3u
 ~/Music/D/Dylan, Bob/Bootlegs/2019/2019.04.12 [Paris]/2019.04.12 [Paris].m3u
+~/Music/D/Dylan, Bob/Bootlegs/2019/2019.07.12 [London]/2019.07.12 [London].m3u
+~/Music/D/Dylan, Bob/Bootlegs/2019/2019.07.14 [Kilkenny]/2019.07.14 [Kilkenny].m3u
+--- ~/Music/D/Dylan, Bob/Bootlegs/2019/2019.07.14 [Kilkenny]/2019.07.14 [Kilkenny].m3u
 ~/Music/E/Earle, Steve/Bootlegs/2008.02.18 [Roundhouse]/2008.02.18 [Roundhouse].m3u
 ~/Music/E/Edwards, Kathleen/Bootlegs/2012.02.28 [London]/2012.02.28 [London].m3u
 ~/Music/F/Family/Bootlegs/2013.02.02 [London]/2013.02.02 [London].m3u
@@ -98,6 +101,7 @@
 ~/Music/F/Fogarty, Seamus/Bootlegs/2018.01.26 [Cambridge]/2018.01.26 [Cambridge].m3u
 ~/Music/F/Folds, Ben/Bootlegs/2011.02.20 [Hammersmith]/2011.02.20 [Hammersmith].m3u
 ~/Music/G/Green, Adam/Bootlegs/2016.05.19 [Cambridge]/2016.05.19 [Cambridge].m3u
+~/Music/H/Hansard, Glen/Bootlegs/2019.07.14 [Kilkenny]/2019.07.14 [Kilkenny].m3u
 ~/Music/H/Harding, Aldous/Bootlegs/2019.05.16 [Cambridge]/2019.05.16 [Cambridge].m3u
 ~/Music/H/Harper, Nick/Bootlegs/2016.06.18 [Cambridge]/2016.06.18 [Cambridge].m3u
 ~/Music/H/Harper, Roy/Bootlegs/2013.10.22 [Royal Festival Hall]/2013.10.22 [Royal Festival Hall].m3u
@@ -117,6 +121,7 @@
 ~/Music/J/Joseph, Martyn/Bootlegs/2017.06.04 [Alfriston]/2017.06.04 [Alfriston].m3u
 ~/Music/J/Joseph, Martyn/Bootlegs/2018.01.20 [Cambridge]/2018.01.20 [Cambridge].m3u
 ~/Music/K/Kings of Leon/Bootlegs/2008.08.14 [Brixton]/2008.08.14 [Brixton].m3u
+~/Music/K/Knopfler, Mark/Bootlegs/2011.10.11 [Nottingham]/2011.10.11 [Nottingham].m3u
 ~/Music/K/Kupa, Emma/Bootlegs/2017.12.05 [Cambridge]/2017.12.05 [Cambridge].m3u
 ~/Music/K/Kupa, Emma/Bootlegs/2018.05.31 [Cambridge]/2018.05.31 [Cambridge].m3u
 ~/Music/L/Larkin Poe/Bootlegs/2015.04.08 [Dingwalls]/2015.04.08 [Dingwalls].m3u
@@ -126,6 +131,7 @@
 ~/Music/M/Marling, Laura/Bootlegs/2017.03.17 [London]/2017.03.17 [London].m3u
 ~/Music/M/Marling, Laura/Bootlegs/2017.03.28 [Norwich]/2017.03.28 [Norwich].m3u
 ~/Music/M/Marling, Laura/Bootlegs/2018.02.17 [London]/2018.02.17 [London].m3u
+~/Music/M/Marling, Laura/Bootlegs/2019.07.11 [London]/2019.07.11 [London].m3u
 ~/Music/M/McGuinn, Roger/Bootlegs/2011.10.15 [London]/2011.10.15 [London].m3u
 ~/Music/M/McTell, Ralph/Bootlegs/2018.06.21 [Cambridge]/2018.06.21 [Cambridge].m3u
 ~/Music/M/Miller-Heidke, Kate/Bootlegs/2011.02.20 [Hammersmith]/2011.02.20 [Hammersmith].m3u
@@ -197,6 +203,7 @@
 ~/Music/V/Van Etten, Sharon/Bootlegs/2015.04.29 [London]/2015.04.29 [London].m3u
 ~/Music/V/Van Etten, Sharon/Bootlegs/2018.08.08 [London]/2018.08.08 [London].m3u
 ~/Music/V/Van Etten, Sharon/Bootlegs/2019.03.26 [London]/2019.03.26 [London].m3u
+~/Music/V/Van Etten, Sharon/Bootlegs/2019.07.02 [Cambridge]/2019.08.02 [Cambridge].m3u
 ~/Music/V/Veirs, Laura/Bootlegs/2012.01.30 [London]/2012.01.30 [London].m3u
 ~/Music/W/Wainwright, Martha/Bootlegs/2010.08.29 [Regents Park]/2010.08.29 [Regents Park].m3u
 ~/Music/W/Waits, Tom/Bootlegs/2008.07.27 [Edinburgh]/2008.07.27 [Edinburgh].m3u
@@ -217,3 +224,6 @@
 ~/Music/Y/Young, Neil/Bootlegs/2013.06.17 [London]/2013.06.17 [London].m3u
 ~/Music/Y/Young, Neil/Bootlegs/2014.07.12 [Hyde Park]/2014.07.12 [Hyde Park].m3u
 ~/Music/Y/Young, Neil/Bootlegs/2016.06.11 [London]/2016.06.11 [London].m3u
+~/Music/Y/Young, Neil/Bootlegs/2019.07.14 [Kilkenny]/2019.07.14 [Kilkenny].m3u
+--- ~/Music/Y/Young, Neil/Bootlegs/2019/2019.07.12 [London]/2019.07.12 [London].m3u
+--- ~/Music/Y/Young, Neil/Bootlegs/2019/2019.07.14 [Kilkenny]/2019.07.14 [Kilkenny].m3u
