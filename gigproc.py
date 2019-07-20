@@ -188,7 +188,12 @@ class GIG_data():
             if len(splits) > 1:
                 # song flags:
                 if '{' in splits[1]:
-                    song.guests += re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                    #song.guests += re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                    for guest in re.findall( '{([0-9A-Za-z- ]+)}', splits[1]):
+                        if guest[0] == '-':
+                            song.missing.append(guest[1:])
+                        else:
+                            song.guests.append(guest)
                 if '[' in splits[1]:
                     #song.custom = re.findall( '\[([0-9A-Za-z- ]+)\]', splits[1])
                     for x in re.findall( '\[([0-9A-Za-z- ]+)\]', splits[1]):
@@ -448,6 +453,8 @@ class GIG_data():
                             if not song.title: # Untitled
                                 continue
                             if guest and song.solo: # solo performance cannot contain guest
+                                continue
+                            if a in song.missing:
                                 continue
                             for got_song in usoa:
                                 if got_song['title'] == song.title:
@@ -1141,6 +1148,7 @@ class GIG_song():
         # flags
         self.medley      = False
         self.guests      = []
+        self.missing     = []
         self.solo        = False
         self.first_time  = False
         self.set_opener  = False

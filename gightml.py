@@ -88,6 +88,8 @@ class GIG_html():
             #return '<div class=flag title="First time I\'ve seen it!">!</div>'
         elif ftype == 'guest':
             return '<div class=flag title="' + force_title + '">' + force_symbol + '</div>'
+        elif ftype == 'missing':
+            return '<div class=flag title="' + force_title + '">&oslash;</div>'
         elif ftype == 'custom':
             force_title = force_title[0].upper() + force_title[1:].lower()
             return '<div class=flag title="' + force_title + '">*</div>'
@@ -256,12 +258,15 @@ class GIG_html():
                 for s in g.songs:
                     if self.do_songcount:
                         song_times = self.gig_data.gig_song_times(gig,s,art_songs)
+                        if g.artists[0].name in s.missing:
+                            # If the artist is missing, no point in showing the count
+                            song_times = None
 
                     sn = s.title if s.title else '???'
                     if sn == '???':
                         if s.quote != None:
                             sn = '<div class=greyflag title=' + s.quote + '>' + sn + '</div>'
-                    elif self.do_songcount:
+                    elif self.do_songcount and song_times != None:
                         sn = '<div class=greyflag title="Songcount: ' + song_times + '">' + sn + '</div>'
                     if s.set_opener:
                         setlist_string += '\n<br><br>'
@@ -296,6 +301,13 @@ class GIG_html():
                             a_indx = gig.get_artists().index(guest)
                             setlist_string += ' ' + self.make_flag_note( 'guest', '+ ' + guest, 
                                                                    self.footnote_symbol(a_indx) )
+
+                    if s.missing:
+                        miss = s.missing[:]
+                        miss.sort()
+                        miss_str = ",".join(miss)
+                        setlist_string += ' ' + self.make_flag_note( 'missing', '- ' + miss_str)
+
                     if s.custom:
                         custom_text = ' / '.join(s.custom)
                         setlist_string += self.make_flag_note( 'custom', custom_text )
@@ -723,6 +735,8 @@ class GIG_html():
                                                 symbol = 'S'
                                             if s.solo and not ss.guests:
                                                 symbol = 'S'
+                                            if "partial" in ss.custom:
+                                                symbol = 'P'
                                             break
                             title = song['title'] + ' / ' + event.venue + \
                                                     ' / ' + event.date.strftime("%d %b %Y")
