@@ -1129,9 +1129,9 @@ class GIG_gig():
 
 class GIG_set():
     def __init__(self, artists):
-        self.artists    = artists
+        self.artists    = artists[0:1]
         self.songs      = []
-        self.band       = []
+        self.band       = [a.name for a in artists[1:]]
         # flags
         self.ordered    = True
         self.guest_only = False
