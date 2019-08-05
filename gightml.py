@@ -713,8 +713,8 @@ class GIG_html():
                     #if self.plotter:
                         #self.plotter.song_freq_dist(unique_songs,plot_fname2)
                     #breakdown += '\n<br>\n<img class=png src="img/' + afname + '_fd.png"><br>\n'
-                else:
-                    breakdown += '\n<br> \n' + '='*50
+                # else:
+                #     breakdown += '\n<br> \n' + '='*50
 
                 breakdown += '<br><br>Breakdown of %d songs across %d events (%.2f songs/event):<br>' \
                                 % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
@@ -1021,14 +1021,14 @@ class GIG_html():
                 future = True
                 links = []
                 for i,g in enumerate(gigs):
-                    link = str(g.date.year)
+                    year = str(g.date.year)
                     info = g.get_artists()[0] + ', ' + g.venue + ' (' + g.date.strftime('%A') + ')'
                     if not g.future:
-                        link = '<a href=%s.html title="%s">%s</a>' % ( str(g.index), info, link )
+                        link = '<a href=%s.html title="%s">%s</a>' % ( g.link, info, year )
                         links.append(link)
                         future = False
                     else:
-                        link = '<div style="display: inline" title="%s">%s</div>' % ( info, link )
+                        link = '<div style="display: inline" title="%s">%s</div>' % ( info, year )
                         links.append(link)
                         # break # don't include multiple future gigs on a single date
 
@@ -1134,7 +1134,7 @@ class GIG_html():
                 for a, g in zip(artists,gigs):
                     info = a + ', ' + g.venue
                     link = '<a href=%s.html title="%s">%s</a>' \
-                            % ( str(g.index), info, g.date.strftime('%d-%b-%Y') )
+                            % ( g.link, info, g.date.strftime('%d-%b-%Y') )
                     versions.append( '%s' % link )
                     versions.sort()
                 songs.append( '\n    <li> ' + s + ' (' + (', '.join(versions)) + ')' )

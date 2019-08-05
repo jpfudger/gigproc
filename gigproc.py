@@ -374,9 +374,8 @@ class GIG_data():
             if year != lyear:
                 i = 0
                 lyear = year
-            ident = str(year)[2:4] + '{0:02d}'.format(i+1)
-            g.index = ident
-            g.link = str(ident)
+            g.index = int(str(year) + str(i+1).zfill(2))
+            g.link  = str(year) + '_' + str(i+1).zfill(2)
             i += 1
 
         self.identify_first_times()
