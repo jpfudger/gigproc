@@ -296,7 +296,7 @@ class GIG_plot():
                 bar_future[0]), ('Total events', \
                 'Events up to %s' % datestr, \
                 #'Dylan events',
-                'Projected total',
+                'Planned total',
                 ), loc='upper left' )
 
         ax.set_axisbelow(True)
@@ -437,7 +437,7 @@ class GIG_plot():
         years = [ date(y[0],1,1) for y in self.gig_data.get_unique_years() ]
         plt.xticks(years,[xx.strftime("%y") for xx in years])
 
-        plt.legend((line1[0],line2[0]), ('Artist h-index','Projected'), loc='upper left')
+        plt.legend((line1[0],line2[0]), ('Artist h-index','Planned'), loc='upper left')
 
         ax.set_axisbelow(True)
 
@@ -645,7 +645,7 @@ class GIG_plot():
 
         if len(dates) > 1 and len(future_dates) > 1 and line1:
             plt.legend( (line1[0],line2[0]), 
-                        ('%d events' % year, 'Projected'), 
+                        ('%d events' % year, 'Planned'), 
                         loc='upper left')
         elif len(dates) > 1 and line1:
             plt.legend((line1[0],), ('%d events' % year,), loc='upper left')
