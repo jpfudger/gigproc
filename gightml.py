@@ -337,6 +337,8 @@ class GIG_html():
             '    <title>Concert Diary</title>',
             '    <link rel="stylesheet" type="text/css" href="style.css">',
             '    <link rel="shortcut icon" href="img/thumb.ico" type="image/x-icon">',
+            '    <script src="shortcut.js"></script>',
+            '    <script src="script.js"></script>',
             '</head>',
             '<body>',
             img_string,
