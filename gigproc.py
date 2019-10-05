@@ -1089,17 +1089,19 @@ class GIG_gig():
             for song in s.songs:
                 for g in song.guests:
                     if not g in artists and not g in addarts:
-                        addarts.insert(0,g)
+                        addarts.append(g)
 
-        # The footnote numbering will be derived from the index in setlists array,
-        # so we always insert the guests at index 1 (immediately after the headliner),
-        # which is usually all we need...
+        # Remember that the footnote numbering will be derived from the index in setlist array!
+        # Examples to check:
+        #   2019_15 (Neil Young footnote in Bob Dylan guest appearance)
+        #   2017_17 (John Cale guests)
+        #   2017_30 (Matthew E. White guests)
 
         for a in addarts:
             aa = data.find_artist(a)
             this_set = GIG_set([aa])
             this_set.guest_only = True
-            self.sets.insert(1,this_set)
+            self.sets.append(this_set)
 
         # Now we also add dummy sets for band members who are explicity named:
 
@@ -1112,7 +1114,7 @@ class GIG_gig():
             bb = data.find_artist(b)
             this_set = GIG_set([bb])
             this_set.band_only = True
-            self.sets.insert(1,this_set)
+            self.sets.append(this_set)
     def get_artists(self):
         if not self.artists:
             self.artists = []
