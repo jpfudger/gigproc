@@ -73,9 +73,7 @@ class GIG_html():
         if g_next != None and g_next.future:
             g_next = None
         return g_next
-    def footnote_symbol(self,n):
-        return '<sup>' + str(n) + '</sup>'
-    def make_flag_note(self, ftype, force_title = None, force_symbol = None ):
+    def make_flag_note(self, ftype, force_title = None, sup = None ):
         if ftype == 'solo':
             return '<div class=flag title="Solo performance">&sect;</div>'
         elif ftype == 'improv':
@@ -87,9 +85,9 @@ class GIG_html():
             # disabled as buggy and not very helpful...
             #return '<div class=flag title="First time I\'ve seen it!">!</div>'
         elif ftype == 'guest':
-            return '<div class=flag title="' + force_title + '">' + force_symbol + '</div>'
+            return '<div class=flag title="+ ' + force_title + '"><sup>' + str(sup) + '</sup></div>'
         elif ftype == 'missing':
-            return '<div class=flag title="' + force_title + '">&oslash;</div>'
+            return '<div class=flag title="- ' + force_title + '"><sup>-' + str(sup) + '</sup></div>'
         elif ftype == 'custom':
             force_title = force_title[0].upper() + force_title[1:].lower()
             return '<div class=flag title="' + force_title + '">*</div>'
@@ -204,16 +202,16 @@ class GIG_html():
             if g.guest_only:
                 alink = '(' + alink + ')'
 
-            asymbol = ''
+            asup = ''
             if g.artists[0].name in gig_guests:
-                asymbol = self.footnote_symbol( gig.get_artists().index(g.artists[0].name) )
+                asup = gig.get_artists().index(g.artists[0].name)
 
             if g.guest_only:
                 continue
-                #fn = self.make_flag_note( 'guest', "Only as a guest in another set", asymbol ) 
+                #fn = self.make_flag_note( 'guest', "Only as a guest in another set", asup ) 
                 #setlist_string += '\n<br> ' + alink + ' ' +  fn
             else:
-                fn = self.make_flag_note( 'guest', "+ Guested in another set", asymbol ) 
+                fn = self.make_flag_note( 'guest', "Guested in another set", asup ) 
                 setlist_string += '\n<br> ' + alink + ' ' + fn
 
             setlist_string += playlist_link
@@ -239,14 +237,13 @@ class GIG_html():
                         continue
                     elif not proc_guests and not band_string:
                         setlist_string += '<br>'
-                    a_indx = gig.get_artists().index(guest)
+                    asup = gig.get_artists().index(guest)
                     ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
                     acount = self.gig_data.gig_artist_times(gig,guest)
                     title = "Artistcount: %s" % acount
                     glink = '<a href=' + ag_fname + ' title="' + title + '">' + guest + '</a>'
                     setlist_string += '\n<br>' + self.sp(3) + '[Guesting ' + glink + ' '
-                    setlist_string += self.make_flag_note( 'guest', '+ ' + guest, 
-                                                            self.footnote_symbol(a_indx) )
+                    setlist_string += self.make_flag_note( 'guest', guest, asup )
                     setlist_string += ']'
                     proc_guests.append(guest)
 
@@ -298,15 +295,12 @@ class GIG_html():
 
                     for guest in s.guests:
                         if guest in gig.get_artists():
-                            a_indx = gig.get_artists().index(guest)
-                            setlist_string += ' ' + self.make_flag_note( 'guest', '+ ' + guest, 
-                                                                   self.footnote_symbol(a_indx) )
-
-                    if s.missing:
-                        miss = s.missing[:]
-                        miss.sort()
-                        miss_str = ",".join(miss)
-                        setlist_string += ' ' + self.make_flag_note( 'missing', '- ' + miss_str)
+                            asup = gig.get_artists().index(guest)
+                            setlist_string += ' ' + self.make_flag_note( 'guest', guest, asup )
+                    
+                    for m in s.missing:
+                        asup = gig.get_artists().index(m)
+                        setlist_string += ' ' + self.make_flag_note( 'missing', m, asup )
 
                     if s.custom:
                         custom_text = ' / '.join(s.custom)
@@ -463,7 +457,7 @@ class GIG_html():
             '    background-color:' + col_boxbg + ';',
             '    display: float;',
             '    border: 1px ' + col_border + ' solid;',
-            '    padding: 8px;',
+            '    padding: 5px;',
             '    }',
             'a:link, a:visited {',
             '    text-decoration: none;',
