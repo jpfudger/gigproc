@@ -610,12 +610,12 @@ class GIG_plot():
         blobs = dates[:]
         blob_totals = totals[:]
 
-        if len(future_dates) > 1:
-            future_dates.append( date(year=year, month=12, day=31) )
-            future_totals.append( future_totals[-1] )
+        # if len(future_dates) > 1:
+        #     future_dates.append( date(year=year, month=12, day=31) )
+        #     future_totals.append( future_totals[-1] )
 
-        dates.insert(0, date(year=year, month=1, day=1) )
-        totals.insert(0,0)
+        #dates.insert(0, date(year=year, month=1, day=1) )
+        #totals.insert(0,0)
         line1 = None
 
         if len(dates) > 1:
@@ -633,13 +633,13 @@ class GIG_plot():
 
         ax.set_axisbelow(True)
 
-        if len(future_dates) > 1:
-            pass
-            #dates.append( datetime.today() )
-            #totals.append( totals[-1] )
-        else:
-            dates.append( date(year=year, month=12, day=31) )
-            totals.append( totals[-1] )
+        # if len(future_dates) > 1:
+        #     pass
+        #     #dates.append( datetime.today() )
+        #     #totals.append( totals[-1] )
+        # else:
+        #     dates.append( date(year=year, month=12, day=31) )
+        #     totals.append( totals[-1] )
 
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
@@ -650,7 +650,7 @@ class GIG_plot():
         elif len(dates) > 1 and line1:
             plt.legend((line1[0],), ('%d events' % year,), loc='upper left')
         elif len(future_dates) > 1:
-            plt.legend((line2[0],), ('%d projection' % year,), loc='upper left')
+            plt.legend((line2[0],), ('%d planned' % year,), loc='upper left')
 
         max_y_axis = 45
         plt.xlim([ date(year=year, month=1, day=1), date(year=year, month=12, day=31) ])
