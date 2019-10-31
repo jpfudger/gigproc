@@ -736,7 +736,8 @@ class GIG_html():
                                             break
                             title = song['title'] + ' / ' + event.venue + \
                                                     ' / ' + event.date.strftime("%d %b %Y")
-                            event_string += '<div class=greyflag title="%s">%s</div>' % ( title, symbol )
+                            link = event.link + '_' + afname + '.html'
+                            event_string += '<a title="%s" href="%s">%s</a>' % (title, link, symbol)
                         else:
                             event_string += '-'
                     event_string += "</div>"
