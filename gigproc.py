@@ -690,7 +690,7 @@ class GIG_data():
             return self.unique_years
     def artist_is_support(self,a):
         support_only = True
-        for gig in self.gigs:
+        for gig in self.all_gigs_of_artist(a):
             if gig.sets[0].artists[0].name == a:
                 support_only = False 
                 break
