@@ -235,7 +235,7 @@ class GIG_plot():
             plt.close()
         else:
             plt.show(block=False)
-    def year_growth(self,dest=None):
+    def year_growth(self,dest=None,end_date=None):
         self.n_graphs += 1
 
         fig, ax = plt.subplots()
@@ -243,6 +243,8 @@ class GIG_plot():
         y_gigs.sort()
 
         yday = datetime.today().timetuple().tm_yday
+        if end_date:
+            yday = end_date.timetuple().tm_yday
         years = []
         total_counts = []
         relative_counts = []
@@ -250,7 +252,6 @@ class GIG_plot():
         future_counts = []  # total + future
 
         max_y_axis = 45
-        next_is_new_year = False
 
         for (y,c) in y_gigs:
             years.append(y)
@@ -258,55 +259,50 @@ class GIG_plot():
             dylan_counts.append(0)
             total_counts.append(0)
             future_counts.append(0)
-            for i, g in enumerate(c):
-                if g.future:
-                    if i == 1:
-                        next_is_new_year = True
-                        break
-                else:
+            for g in c:
+                if end_date and g.date > end_date:
+                    continue
+                future_counts[-1] += 1
+
+                if not g.future:
                     total_counts[-1] += 1
                     if g.date.timetuple().tm_yday <= yday:
                         relative_counts[-1] += 1
                     if 'Bob Dylan' in g.get_artists():
                         dylan_counts[-1] += 1
-                future_counts[-1] += 1
-
             if y == self.year:
                 break
 
-        if next_is_new_year:
-            years = years[:-1]
-            relative_counts = relative_counts[:-1]
-            dylan_counts    = dylan_counts[:-1]
-            total_counts    = total_counts[:-1]
-            future_counts   = future_counts[:-1]
-
         ind = range(1,len(years)+1)
-
-        bar_tot = ax.bar( ind, total_counts, align='center', \
-                          color=self.colour1, edgecolor=self.colour1 )
-
-        if not next_is_new_year:
-            bar_rel = ax.bar( ind, relative_counts, align='center', \
-                              color=self.colour2, edgecolor=self.colour1 )
+        if not end_date:
             bar_future = ax.bar( ind, future_counts, align='center', \
                                  color=self.colour3, edgecolor=self.colour1 )
-
+        bar_tot = ax.bar( ind, total_counts, align='center', \
+                          color=self.colour1, edgecolor=self.colour1 )
+        bar_rel = ax.bar( ind, relative_counts, align='center', \
+                          color=self.colour2, edgecolor=self.colour1 )
+        #bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', \
+        #                  color=self.colour4, edgecolor=self.colour1 )
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         today = datetime.today()
         ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
         datestr = str(ordinal(today.day)) + today.strftime(" %b")
+        plt.legend((bar_tot[0],), ('Events up to %s' % datestr,), loc='upper left')
 
-        if next_is_new_year:
-            plt.legend((bar_tot[0],), ('Total events',), loc='upper left' )
-        else:
-            plt.legend( (bar_tot[0], bar_rel[0], bar_future[0]), 
-                        ('Total events', 'Events up to %s' % datestr, 'Planned total'),
-                        loc='upper left' )
+        if not end_date:
+            plt.legend((bar_tot[0], bar_rel[0], 
+                #bar_dyl[0], 
+                bar_future[0]), ('Total events', \
+                'Events up to %s' % datestr, \
+                #'Dylan events',
+                'Planned total',
+                ), loc='upper left' )
 
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        if end_date:
+            plt.ylim( [ 0, max_y_axis ] )
 
         plt.xlim( [0, len(years)+1] )
 
