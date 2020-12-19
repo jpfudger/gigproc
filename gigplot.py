@@ -270,8 +270,15 @@ class GIG_plot():
                         relative_counts[-1] += 1
                     if 'Bob Dylan' in g.get_artists():
                         dylan_counts[-1] += 1
+
             if y == self.year:
                 break
+
+        plot_up_to_day = True
+        if total_counts[-1] == 0 and total_counts[-2] == future_counts[-2]:
+            plot_up_to_day = False
+        elif total_counts[-1] == future_counts[-1]:
+            plot_up_to_day = False
 
         ind = range(1,len(years)+1)
         if not end_date:
@@ -279,25 +286,44 @@ class GIG_plot():
                                  color=self.colour3, edgecolor=self.colour1 )
         bar_tot = ax.bar( ind, total_counts, align='center', \
                           color=self.colour1, edgecolor=self.colour1 )
-        bar_rel = ax.bar( ind, relative_counts, align='center', \
-                          color=self.colour2, edgecolor=self.colour1 )
+
+        if plot_up_to_day:
+            bar_rel = ax.bar( ind, relative_counts, align='center', \
+                              color=self.colour2, edgecolor=self.colour1 )
+
         #bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', \
         #                  color=self.colour4, edgecolor=self.colour1 )
+
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         today = datetime.today()
         ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
         datestr = str(ordinal(today.day)) + today.strftime(" %b")
-        plt.legend((bar_tot[0],), ('Events up to %s' % datestr,), loc='upper left')
+        plt.legend((bar_tot[0],), ('Up to %s' % datestr,), loc='upper left')
 
         if not end_date:
-            plt.legend((bar_tot[0], bar_rel[0], 
-                #bar_dyl[0], 
-                bar_future[0]), ('Total events', \
-                'Events up to %s' % datestr, \
-                #'Dylan events',
-                'Planned total',
-                ), loc='upper left' )
+            data = (bar_tot[0], 
+                   #bar_rel[0], 
+                   #bar_dyl[0], 
+                    bar_future[0])
+
+            keys = ('Total events',
+                   #'Up to %s' % datestr,
+                   #'Dylan events',
+                    'Planned events')
+
+            if plot_up_to_day:
+                data = (bar_tot[0], 
+                        bar_rel[0], 
+                       #bar_dyl[0], 
+                        bar_future[0])
+
+                keys = ('Total events',
+                        'Up to %s' % datestr,
+                       #'Dylan events',
+                        'Planned events')
+
+            plt.legend(data, keys, loc='upper left' )
 
         ax.set_axisbelow(True)
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -510,7 +536,7 @@ class GIG_plot():
         today = datetime.today()
         ordinal = lambda n: str(n)+("th" if 4<=n%100<=20 else {1:"st",2:"nd",3:"rd"}.get(n%10, "th"))
         datestr = str(ordinal(today.day)) + today.strftime(" %b")
-        plt.legend((bar1[0],), ('Events up to %s' % datestr,), loc='upper left')
+        plt.legend((bar1[0],), ('Up to %s' % datestr,), loc='upper left')
 
         #plt.title("Relative Progress")
         fig.canvas.set_window_title("Figure %d" % self.n_graphs)
@@ -656,6 +682,12 @@ class GIG_plot():
         plt.xlim([ date(year=year, month=1, day=1), date(year=year, month=12, day=31) ])
         plt.ylim([0,max_y_axis])
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        # # for current year, draw straight line from 0 to 40 gigs:
+        # if year == datetime.today().year:
+        #     xs = [ date(year, 1, 1), date(year, 12, 31) ]
+        #     ys = [ 0, 40 ]
+        #     plt.plot(xs, ys, zorder=-10, color="green", linewidth=0.5)
 
         fig.savefig(dest, bbox_inches='tight')
         plt.close()
@@ -969,7 +1001,7 @@ class GIG_plot():
             plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
             plt.legend( (bar1[0],bar2[0]), \
-                        ('Ages of headline artists', 'Ages of Bob Dylan'), \
+                        ('Ages of headliners', 'Ages of Bob Dylan'), \
                         loc='upper left' )
 
             if dest_ages:
@@ -1001,7 +1033,7 @@ class GIG_plot():
             plt.xticks(yr_list,[str(xx)[2:] for xx in yr_list])
 
             #plt.legend( (bar2[0],bar1[0]), \
-                        #('Ages of headline artists', 'Ages of Bob Dylan'), \
+                        #('Ages of headliners', 'Ages of Bob Dylan'), \
                         #loc='upper left' )
 
             if dest_av:
