@@ -187,13 +187,14 @@ class GIG_html():
             acount = self.gig_data.gig_artist_times(gig,g.artists[0].name)
             title = "Artistcount: %s" % acount
             age = g.artists[0].age(gig.date)
-            if age: 
-                title += '&#10;' + 'Age: %d' % age
-                gender = g.artists[0].gender()
-                if gender == 'male':
-                    title += ' (M)'
-                elif gender == 'female':
-                    title += ' (F)'
+            age = str(age) if age else "??"
+
+            title += '&#10;' + 'Age: %s' % age
+            gender = g.artists[0].gender()
+            if gender == 'male':
+                title += ' (M)'
+            elif gender == 'female':
+                title += ' (F)'
 
             alink = '<a href=%s title="%s">%s</a>' % ( ag_fname, title, g.artists[0].name )
 

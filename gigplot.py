@@ -275,10 +275,10 @@ class GIG_plot():
                 break
 
         plot_up_to_day = True
-        if total_counts[-1] == 0 and total_counts[-2] == future_counts[-2]:
-            plot_up_to_day = False
-        elif total_counts[-1] == future_counts[-1]:
-            plot_up_to_day = False
+        #if total_counts[-1] == 0 and total_counts[-2] == future_counts[-2]:
+            #plot_up_to_day = False
+        #elif total_counts[-1] == future_counts[-1]:
+            #plot_up_to_day = False
 
         ind = range(1,len(years)+1)
         if not end_date:
@@ -933,7 +933,8 @@ class GIG_plot():
 
         for (y,c) in gigs_by_year:
             total_age = 0    
-            n_artists = 0
+            n_artist_ages = 0
+            n_artist_genders = 0
             gender_totals = [0,0]
             for g in c:
                 date = g.date.date()
@@ -943,7 +944,7 @@ class GIG_plot():
 
                 if age:
                     total_age += age
-                    n_artists += 1
+                    n_artist_ages += 1
                     #print("%s (%d)" % (artist.name, age))
                     age = str(age)
                     if not age in ages:
@@ -955,16 +956,20 @@ class GIG_plot():
                             ages_bob[age] = 0
                         ages_bob[age] += 1
                 if gender:
+                    n_artist_genders += 1
                     if gender == 'male':
                         gender_totals[0] += 1
                     elif gender == 'female':
                         gender_totals[1] += 1
                     
-            if n_artists > 0:
-                average_ages[str(y)] = total_age / n_artists
-                genders[str(y)] = gender_totals
+            if n_artist_ages > 0:
+                average_ages[str(y)] = total_age / n_artist_ages
             else:
                 average_ages[str(y)] = 0
+        
+            if n_artist_genders > 0:
+                genders[str(y)] = gender_totals
+            else:
                 genders[str(y)] = [0,0]
 
         #print(ages)
