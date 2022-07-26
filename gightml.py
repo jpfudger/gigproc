@@ -2,6 +2,8 @@ import os
 import time
 from gigproc.gigplot import GIG_plot
 
+INCLUDE_FUTURE_YEARS = False
+
 class GIG_html():
     def __init__(self, gig_data, head, playlists=False, plots=True):
         self.gig_data = gig_data
@@ -22,7 +24,7 @@ class GIG_html():
         self.do_calendar  = True
 
         # do the work:
-        self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(True) ]
+        self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(INCLUDE_FUTURE_YEARS) ]
         self.years.sort()
         if self.do_playlists:
             gig_data.fill_in_playlist_links()
@@ -645,7 +647,7 @@ class GIG_html():
     def make_years_string(self,highlight_year=None):
         # years will include extras (artists, venues, etc.)
         years_string = ''
-        year_gigs = self.gig_data.get_unique_years(False)
+        year_gigs = self.gig_data.get_unique_years(INCLUDE_FUTURE_YEARS)
         for y in self.years:
             if y == '':
                 years_string += '\n<br>'
@@ -1049,8 +1051,8 @@ class GIG_html():
         self.make_stylesheet()
 
         extras = [ 'Artists', 'Venues' ]
-        if self.do_playlists:
-            extras += [ 'Tapes' ]
+        # if self.do_playlists:
+        #     extras += [ 'Tapes' ]
         if self.do_graphs:
             extras += [ 'Graphs' ]
         if self.do_covers_list:
@@ -1066,7 +1068,7 @@ class GIG_html():
         index_string   = ''
         years_string_i = ''
          
-        for (y,c) in self.gig_data.get_unique_years(True):
+        for (y,c) in self.gig_data.get_unique_years(INCLUDE_FUTURE_YEARS):
             gigs_string = self.build_gigs_string(self.gig_data.gigs,y)
             years_string_h = self.make_years_string(y)
 
@@ -1128,10 +1130,10 @@ class GIG_html():
         self.make_file( 'artists',   years_string_a,   artists_string,   '' )
         self.make_file( 'index',     years_string_i,   index_string,     '' )
 
-        if self.do_playlists:
-            years_string_b = self.make_years_string("Tapes")
-            bootlegs_string = self.make_bootlegs_index_string()
-            self.make_file( 'tapes',     years_string_b,   bootlegs_string,  '' )
+        # if self.do_playlists:
+        #     years_string_b = self.make_years_string("Tapes")
+        #     bootlegs_string = self.make_bootlegs_index_string()
+        #     self.make_file( 'tapes',     years_string_b,   bootlegs_string,  '' )
 
         if self.do_graphs:
             years_string_g = self.make_years_string("Graphs")
