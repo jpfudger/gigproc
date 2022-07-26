@@ -328,17 +328,22 @@ class GIG_data():
             elif mopen:
                 last_blank = False
                 level += 1
-                m1 = re.match('^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                line = mopen.group(1).strip()
+                ticket = False
+                if line.endswith("--- [ticket]"):
+                    ticket = True
+                    line = line[:-12]
+                m1 = re.match('^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$', line)
                 date_regex = "%d-%b-%Y"
                 if not m1:
-                    m1 = re.match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$',mopen.group(1))
+                    m1 = re.match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$', line)
                     date_regex = "%d.%m.%Y"
                 if commented:
                     pass
                 elif m1:
                     d = datetime.strptime( m1.group(1), date_regex )
                     v = m1.group(2)
-                    this_gig = GIG_gig( d, v )
+                    this_gig = GIG_gig( d, v, ticket)
                 elif not this_gig:
                     # This can happen when the regex doesn't match (e.g. due to a missing "]"), 
                     # so we misinterpret a set as an event. 
@@ -1267,9 +1272,10 @@ class GIG_data():
         return self.stats_by_year[:]
 
 class GIG_gig():
-    def __init__(self, date, venue):
+    def __init__(self, date, venue, confirmed=True):
         self.index  = 0
         self.date   = date
+        self.confirmed = confirmed
         self.venue  = venue.replace('_',' ')
         self.city   = venue.split()[0].replace('_',' ')
         self.country = None

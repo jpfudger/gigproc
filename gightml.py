@@ -619,7 +619,8 @@ class GIG_html():
                     name_str += 'href=' + link + '.html title="' + title + '">' + name_str2 + '</a>'
 
                 if gig.future:
-                    gigs_string += self.row( [ '', name_str, date_str, gig.venue ], 'rlll' )
+                    conf = "* " if gig.confirmed else ""
+                    gigs_string += self.row( [ conf + self.sp(1), name_str, date_str, gig.venue ], 'rlll' )
                 else:
                     ccount = self.gig_data.gig_city_times(gig)
                     vcount = self.gig_data.gig_venue_times(gig)
