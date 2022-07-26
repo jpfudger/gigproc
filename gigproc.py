@@ -8,6 +8,21 @@ from datetime import datetime, timedelta, date
 from gigproc.gigplot import GIG_plot
 from gigproc.gightml import GIG_html
 
+ignore_band_artists = {
+    "Tony Garnier"      : False,
+    "Charlie Sexton"    : False,
+    "Larry Campbell"    : False,
+    "Jim Keltner"       : False,
+    "Freddy Koella"     : False,
+    "George Recile"     : False,
+    "Stu Kimball"       : False,
+    "Denny Freeman"     : False,
+    "Donnie Herron"     : False,
+
+    "Nils Lofgren"      : False,
+    "Steve Van Zandt"   : False,
+    }
+
 class GIG_artist():
     def __init__(self,name,index):
         self.name  = name
@@ -166,7 +181,13 @@ class GIG_data():
                     this_set.solo = True
                 # Comment out these two lines to suppress the band member processing
                 if re.match( '.*{.*', splits[1] ):
-                   this_set.band += re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
+                    for b in re.findall( '{([0-9A-Za-z- ]+)}', splits[1]):
+                        if b in ignore_band_artists.keys():
+                            if not ignore_band_artists[b]:
+                                #print("Ignoring band artist:", b)
+                                ignore_band_artists[b] = True
+                        else:
+                            this_set.band.append(b)
                 if '@' in splits[1]:
                     path = line.split('@')[1].strip()
                     path = r'/home/jpf/Music/' + path
