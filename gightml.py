@@ -83,15 +83,13 @@ class GIG_html():
         elif ftype == 'debut':
             return '<div class=flag title="Live debut">@</div>'
         elif ftype == 'first_time':
-            return ''
-            # disabled as buggy and not very helpful...
-            #return '<div class=flag title="First time I\'ve seen it!">!</div>'
+            return '<div class=flagc title="First time">+</div>'
         elif ftype == 'guest':
             return '<div class=flag title="+ ' + force_title + '"><sup>' + str(sup) + '</sup></div>'
         elif ftype == 'missing':
             return '<div class=flag title="- ' + force_title + '"><sup>-' + str(sup) + '</sup></div>'
         elif ftype == 'custom':
-            force_title = force_title[0].upper() + force_title[1:].lower()
+            #force_title = force_title[0].upper() + force_title[1:].lower()
             return '<div class=flag title="' + force_title + '">*</div>'
         elif ftype == 'request':
             return '<div class=flag title="Audience request">&reg;</div>'
@@ -187,7 +185,7 @@ class GIG_html():
                 ag_fname = gig.link + '_a' + self.id_of_artist(g.artists[0].name) + '.html'
 
             acount = self.gig_data.gig_artist_times(gig,g.artists[0].name)
-            title = "Artistcount: %s" % acount
+            title = "Artistcount: %d/%d" % ( acount[0], acount[1] )
             age = g.artists[0].age(gig.date)
             age = str(age) if age else "??"
 
@@ -201,9 +199,11 @@ class GIG_html():
             alink = '<a href=%s title="%s">%s</a>' % ( ag_fname, title, g.artists[0].name )
 
             if g.solo and self.do_solo_sets:
-               alink += ' ' + self.make_flag_note('solo')
+                alink += ' ' + self.make_flag_note('solo')
             if g.guest_only:
                 alink = '(' + alink + ')'
+            if acount[0] == 1:
+                alink += ' ' + self.make_flag_note('first_time')
 
             asup = ''
             if g.artists[0].name in gig_guests:
@@ -221,11 +221,24 @@ class GIG_html():
 
             band_string = ''
             if g.band:
+                band = list(set(g.band[:]))
                 band_links = []
-                for b in g.band:
-                    acount = self.gig_data.gig_artist_times(gig,b)
+                for b in band:
+                    g_acount = self.gig_data.gig_artist_times(gig,b)
                     bg_fname = gig.link + '_a' + self.id_of_artist(b) + '.html'
-                    title = "Artistcount: %s" % acount
+                    title = "Artistcount: %d/%d" % ( g_acount[0], g_acount[1] )
+
+                    b_obj = self.gig_data.find_artist(b)
+                    age = b_obj.age(gig.date)
+                    age = str(age) if age else "??"
+
+                    title += '&#10;' + 'Age: %s' % age
+                    gender = b_obj.gender()
+                    if gender == 'male':
+                        title += ' (M)'
+                    elif gender == 'female':
+                        title += ' (F)'
+
                     blink = '<a href=' + bg_fname + ' title="' + title + '">' + b + '</a>'
                     band_links.append(blink)
                 band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + ']'
@@ -242,8 +255,8 @@ class GIG_html():
                         setlist_string += '<br>'
                     asup = gig.get_artists().index(guest)
                     ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
-                    acount = self.gig_data.gig_artist_times(gig,guest)
-                    title = "Artistcount: %s" % acount
+                    g_acount = self.gig_data.gig_artist_times(gig,guest)
+                    title = "Artistcount: %d/%d" % ( g_acount[0], g_acount[1] )
                     glink = '<a href=' + ag_fname + ' title="' + title + '">' + guest + '</a>'
                     setlist_string += '\n<br>' + self.sp(3) + '[Guesting ' + glink + ' '
                     setlist_string += self.make_flag_note( 'guest', guest, asup )
@@ -256,6 +269,7 @@ class GIG_html():
                 setlist_string += '\n<' + list_tag + '>'
 
                 for s in g.songs:
+                    first_time = False
                     if self.do_songcount:
                         song_times = self.gig_data.gig_song_times(gig,s,art_songs)
                         if g.artists[0].name in s.missing:
@@ -267,7 +281,8 @@ class GIG_html():
                         if s.quote != None:
                             sn = '<div class=greyflag title=' + s.quote + '>' + sn + '</div>'
                     elif self.do_songcount and song_times != None:
-                        sn = '<div class=greyflag title="Songcount: ' + song_times + '">' + sn + '</div>'
+                        sn = '<div class=greyflag title="Songcount: %d/%d">%s</div>' % (song_times[0], song_times[1], sn)
+                        first_time = song_times[0] == 1 and acount[0] > 1
                     if s.set_opener:
                         setlist_string += '\n<br><br>'
                     if s.medley:
@@ -283,14 +298,14 @@ class GIG_html():
                         setlist_string += self.make_flag_note('request')
                     if s.debut:
                         setlist_string += self.make_flag_note('debut')
-                    if s.first_time:
-                        setlist_string += self.make_flag_note('first_time')
                     if s.cover and self.do_covers:
                         symbol = '&curren;'
                         #symbol = '*'
                         cover_label = self.cover_artist_label(s.cover)
                         setlist_string += '<a href="covers.html#%s" title="%s">%s</a>' % \
                                             ( cover_label, s.cover + ' cover', symbol )
+                    if first_time:
+                        setlist_string += self.make_flag_note('first_time')
 
                     # ensure guest footnotes are in order of guest appearances
                     s.guests.sort(key=lambda g: 
@@ -406,7 +421,7 @@ class GIG_html():
             '    float: right;',
             '    top: 50;',
             '    right: 60;',
-            '    z-index: -1;',
+            '    /*z-index: -1;*/',
             '    display: block;',
             '    }',
             '#header {',
@@ -526,6 +541,10 @@ class GIG_html():
             '    display: inline;',
             '    color:' + col_border + ';',
             '    }',
+            '.flagc {',
+            '    display: inline;',
+            '    color:' + col_boxbg + ';',
+            '    }',
             '.greyflag {',
             '    display: inline;',
             #'    color:' + col_boxbg + ';',
@@ -581,9 +600,9 @@ class GIG_html():
                 #     # pad single digit with a space
                 #     day = '&nbsp;' + day
 
-                day = gig.date.strftime("%d")
-                date_str = '<div class=date>' + day + \
-                            gig.date.strftime(" %b %Y") + '</div>'
+                date_str = '<div class=date title=%s>%s</div>' % \
+                            ( gig.date.strftime("%A"), 
+                              gig.date.strftime("%d %b %Y"))
 
                 name_str = gig.sets[0].artists[0].name
 
@@ -615,7 +634,7 @@ class GIG_html():
                         name_str += 'class=highlight '
                     artist = force_artist if force_artist else gig.sets[0].artists[0].name
                     acount = self.gig_data.gig_artist_times(gig, artist)
-                    title = "Artistcount: %s" % acount
+                    title = "Artistcount: %d/%d" % ( acount[0], acount[1] )
                     name_str += 'href=' + link + '.html title="' + title + '">' + name_str2 + '</a>'
 
                 if gig.future:
@@ -755,6 +774,13 @@ class GIG_html():
                                             ( cover_label, song['obj'].cover + ' cover', symbol )
                     if song['obj'].improv:
                         songtitle += ' ' + self.make_flag_note('improv')
+                    if a in song['obj'].guests:
+                        message = "Guesting in a %s set" % song['obj'].set.artists[0].name
+                        songtitle += ' ' + self.make_flag_note('custom', message)
+                    # this doesn't work, because "band" is an attribute on the set:
+                    if a in song['obj'].set.band:
+                        message = "Featuring in a %s set" % song['obj'].set.artists[0].name
+                        songtitle += ' ' + self.make_flag_note('custom', message)
 
                     songcount = str(len(song['events']))
                     breakdown += self.row( [ songcount + self.sp(1), songtitle + self.sp(2), event_string ], 'rll' )
@@ -835,12 +861,7 @@ class GIG_html():
             if len(gigs_past) > 0:
                 n_cities += 1
 
-        countries = self.gig_data.get_unique_countries()
-        all_countries = list(countries.keys())
-        all_countries.sort()
-
-        venues_string += '\n<br>%d cities (in %d countries):<br><br>\n<table>' \
-                % ( n_cities, len(all_countries) )
+        venues_string += '\n<br>%d cities:<br><br>\n<table>' % n_cities
 
         n_gigs_for_last_city = 0
         counter = 0
@@ -890,11 +911,51 @@ class GIG_html():
         venues_string += '</td></tr></table>'
 
         # table of countries:
-        # venues_string += "\n<br>%d countries:" % len(all_countries)
-        # venues_string += '\n<ul>'
-        # for country in all_countries:
-        #     venues_string += "<li>%s (%d)" % (country, len(countries[country]))
-        # venues_string += '</ul>'
+
+        countries = self.gig_data.get_unique_countries()
+
+        n_gigs_for_last_country = 0
+        #counter = 0
+
+        venues_string += '\n<br>%d countries:<br><br>\n<table>' % len(countries)
+
+        MAKE_COUNTRY_INDEX_PAGES = False
+
+        for (country, country_gigs) in countries:
+            nlink = country
+
+            if MAKE_COUNTRY_INDEX_PAGES:
+                counter += 1
+                nfname = 'n' + str(counter).zfill(3)
+                nlink = '<a href=' + nfname + '.html>' + country + '</a>' 
+
+                country_string = self.build_gigs_string( country_gigs, None, nfname, country )
+
+                plot_link = ''
+                self.make_file( nfname, years_string_v, country_string, plot_link )
+
+                #make country index pages (and highlighted versions)
+                for gig in country_gigs:
+                    suffix = '_' + nfname
+                    link = gig.link + suffix
+                    country_string_h = self.build_gigs_string( country_gigs, None, nfname, country, None, gig.index )
+                    setlist_string = self.gig_setlist_string( gig, True, country_gigs, suffix )
+                    self.make_file( link, years_string_v, country_string_h, setlist_string, gig.img )
+
+            if len(country_gigs) == 0:
+                pass
+            elif len(country_gigs) == n_gigs_for_last_country:
+                venues_string += ', ' + nlink
+            else:
+                if n_gigs_for_last_country != None:
+                    venues_string += '</td></tr>'
+
+                venues_string += '\n<tr><td align=right valign=top>%d.%s</td><td>%s' \
+                        % ( len(country_gigs), self.sp(1), nlink )
+            
+            n_gigs_for_last_country = len(country_gigs)
+
+        venues_string += '</td></tr></table>'
 
         return venues_string
     def make_bootlegs_index_string(self):
@@ -934,11 +995,11 @@ class GIG_html():
         if self.plotter:
             self.plotter.year_growth('html/img/plot_year_growth.png')
             self.plotter.total_progress('html/img/plot_cumulative.png')
-            #self.plotter.month_growth('html/img/plot_month_growth.png')
+            self.plotter.month_growth('html/img/plot_month_growth.png')
             self.plotter.artist_growth('html/img/plot_artist_growth.png')
             self.plotter.venue_growth('html/img/plot_venue_growth.png')
             #self.plotter.relative_progress('html/img/plot_relative_progress.png')
-            #self.plotter.days_growth('html/img/plot_days_growth.png')
+            self.plotter.days_growth('html/img/plot_days_growth.png')
             #self.plotter.top_venue_growth(9,'html/img/plot_top_venue_growth.png')
             self.plotter.h_index('html/img/plot_h_index.png')
             #self.plotter.freq_dist('html/img/plot_freq_dist.png')

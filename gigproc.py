@@ -114,6 +114,9 @@ class GIG_data():
                     'gender' : None,
                     'dod'    : None,
                     }
+
+                line = line.split('#')[0]
+
                 splits = line.split(':')
                 splits = [ x.strip() for x in splits ]
 
@@ -333,6 +336,7 @@ class GIG_data():
         commented = False
         com_level = -1
         last_blank = False
+        vcountries = self.get_venue_data()
         with open(path) as f:
             lines = f.read().splitlines()
         for line in lines:
@@ -364,7 +368,12 @@ class GIG_data():
                 elif m1:
                     d = datetime.strptime( m1.group(1), date_regex )
                     v = m1.group(2)
-                    this_gig = GIG_gig( d, v, ticket)
+                    this_gig = GIG_gig(d, v, ticket)
+                    try:
+                        this_gig.country = vcountries[this_gig.city]
+                    except KeyError:
+                        print("New city: %s. Defaulting to UK" % this_gig.city)
+                        this_gig.country = "UK"
                 elif not this_gig:
                     # This can happen when the regex doesn't match (e.g. due to a missing "]"), 
                     # so we misinterpret a set as an event. 
@@ -385,7 +394,7 @@ class GIG_data():
                 if commented and com_level == level:
                     com_level = -1
                     commented = False
-            elif level == 2:
+            elif level == 2 and not commented:
                 self.process_song_line(line,this_set,last_blank)
                 last_blank = False
     def build_gig_data(self):
@@ -406,6 +415,17 @@ class GIG_data():
             i += 1
 
         self.identify_first_times()
+    def generate_google_calendar(self):
+        #https://developers.google.com/calendar/api/guides/create-events#python
+        gigs = [ g for g in self.gigs if g.future ]
+        lines = []
+        events = []
+        for g in gigs:
+            gig = { "summary": g.artist,
+                    "location": g.venue,
+                    "start": { "dateTime": g.date }
+                  }
+            events.append(event)
         
     # Some utilities
     def artist_stats(self,artist):
@@ -596,8 +616,22 @@ class GIG_data():
                         artists.append(artist)
                         artgigs.append([gig])
         
-        for l in artgigs:
+        for a,l in zip(artists, artgigs):
             l.sort(key=lambda x: x.index)
+            all_in_bands = True
+            for g in l:
+                for s in g.sets:
+                    if a in [ x.name for x in s.artists ]:
+                        if not s.band_only:
+                            all_in_bands = False
+                            break
+                    if a in s.coheadliners:
+                        all_in_bands = False
+                        break
+
+                if not all_in_bands: break
+            # if all_in_bands:
+            #     print("Only in bands:", a)
         
         zipped = list( zip( artists, artgigs ) )
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
@@ -668,15 +702,19 @@ class GIG_data():
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
-    def get_unique_countries(self,inc_future=False):
-        countries = {}
+    def get_venue_data(self):
+        vcountries = {}
         path = self.root + '/venue_data'
-        v_countries = {}
         with open(path) as f:
             for line in f.readlines():
                 splits = line.split('#')
                 if len(splits) == 2:
-                    v_countries[splits[0].strip()] = splits[1].strip()
+                    vcountries[splits[0].strip()] = splits[1].strip()
+        return vcountries
+    def get_unique_countries(self,inc_future=False):
+        countries = {}
+        path = self.root + '/venue_data'
+        v_countries = self.get_venue_data()
         for (city, gigs_past, gigs_future) in self.unique_cities():
             if city in v_countries.keys():
                 country = v_countries[city]
@@ -685,7 +723,15 @@ class GIG_data():
                 countries[country] += gigs_past
                 if inc_future:
                     countries[country] += gigs_future
-        return countries
+
+        all_countries = countries.keys()
+        country_gigs = [ countries[c] for c in all_countries ]
+
+        zipped = list( zip( all_countries, country_gigs ) )
+        zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
+        zipped.reverse()
+
+        return zipped
     def generate_unique_years(self,inc_future=False):
         years = []
         ygigs = []
@@ -725,7 +771,8 @@ class GIG_data():
     def longest_gap(self):
         gaps = []
         gigs = self.get_past_gigs()
-        gigs = [ x for x in gigs if x.date.year >= 2010 ]
+        start_year = 2010
+        gigs = [ x for x in gigs if x.date.year >= start_year ]
         for i in range(1,len(gigs)):
             gap = gigs[i].date.toordinal() - gigs[i-1].date.toordinal() 
             gaps.append( [ gap, gigs[i-1], gigs[i] ] )
@@ -734,10 +781,10 @@ class GIG_data():
         print( "\n  Current gap is %d days (since %s)." % \
                 ( cur_gap[0], cur_gap[1].date.strftime("%d-%b-%Y")) )
         gaps.append(cur_gap)
-        ngaps = 20
+        ngaps = 10
         gaps.sort(key=lambda x: -x[0])
         gaps = gaps[:ngaps]
-        print( "\n  Longest gaps since 2010:\n" )
+        print( "\n  Longest %d gaps since %d:\n" % (ngaps, start_year) )
         for gap in gaps:
             date1 = gap[1].date.strftime("%d-%b-%Y") if gap[1] else '           '
             date2 = gap[2].date.strftime("%d-%b-%Y") if gap[2] else '           '
@@ -1069,7 +1116,7 @@ class GIG_data():
                             artist_count += 1
                         if gig.index == agig.index:
                             record = False
-                    s.artisttimes = "%s/%s" % ( artist_count, total )
+                    s.artisttimes = ( artist_count, total )
                 return s.artisttimes
         return None
     def gig_venue_times(self,gig):
@@ -1132,7 +1179,7 @@ class GIG_data():
                     if e.index == gig.index:
                         record = False
         n_times += song.count - 1
-        return "%s/%s" % ( n_times, total )
+        return ( n_times, total )
 
     def animate_growth(self):
         import subprocess
@@ -1388,13 +1435,14 @@ class GIG_gig():
         # short printer
         headliner = self.sets[0].artists[0].name
         date = self.date.strftime("%d-%b-%Y (%a)")
-        return "%s %s   %s" % (headliner.ljust(20), date, self.venue )
+        return "%s %s   %s" % (headliner.ljust(25), date, self.venue )
 
 class GIG_set():
     def __init__(self, artists):
         self.artists    = artists[0:1]
         self.songs      = []
         self.band       = [a.name for a in artists[1:]]
+        self.coheadliners = self.band[:]
         # flags
         self.ordered    = True
         self.guest_only = False
@@ -1404,6 +1452,7 @@ class GIG_set():
         self.artisttimes = 0
     def append_song(self, song):
         self.songs.append(song)
+        song.set = self
 
 class GIG_song():
     def __init__(self, title):
@@ -1422,6 +1471,7 @@ class GIG_song():
         self.cover       = None
         self.custom      = []
         self.count       = 0
+        self.set         = None
 
 class GIG_query():
     def __init__(self,gig_data,opts):
