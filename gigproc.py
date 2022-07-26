@@ -993,26 +993,37 @@ class GIG_data():
 
         return covers
     def get_untitled(self):
+        untitled = []
+        width = 0
         for g in self.gigs:
             for s in g.sets:
                 for song in s.songs:
                     if not song.title:
-                        print("=====")
-                        print(g.date.strftime("%Y-%b-%d"))
+                        if len(s.artists[0].name) > width:
+                            width = len(s.artists[0].name)
                         quote = song.quote if song.quote else ""
-                        print(s.artists[0].name.ljust(30) + '"' + quote + '"')
+                        untitled.append( [ g.date, s.artists[0].name, quote ] )
+
+        for song in untitled:
+            print( "%s : %s : %s" % ( song[0].strftime("%Y-%b-%d"), song[1].ljust(width), song[2] ))
     def get_live_debuts(self):
         debuts = []
+        width = 0
+
         for g in self.gigs:
             for s in g.sets:
                 for song in s.songs:
                     if song.debut:
+                        if len(s.artists[0].name) > width:
+                            width = len(s.artists[0].name)
                         debuts.append( [ song.title, s.artists[0].name, g ] )
 
         debuts.sort(key=lambda x: x[2].date)
 
-        for debut in debuts:
-            print( "%s %s : %s" % ( debut[1], debut[2].date.strftime("%Y-%b-%d"), debut[0] ) )
+
+
+        for song in debuts:
+            print( "%s : %s : %s" % ( song[2].date.strftime("%Y-%b-%d"), song[1].ljust(width), song[0] ) )
 
         return debuts
 

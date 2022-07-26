@@ -18,6 +18,7 @@ def proc_options():
     parser.add_argument( '-stats',     action='store_true' )
     parser.add_argument( '-playlists', action='store_true' )
     parser.add_argument( '-untitled',  action='store_true' )
+    parser.add_argument( '-debuts',    action='store_true' )
     parser.add_argument( '-a', dest='artist', type=str, default=None )
     parser.add_argument( '-v', dest='venue',  type=str, default=None )
     parser.add_argument( '-s', dest='song',   type=str, default=None )
@@ -73,6 +74,8 @@ if __name__ == "__main__":
         gig_data.get_covers(True)
     elif options.untitled:
         gig_data.get_untitled()
+    elif options.debuts:
+        gig_data.get_live_debuts()
     else:
         query = gigproc.GIG_query(gig_data,options)
         if query.empty:
