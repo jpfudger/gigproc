@@ -1080,6 +1080,36 @@ class GIG_html():
                 index_string = gigs_string
                 years_string_i = years_string_h
 
+            # It would be nice to display some stats on the current year:
+
+            stats = self.gig_data.get_stats_by_year(y)
+
+            if stats and stats["n_events"] > 0:
+                n_events = stats["n_events"]
+                n_new_dates = stats["n_new_dates"]
+                n_artists = stats["n_artists"]
+                n_new_artists = stats["n_new_artists"]
+                n_headliners = stats["n_headliners"]
+                n_new_headliners = stats["n_new_headliners"]
+                n_male_headliners = stats["n_male_headliners"]
+                n_female_headliners = stats["n_female_headliners"]
+                n_venues = stats["n_venues"]
+                n_new_venues = stats["n_new_venues"]
+                n_cities = stats["n_cities"]
+                n_new_cities = stats["n_new_cities"]
+                n_countries = stats["n_countries"]
+                n_new_countries = stats["n_new_countries"]
+
+                year_stats =  "<br><ul>"
+                year_stats += "<li> %d events (%d new dates)" % ( n_events, n_new_dates )
+                year_stats += "<li> %d artists (%d new)" % ( n_artists, n_new_artists )
+                year_stats += "<li> %d headliners (%d new) (%d male) (%d female)" % ( n_headliners, n_new_headliners, n_male_headliners, n_female_headliners )
+                year_stats += "<li> %d venues (%d new)" % ( n_venues, n_new_venues )
+                year_stats += "<li> %d cities (%d new)" % ( n_cities, n_new_cities )
+                year_stats += "<li> %d countries (%d new)" % ( n_countries, n_new_countries )
+                year_stats += "</ul>"
+                plot_string += "<br>" + year_stats
+
             self.make_file( str(y), years_string_h, gigs_string, plot_string )
             for gig in self.gig_data.gigs:
                 if gig.future:

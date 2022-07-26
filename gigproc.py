@@ -38,6 +38,7 @@ class GIG_data():
 
         self.artist_bios = {}
         self.last_artist_index = 0
+        self.stats_by_year = []
 
         self.unique_artists = None  # cached
         self.unique_artists_inc_future = None  # cached
@@ -1135,6 +1136,135 @@ class GIG_data():
         # print('made anim_a.gif')
         # subprocess.call(['convert','-delay','5','-loop','1','anim/*_v.png','anim_v.gif'])
         # print('made anim_v.gif')
+
+    def get_stats_by_year(self, year=None):
+        if not self.stats_by_year:
+            y_gigs = self.get_unique_years(True)
+            y_gigs.sort()
+
+            today = datetime.today()
+
+            all_dates = []
+            all_artists = []
+            all_headliners = []
+            all_venues = []
+            all_cities = []
+            all_countries = []
+
+            for (y,c) in y_gigs:
+                d = { "year": y, 
+                      "n_events": 0,
+                      "n_new_dates": 0,
+                      "n_artists": 0, 
+                      "n_new_artists": 0, 
+                      "n_headliners": 0, 
+                      "n_new_headliners": 0,
+                      "n_male_headliners": 0,
+                      "n_female_headliners": 0,
+                      "ages_of_headliners": [],
+                      "ages_of_bob": [],
+                      "n_venues": 0,
+                      "n_new_venues": 0,
+                      "n_cities": 0,
+                      "n_new_cities": 0,
+                      "n_countries": 0,
+                      "n_new_countries": 0,
+                      "n_future": 0,
+                      "n_dylan": 0,     # not in future!
+                      "n_relative": 0,  # number of gigs up to today
+                    }
+                self.stats_by_year.append(d)
+
+                y_artists = []
+                y_headliners = []
+                y_venues = []
+                y_cities = []
+                y_countries = []
+
+                for g in c:
+                    if g.future:
+                        d["n_future"] += 1
+                        continue
+
+                    d["n_events"] += 1
+                    if g.date.timetuple().tm_yday <= today.date().timetuple().tm_yday:
+                        d["n_relative"] += 1
+
+                    set_index = 0
+                    day_of_year = g.date.strftime("%m%d")
+
+                    if day_of_year not in all_dates:
+                        all_dates.append(day_of_year)
+                        d["n_new_dates"] += 1
+
+                    if not g.venue in all_venues:
+                        all_venues.append(g.venue)
+                        d["n_new_venues"] += 1
+                        
+                    if not g.venue in y_venues:
+                        y_venues.append(g.venue)
+                        d["n_venues"] += 1
+
+                    if not g.city in all_cities:
+                        all_cities.append(g.city)
+                        d["n_new_cities"] += 1
+                        
+                    if not g.city in y_cities:
+                        y_cities.append(g.city)
+                        d["n_cities"] += 1
+
+                    if not g.country in y_countries:
+                        y_countries.append(g.country)
+                        d["n_countries"] += 1
+
+                    if not g.country in all_countries:
+                        all_countries.append(g.country)
+                        d["n_new_countries"] += 1
+
+                    for s in g.sets:
+                        aname = s.artists[0].name
+                        if aname == "Bob Dylan":
+                            d["n_dylan"] += 1
+
+                        if not aname in all_artists:
+                            all_artists.append(aname)
+                            d["n_new_artists"] += 1
+
+                        if not aname in y_artists:
+                            y_artists.append(aname)
+                            d["n_artists"] += 1
+
+                        if set_index == 0:
+                            if not aname in all_headliners:
+                                all_headliners.append(aname)
+                                d["n_new_headliners"] += 1
+
+                            if not aname in y_headliners:
+                                y_headliners.append(aname)
+                                d["n_headliners"] += 1
+
+                            gender = s.artists[0].gender()
+                            if gender == "male":
+                                d["n_male_headliners"] += 1
+                            elif gender == "female":
+                                d["n_female_headliners"] += 1
+
+                            age = s.artists[0].age(g.date.date())
+                            if age:
+                                d["ages_of_headliners"].append(age)
+
+                                if aname == "Bob Dylan":
+                                    d["ages_of_bob"].append(age)
+
+                        set_index += 1
+
+        if year:
+            for d in self.stats_by_year:
+                if d["year"] == year:
+                    return d
+            return None
+
+        return self.stats_by_year[:]
 
 class GIG_gig():
     def __init__(self, date, venue):
