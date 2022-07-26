@@ -745,6 +745,100 @@ class GIG_data():
             for g in run:
                 print( "    " + g.stub() )
             print( "" )
+    def longest_run_of_different_venues(self, cities=False):
+        which = "cities" if cities else "venues"
+        gigs = self.get_past_gigs()
+
+        # First calculate current run, by counting backwards:
+
+        current_run = []
+
+        for g in reversed(gigs):
+            if cities and g.city in [ c.city for c in current_run ]:
+                break
+            elif not cities and g.venue in [ c.venue for c in current_run ]:
+                break
+            else:
+                current_run.append(g)
+
+        print(f'  Current run of different {which} is {len(current_run)}.')
+
+        # Then find the long run, but calculating the run starting at every gig:
+
+        runs = []
+        curlist = []
+
+        for i, g in enumerate(gigs):
+            curlist = [g]
+
+            for sg in gigs[i+1:]:
+                if cities and sg.city not in [ c.city for c in curlist ]:
+                    curlist.append(sg)
+                elif not cities and sg.venue not in [ c.venue for c in curlist ]:
+                    curlist.append(sg)
+                else:
+                    break
+            runs.append(curlist)
+        
+        runs.sort(key=lambda L: -len(L))
+        longest = [ r for r in runs if len(r) == len(runs[0]) ]
+
+        print(f'  Longest run of different {which} is {len(runs[0])}, which occurred {len(longest)} times:\n')
+
+        for l in longest:
+            for g in l:
+                print('    ' + g.stub())
+            print()
+    def longest_gap_between_artist_events(self):
+        longest_gap = None
+        longest_gap_artists = []
+        longest_gap_events = []
+
+        for artist, gigs in self.get_unique_artists():
+            gap = None
+            prev = gigs[0]
+            for gig in gigs[1:]:
+                this_gap = gig.date - prev.date
+                if this_gap == longest_gap:
+                    longest_gap_artists.append(artist)
+                    longest_gap_events.append((prev,gig))
+                elif not longest_gap or this_gap > longest_gap:
+                    longest_gap = this_gap
+                    longest_gap_artists = [artist]
+                    longest_gap_events = [(prev,gig)]
+
+                prev = gig
+
+        print(f'  Longest gap between gigs is {longest_gap.days} days ({int(longest_gap.days / 365)} years) for {len(longest_gap_artists)} artists:\n')
+
+        for artist, events in zip(longest_gap_artists, longest_gap_events):
+            print(f'    {artist}: {events[0].date.date()} -> {events[1].date.date()}')
+            print()
+    def longest_gap_between_venue_events(self):
+        longest_gap = None
+        longest_gap_venues = []
+        longest_gap_events = []
+
+        for venue, gigs in self.get_unique_venues():
+            gap = None
+            prev = gigs[0]
+            for gig in gigs[1:]:
+                this_gap = gig.date - prev.date
+                if this_gap == longest_gap:
+                    longest_gap_venues.append(venue)
+                    longest_gap_events.append((prev,gig))
+                elif not longest_gap or this_gap > longest_gap:
+                    longest_gap = this_gap
+                    longest_gap_venues = [venue]
+                    longest_gap_events = [(prev,gig)]
+
+                prev = gig
+
+        print(f'  Longest gap between gigs is {longest_gap.days} days ({int(longest_gap.days / 365)} years) for {len(longest_gap_venues)} venues:\n')
+
+        for venue, events in zip(longest_gap_venues, longest_gap_events):
+            print(f'    {venue}: {events[0].date.date()} -> {events[1].date.date()}')
+        print()
     def relative_progress(self):
         year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday

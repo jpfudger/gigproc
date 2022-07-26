@@ -59,6 +59,10 @@ if __name__ == "__main__":
     elif options.runs:
         gig_data.longest_gap()
         gig_data.longest_run()
+        gig_data.longest_run_of_different_venues()
+        gig_data.longest_run_of_different_venues(cities=True)
+        gig_data.longest_gap_between_artist_events()
+        gig_data.longest_gap_between_venue_events()
     elif options.growth:
         gig_data.growth()
     elif options.fuzzy:
