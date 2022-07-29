@@ -196,6 +196,7 @@ class GIG_html():
             elif gender == 'female':
                 title += ' (F)'
 
+            #if acount[1] == 1: ag_fname = '""'
             alink = '<a href=%s title="%s">%s</a>' % ( ag_fname, title, g.artists[0].name )
 
             if g.solo and self.do_solo_sets:
@@ -251,12 +252,15 @@ class GIG_html():
                         continue
                     if guest in proc_guests:
                         continue
+                    if guest in g.band:
+                        continue
                     elif not proc_guests and not band_string:
                         setlist_string += '<br>'
                     asup = gig.get_artists().index(guest)
                     ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
                     g_acount = self.gig_data.gig_artist_times(gig,guest)
                     title = "Artistcount: %d/%d" % ( g_acount[0], g_acount[1] )
+                    #if acount[1] == 1: ag_fname = '""'
                     glink = '<a href=' + ag_fname + ' title="' + title + '">' + guest + '</a>'
                     setlist_string += '\n<br>' + self.sp(3) + '[Guesting ' + glink + ' '
                     setlist_string += self.make_flag_note( 'guest', guest, asup )
