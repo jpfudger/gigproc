@@ -241,6 +241,13 @@ class GIG_html():
                         title += ' (F)'
 
                     blink = '<a href=' + bg_fname + ' title="' + title + '">' + b + '</a>'
+
+                    for s in g.songs:
+                        if b in s.guests:
+                            asup = gig.get_artists().index(b)
+                            blink += ' ' + self.make_flag_note( 'guest', b, asup )
+                            break
+
                     band_links.append(blink)
                 band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + ']'
             setlist_string += band_string
