@@ -501,6 +501,85 @@ class GIG_plot():
         else:
             plt.show(block=False)
             plt.show()
+    def total_progress_wrt_target(self, dest=None):
+        gigs_by_year = self.gig_data.get_unique_years()
+        gigs_by_year.sort()
+        target = 40
+
+        gig_dates = []
+        gig_attainment = []
+
+        for (y,c) in gigs_by_year:
+            leap = y % 4 == 0
+            days_in_year = 366 if leap else 365
+            gig_count = 0
+            for g in c:
+                gig_count += 1
+                d = g.date.date()
+                ordinal = d.timetuple().tm_yday
+                expected = (target / days_in_year) * ordinal
+                gig_dates.append(d)
+                gig_attainment.append(gig_count - expected)
+                print(d, expected, gig_count - expected)
+
+        fig, ax = plt.subplots()
+        line1 = plt.plot(gig_dates, gig_attainment, color=self.colour1) #,linewidth=2.0)
+
+        if dest:
+            fig.savefig(dest, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
+    def average_age_evolution(self, dest=None):
+        gigs_by_year = self.gig_data.get_unique_years()
+        gigs_by_year.sort()
+
+        years = []
+
+        gig_dates = []
+        gig_ages = []
+
+        total_age = 0
+        gig_count = 0
+
+        ageless = []
+
+        for (y,c) in gigs_by_year:
+            years.append(y)
+            for g in c:
+                d = g.date.date()
+                artist = g.sets[0].artists[0]
+                age = artist.age(d)
+
+                if age:
+                    gig_count += 1
+                    total_age += age
+                    average = total_age / gig_count
+                    gig_dates.append(d)
+                    gig_ages.append(average)
+                elif artist in ageless:
+                    pass
+                else:
+                    print("No age for: " + artist.name)
+                    ageless.append(artist)
+
+        years = [ date(y,1,1) for y in years ]
+                
+        fig, ax = plt.subplots()
+        line1 = plt.plot(gig_dates, gig_ages, color=self.colour1) #,linewidth=2.0)
+
+        plt.xticks(years, [str(d.year)[2:4] for d in years] )
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        plt.legend((line1[0],), ('Average age of headliners',), loc='upper right')
+
+        if dest:
+            fig.savefig(dest, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
+        pass
     def total_progress_by_year(self,dest,year):
         gigs = None
 
@@ -908,5 +987,4 @@ class GIG_plot():
             else:
                 plt.show(block=False)
                 plt.show()
-            
 
