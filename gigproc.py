@@ -123,7 +123,20 @@ class GIG_data():
                 artist = splits[0]
 
                 if len(splits) > 1 and splits[1]:
-                    bio['dob'] = datetime.strptime( splits[1], '%Y-%m-%d').date()
+                    date_strings = splits[1].replace("-00-00", "-01-01").split()
+                    dates = [ datetime.strptime(d, '%Y-%m-%d').date() for d in date_strings ]
+                    dates.sort()
+                    bio["dob"] = dates[0]
+
+                    if len(dates) > 1:
+                        # use average age of band members
+                        #print(artist)
+                        ordinals = [ d.toordinal() for d in dates ]
+                        mean_ordinal = int(sum(ordinals) / len(ordinals))
+                        mean_date = datetime.fromordinal(mean_ordinal)
+                        #print("Multi-date:", dates) 
+                        #print("Mean date:", mean_date)
+                        bio["dob"] = mean_date
 
                 if len(splits) > 2 and splits[2]:
                     bio['gender'] = splits[2]
