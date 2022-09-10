@@ -267,6 +267,17 @@ class GIG_html():
                     ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
                     g_acount = self.gig_data.gig_artist_times(gig,guest)
                     title = "Artistcount: %d/%d" % ( g_acount[0], g_acount[1] )
+
+                    b_obj = self.gig_data.find_artist(guest)
+                    age = b_obj.age(gig.date)
+                    age = str(age) if age else "??"
+                    title += '&#10;' + 'Age: %s' % age
+                    gender = b_obj.gender()
+                    if gender == 'male':
+                        title += ' (M)'
+                    elif gender == 'female':
+                        title += ' (F)'
+
                     #if acount[1] == 1: ag_fname = '""'
                     glink = '<a href=' + ag_fname + ' title="' + title + '">' + guest + '</a>'
                     setlist_string += '\n<br>' + self.sp(3) + '[Guesting ' + glink + ' '
