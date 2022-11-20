@@ -2,7 +2,7 @@ import os
 import time
 from gigproc.gigplot import GIG_plot
 
-INCLUDE_FUTURE_YEARS = False
+INCLUDE_FUTURE_YEARS = True
 
 class GIG_html():
     def __init__(self, gig_data, head, playlists=False, plots=True):
@@ -550,6 +550,9 @@ class GIG_html():
             '    padding: 5px;',
             '    border: 1px solid ' + col_maintext + ';',
             '    }',
+            '.nowrap {',
+            '    white-space: nowrap;',
+            '    }',
             '.date {',
             '    font-weight: bold;',
             '    font-family: "Courier new", monospace;',
@@ -760,7 +763,7 @@ class GIG_html():
                 breakdown += '<br><br>Breakdown of %d songs across %d events (%.2f songs/event):<br>' \
                                 % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
 
-                breakdown += '\n<table>'
+                breakdown += '\n<table class=nowrap>'
                 breakdown += '\n<br>'
 
                 for song in unique_songs:
