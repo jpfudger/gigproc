@@ -1176,18 +1176,18 @@ class GIG_html():
             if stats and stats["n_events"] > 0:
                 n_events = stats["n_events"]
                 n_new_dates = stats["n_new_dates"]
-                n_artists = stats["n_artists"]
-                n_new_artists = stats["n_new_artists"]
-                n_headliners = stats["n_headliners"]
-                n_new_headliners = stats["n_new_headliners"]
+                n_artists = len(stats["n_artists"])
+                n_new_artists = len(stats["n_new_artists"])
+                n_headliners = len(stats["n_headliners"])
+                n_new_headliners = len(stats["n_new_headliners"])
                 n_male_headliners = stats["n_male_headliners"]
                 n_female_headliners = stats["n_female_headliners"]
-                n_venues = stats["n_venues"]
-                n_new_venues = stats["n_new_venues"]
-                n_cities = stats["n_cities"]
-                n_new_cities = stats["n_new_cities"]
-                n_countries = stats["n_countries"]
-                n_new_countries = stats["n_new_countries"]
+                n_venues = len(stats["n_venues"])
+                n_new_venues = len(stats["n_new_venues"])
+                n_cities = len(stats["n_cities"])
+                n_new_cities = len(stats["n_new_cities"])
+                n_countries = len(stats["n_countries"])
+                n_new_countries = len(stats["n_new_countries"])
 
                 year_stats =  "<br><ul>"
                 year_stats += "<li> %d events (%d new dates)" % ( n_events, n_new_dates )

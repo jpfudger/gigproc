@@ -91,10 +91,10 @@ class GIG_plot():
         fig, ax = plt.subplots()
         self.n_graphs += 1
 
-        years            = [ d["year"]             for d in self.stats if d["n_events"] > 0]
-        n_artists        = [ d["n_artists"]        for d in self.stats if d["n_events"] > 0]
-        n_new_artists    = [ d["n_new_artists"]    for d in self.stats if d["n_events"] > 0]
-        n_new_headliners = [ d["n_new_headliners"] for d in self.stats if d["n_events"] > 0]
+        years            = [ d["year"]                  for d in self.stats if d["n_events"] > 0]
+        n_artists        = [ len(d["n_artists"])        for d in self.stats if d["n_events"] > 0]
+        n_new_artists    = [ len(d["n_new_artists"])    for d in self.stats if d["n_events"] > 0]
+        n_new_headliners = [ len(d["n_new_headliners"]) for d in self.stats if d["n_events"] > 0]
 
         ind = range(1,len(years)+1)
         bar1 = ax.bar( ind, n_artists, align='center', \
@@ -231,8 +231,8 @@ class GIG_plot():
             bar_rel = ax.bar( ind, relative_counts, align='center', \
                               color=self.colour2, edgecolor=self.colour1 )
 
-        #bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', \
-        #                  color=self.colour4, edgecolor=self.colour1 )
+        bar_dyl = ax.bar( ind, dylan_counts,    0.4,  align='center', \
+                          color=self.colour4, edgecolor=self.colour1 )
 
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
@@ -244,23 +244,29 @@ class GIG_plot():
             #print("UP TO DAY")
             data = [bar_tot[0], 
                     bar_rel[0], 
+                    bar_dyl[0],
                     bar_future[0]]
 
             keys = ['Total events',
                     'Up to %s' % datestr,
+                    'Dylan events',
                     'Planned events']
         elif plot_future:
             #print("GOT FUTURE")
             data = [bar_tot[0], 
+                    bar_dyl[0],
                     bar_future[0]]
 
             keys = ['Total events',
+                    'Dylan events',
                     'Planned events']
         else:
             #print("GOT NO FUTURE")
-            data = [bar_tot[0]]
+            data = [bar_tot[0],
+                    bar_dyl[0]]
 
-            keys = ['Total events']
+            keys = ['Total events',
+                    'Dylan events']
 
         plt.legend(data, keys, loc='upper left' )
         ax.set_axisbelow(True)
@@ -279,10 +285,10 @@ class GIG_plot():
         fig, ax = plt.subplots()
         self.n_graphs += 1
  
-        years        = [ d["year"]         for d in self.stats if d["n_events"] > 0]
-        n_venues     = [ d["n_venues"]     for d in self.stats if d["n_events"] > 0]
-        n_new_venues = [ d["n_new_venues"] for d in self.stats if d["n_events"] > 0]
-        n_new_cities = [ d["n_new_cities"] for d in self.stats if d["n_events"] > 0]
+        years        = [ d["year"]              for d in self.stats if d["n_events"] > 0]
+        n_venues     = [ len(d["n_venues"])     for d in self.stats if d["n_events"] > 0]
+        n_new_venues = [ len(d["n_new_venues"]) for d in self.stats if d["n_events"] > 0]
+        n_new_cities = [ len(d["n_new_cities"]) for d in self.stats if d["n_events"] > 0]
 
         ind = range(1,len(years)+1)
         bar1 = ax.bar( ind, n_venues, align='center', \

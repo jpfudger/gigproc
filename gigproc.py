@@ -1241,31 +1241,25 @@ class GIG_data():
                 d = { "year": y, 
                       "n_events": 0,
                       "n_new_dates": 0,
-                      "n_artists": 0, 
-                      "n_new_artists": 0, 
-                      "n_headliners": 0, 
-                      "n_new_headliners": 0,
+                      "n_artists": [], 
+                      "n_new_artists": [], 
+                      "n_headliners": [], 
+                      "n_new_headliners": [],
                       "n_male_headliners": 0,
                       "n_female_headliners": 0,
                       "ages_of_headliners": [],
                       "ages_of_bob": [],
-                      "n_venues": 0,
-                      "n_new_venues": 0,
-                      "n_cities": 0,
-                      "n_new_cities": 0,
-                      "n_countries": 0,
-                      "n_new_countries": 0,
+                      "n_venues": [],
+                      "n_new_venues": [],
+                      "n_cities": [],
+                      "n_new_cities": [],
+                      "n_countries": [],
+                      "n_new_countries": [],
                       "n_future": 0,
                       "n_dylan": 0,     # not in future!
                       "n_relative": 0,  # number of gigs up to today
                     }
                 self.stats_by_year.append(d)
-
-                y_artists = []
-                y_headliners = []
-                y_venues = []
-                y_cities = []
-                y_countries = []
 
                 for g in c:
                     if g.future:
@@ -1285,27 +1279,24 @@ class GIG_data():
 
                     if not g.venue in all_venues:
                         all_venues.append(g.venue)
-                        d["n_new_venues"] += 1
+                        d["n_new_venues"].append(g.venue)
                         
-                    if not g.venue in y_venues:
-                        y_venues.append(g.venue)
-                        d["n_venues"] += 1
+                    if not g.venue in d["n_venues"]:
+                        d["n_venues"].append(g.venue)
 
                     if not g.city in all_cities:
                         all_cities.append(g.city)
-                        d["n_new_cities"] += 1
+                        d["n_new_cities"].append(g.city)
                         
-                    if not g.city in y_cities:
-                        y_cities.append(g.city)
-                        d["n_cities"] += 1
+                    if not g.city in d["n_cities"]:
+                        d["n_cities"].append(g.city)
 
-                    if not g.country in y_countries:
-                        y_countries.append(g.country)
-                        d["n_countries"] += 1
+                    if not g.country in d["n_countries"]:
+                        d["n_countries"].append(g.country)
 
                     if not g.country in all_countries:
                         all_countries.append(g.country)
-                        d["n_new_countries"] += 1
+                        d["n_new_countries"].append(g.country)
 
                     for s in g.sets:
                         aname = s.artists[0].name
@@ -1314,20 +1305,18 @@ class GIG_data():
 
                         if not aname in all_artists:
                             all_artists.append(aname)
-                            d["n_new_artists"] += 1
+                            d["n_new_artists"].append(aname)
 
-                        if not aname in y_artists:
-                            y_artists.append(aname)
-                            d["n_artists"] += 1
+                        if not aname in d["n_artists"]:
+                            d["n_artists"].append(aname)
 
                         if set_index == 0:
                             if not aname in all_headliners:
                                 all_headliners.append(aname)
-                                d["n_new_headliners"] += 1
+                                d["n_new_headliners"].append(aname)
 
-                            if not aname in y_headliners:
-                                y_headliners.append(aname)
-                                d["n_headliners"] += 1
+                            if not aname in d["n_headliners"]:
+                                d["n_headliners"].append(aname)
 
                             gender = s.artists[0].gender()
                             if gender == "male":
