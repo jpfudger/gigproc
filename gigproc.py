@@ -197,7 +197,7 @@ class GIG_data():
                     this_set.solo = True
                 # Comment out these two lines to suppress the band member processing
                 if re.match( '.*{.*', splits[1] ):
-                    for b in re.findall( '{([0-9A-Za-z- ]+)}', splits[1]):
+                    for b in re.findall( '{([^}]+)}', splits[1]):
                         if b in ignore_band_artists.keys():
                             if not ignore_band_artists[b]:
                                 #print("Ignoring band artist:", b)
