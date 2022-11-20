@@ -18,7 +18,9 @@ ignore_band_artists = {
     "Stu Kimball"       : False,
     "Denny Freeman"     : False,
     "Donnie Herron"     : False,
-
+    "Doug Lancio"       : False,
+    "Charley Drayton"   : False,
+    "Bob Britt"         : False,
     "Nils Lofgren"      : False,
     "Steve Van Zandt"   : False,
     }
