@@ -8,23 +8,6 @@ from datetime import datetime, timedelta, date
 from gigproc.gigplot import GIG_plot
 from gigproc.gightml import GIG_html
 
-ignore_band_artists = {
-    "Tony Garnier"      : False,
-    "Charlie Sexton"    : False,
-    "Larry Campbell"    : False,
-    "Jim Keltner"       : False,
-    "Freddy Koella"     : False,
-    "George Recile"     : False,
-    "Stu Kimball"       : False,
-    "Denny Freeman"     : False,
-    "Donnie Herron"     : False,
-    "Doug Lancio"       : False,
-    "Charley Drayton"   : False,
-    "Bob Britt"         : False,
-    "Nils Lofgren"      : False,
-    "Steve Van Zandt"   : False,
-    }
-
 class GIG_artist():
     def __init__(self,name,index):
         self.name  = name
@@ -56,6 +39,7 @@ class GIG_data():
         self.artist_bios = {}
         self.last_artist_index = 0
         self.stats_by_year = []
+        self.ignore_band_artists = self.get_ignore_artists()
 
         self.unique_artists = None  # cached
         self.unique_artists_inc_future = None  # cached
@@ -200,10 +184,10 @@ class GIG_data():
                 # Comment out these two lines to suppress the band member processing
                 if re.match( '.*{.*', splits[1] ):
                     for b in re.findall( '{([^}]+)}', splits[1]):
-                        if b in ignore_band_artists.keys():
-                            if not ignore_band_artists[b]:
+                        if b in self.ignore_band_artists.keys():
+                            if not self.ignore_band_artists[b]:
                                 #print("Ignoring band artist:", b)
-                                ignore_band_artists[b] = True
+                                self.ignore_band_artists[b] = True
                         else:
                             this_set.band.append(b)
                 if '@' in splits[1]:
@@ -345,7 +329,14 @@ class GIG_data():
         # Print playlists which have not been matched to a set:
         #for pl in playlists:
             #print(pl)
-
+    def get_ignore_artists(self):
+        ignore_band_artists = {}
+        path = self.root + '/ignore_band_artists'
+        with open(path) as f:
+            for line in f:
+                artist = line.split("#")[0].strip()
+                ignore_band_artists[artist] = False
+        return ignore_band_artists
     def get_data_from_file(self,path):
         level = 0
         commented = False
