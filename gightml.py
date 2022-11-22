@@ -488,6 +488,9 @@ class GIG_html():
             '    padding:10px;',
             '    background:transparent;',
             '    }',
+            '.collapse {',
+            '    display: none',
+            '    }',
             '.cf {*zoom:1;}',
             '',
             '.yr {',
@@ -1241,10 +1244,11 @@ class GIG_html():
     def make_covers_string(self):
         covers = self.gig_data.get_covers()
         string = '\n<ol>'
-        for cover in covers:
+
+        for i, cover in enumerate(covers, start=1):
             string += '<a name="%s"></a>' % self.cover_artist_label(cover['cover_artist'])
-            string += '\n<li> <b>%s</b> (%d)' % ( cover['cover_artist'], cover['count'] )
-            string += '\n    <ul>'
+            string += '\n<a href=# onclick=toggle_entry(%d)>%s</a> (%d)' % ( i, cover['cover_artist'], cover['count'] )
+            string += '\n    <ul class=collapse id=%d>' % i
             songs = []
             for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
                 versions = []
@@ -1259,6 +1263,5 @@ class GIG_html():
             string += ''.join(songs)
             string += '\n    </ul>'
             string += '\n    <br>'
-        string += '\n</ol>'
         return string
 
