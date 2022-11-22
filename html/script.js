@@ -125,6 +125,9 @@ function toggle_entry(id) {
             break;
             }
         }
+
+    // don't do default event action, (i.e. reloading page)
+    event.preventDefault();
     }
 
 shortcut.add("j",function() {
