@@ -900,7 +900,14 @@ class GIG_html():
                     #'</td><td>' + ', '.join([ x[0] for x in c]) + '</td></tr>'
             counter += 1
             cfname = 'c' + str(counter).zfill(3)
-            clink = '<a href=' + cfname + '.html>' + city + '</a>' 
+
+            unique_venues_for_city = []
+            for g in gigs_past:
+                if g.venue not in unique_venues_for_city:
+                    unique_venues_for_city.append(g.venue)
+            title = "\"%d venues\"" % len(unique_venues_for_city)
+
+            clink = '<a href=' + cfname + '.html title=' + title + '>' + city + '</a>' 
 
             all_cgigs = gigs_past + gigs_future;
 
