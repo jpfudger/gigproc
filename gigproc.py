@@ -345,7 +345,7 @@ class GIG_data():
         commented = False
         com_level = -1
         last_blank = False
-        vcountries = self.get_venue_data()
+        vcountries = self.get_city_data()
         with open(path) as f:
             lines = f.read().splitlines()
         for line in lines:
@@ -711,19 +711,36 @@ class GIG_data():
         zipped.sort( key=lambda x: (-len(x[1]),x[0]), reverse = True ) 
         zipped.reverse()
         return zipped
-    def get_venue_data(self):
+    def get_city_data(self):
         vcountries = {}
-        path = self.root + '/venue_data'
+        path = self.root + '/city_data'
         with open(path) as f:
             for line in f.readlines():
                 splits = line.split('#')
                 if len(splits) == 2:
                     vcountries[splits[0].strip()] = splits[1].strip()
         return vcountries
+    def get_venue_capacities(self):
+        vdata = {}
+        path = self.root + '/venue_capacity'
+        with open(path) as f:
+            for line in f.readlines():
+                splits = line.split('#')
+                if len(splits) > 1:
+                    ven = splits[0].strip()
+                    caps = []
+                    for c in splits[1:]:
+                        try:
+                            caps.append(int(c.strip()))
+                        except:
+                            pass
+                    if ven and caps:
+                        vdata[ven] = max(caps)
+        return vdata
     def get_unique_countries(self,inc_future=False):
         countries = {}
-        path = self.root + '/venue_data'
-        v_countries = self.get_venue_data()
+        path = self.root + '/city_data'
+        v_countries = self.get_city_data()
         for (city, gigs_past, gigs_future) in self.unique_cities():
             if city in v_countries.keys():
                 country = v_countries[city]

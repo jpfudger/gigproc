@@ -858,6 +858,8 @@ class GIG_html():
         all_venues = self.gig_data.get_unique_venues()
         venues_string = str(len(self.gig_data.get_past_gigs())) + ' events at ' + \
                 str(len(all_venues)) + ' venues:<br><br>\n<table>'
+        venue_capacities = self.gig_data.get_venue_capacities()
+
         n_gigs_for_last_venue = 0
         counter = 0
         for (v,c) in all_venues:
@@ -886,7 +888,14 @@ class GIG_html():
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_v, venue_string_h, setlist_string, gig.img )
 
+            hover = ""
+            if v in venue_capacities:
+                cap = venue_capacities[v]
+                #print(v, ":", cap, ":", f"{cap:,}")
+                hover = 'title="Capacity: ' + f"{cap:,}" + '"'
+
             link = '<a href=' + vfname + '.html>' + v + '</a>'
+            link = '<a href=%s.html %s>%s</a>' % (vfname, hover, v)
 
             if len(c) == n_gigs_for_last_venue:
                 venues_string += ', ' + link
