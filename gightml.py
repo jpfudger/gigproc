@@ -1,8 +1,7 @@
 import os
 import time
+from datetime import datetime  
 from gigproc.gigplot import GIG_plot
-
-INCLUDE_FUTURE_YEARS = True
 
 class GIG_html():
     def __init__(self, gig_data, head, playlists=False, plots=True):
@@ -12,6 +11,9 @@ class GIG_html():
         self.plotter = None
         if plots:
             self.plotter = GIG_plot(gig_data)
+
+        # Add future years if generating html in November or December:
+        self.INCLUDE_FUTURE_YEARS = datetime.now().month > 10
 
         # optional extras:
         self.do_covers = True           # mark covers
@@ -24,7 +26,7 @@ class GIG_html():
         self.do_calendar  = True
 
         # do the work:
-        self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(INCLUDE_FUTURE_YEARS) ]
+        self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(self.INCLUDE_FUTURE_YEARS) ]
         self.years.sort()
         if self.do_playlists:
             gig_data.fill_in_playlist_links()
@@ -695,7 +697,7 @@ class GIG_html():
     def make_years_string(self,highlight_year=None):
         # years will include extras (artists, venues, etc.)
         years_string = ''
-        year_gigs = self.gig_data.get_unique_years(INCLUDE_FUTURE_YEARS)
+        year_gigs = self.gig_data.get_unique_years(self.INCLUDE_FUTURE_YEARS)
         for y in self.years:
             if y == '':
                 years_string += '\n<br>'
@@ -865,9 +867,14 @@ class GIG_html():
         for (v,c) in all_venues:
             counter += 1
             vfname = 'v' + str(counter).zfill(3)
+            vcapacity = f"{venue_capacities[v]:,}" if v in venue_capacities else None
+
+            v_name = v 
+            if vcapacity:
+                v_name += " (%s)" % vcapacity
 
             all_vgigs = self.gig_data.all_gigs_of_venue(v,True) # need to include future gigs here!
-            venue_string = self.build_gigs_string( all_vgigs, None, vfname, v )
+            venue_string = self.build_gigs_string( all_vgigs, None, vfname, v_name )
 
             vplot_link = ''
             # Plot venue growth:
@@ -884,15 +891,13 @@ class GIG_html():
                     break
                 suffix = '_' + vfname
                 link = gig.link + suffix
-                venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v, None, gig.index )
+                venue_string_h = self.build_gigs_string( all_vgigs, None, vfname, v_name, None, gig.index )
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_v, venue_string_h, setlist_string, gig.img )
 
             hover = ""
-            if v in venue_capacities:
-                cap = venue_capacities[v]
-                #print(v, ":", cap, ":", f"{cap:,}")
-                hover = 'title="Capacity: ' + f"{cap:,}" + '"'
+            if vcapacity:
+                hover = 'title="Capacity: %s"' % vcapacity
 
             link = '<a href=' + vfname + '.html>' + v + '</a>'
             link = '<a href=%s.html %s>%s</a>' % (vfname, hover, v)
@@ -1188,7 +1193,7 @@ class GIG_html():
         index_string   = ''
         years_string_i = ''
          
-        for (y,c) in self.gig_data.get_unique_years(INCLUDE_FUTURE_YEARS):
+        for (y,c) in self.gig_data.get_unique_years(self.INCLUDE_FUTURE_YEARS):
             gigs_string = self.build_gigs_string(self.gig_data.gigs,y)
             years_string_h = self.make_years_string(y)
 
