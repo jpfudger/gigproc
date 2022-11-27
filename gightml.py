@@ -826,7 +826,21 @@ class GIG_html():
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_a, artist_string_h + breakdown, setlist_string, gig.img )
 
-            link = '<a href=' + afname + '.html>' + a + '</a>'
+            biog = self.gig_data.get_artist_biog(a)
+            deceased = False
+            hover = ""
+            if biog:
+                if biog["dob"]:
+                    hover = "Born: %s" % biog["dob"]
+                if biog["dod"]:
+                    if hover: hover += "\n"
+                    hover = "Died: %s" % biog["dod"]
+                    deceased = True
+
+            link = '<a href=%s.html title="%s">%s</a>' % (afname, hover, a)
+            if deceased:
+                link += "&dagger;"
+
             if self.gig_data.artist_is_support(a):
                 link = '<i>' + link + '</i>'
             if len(c) == n_gigs_for_last_artist:

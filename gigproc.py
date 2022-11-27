@@ -22,6 +22,9 @@ class GIG_artist():
             age = date.year - dob.year - ((date.month, date.day) < (dob.month, dob.day))
         return age
 
+    def deceased(self):
+        return self.biog and self.biog['dod']
+
     def gender(self):
         gender = None
         if self.biog and self.biog['gender']:
@@ -87,7 +90,7 @@ class GIG_data():
 
         return string
 
-    def get_artist_bios(self,name):
+    def get_artist_biog(self,name):
         if not self.artist_bios:
             lines = []
             path = self.root + '/artist_data'
@@ -146,7 +149,7 @@ class GIG_data():
         if not artist:
             self.last_artist_index += 1
             artist = GIG_artist(name, self.last_artist_index)
-            artist.biog = self.get_artist_bios(name)
+            artist.biog = self.get_artist_biog(name)
             self.artists.append(artist)
         return artist
 
