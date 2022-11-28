@@ -870,8 +870,9 @@ class GIG_html():
             vcapacity = f"{venue_capacities[v]:,}" if v in venue_capacities else None
 
             v_name = v 
-            if vcapacity:
-                v_name += " (%s)" % vcapacity
+            # Add capacity to top of list of gigs at venue:
+            #if vcapacity:
+                #v_name += " (%s)" % vcapacity
 
             all_vgigs = self.gig_data.all_gigs_of_venue(v,True) # need to include future gigs here!
             venue_string = self.build_gigs_string( all_vgigs, None, vfname, v_name )
