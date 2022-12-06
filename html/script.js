@@ -180,3 +180,28 @@ shortcut.add("c",function() {
     open_url(url);
     });
 
+function process_url() {
+    var anchor = window.location.href.match(/covers\.html#[^#]+$/)
+
+    if ( anchor )
+        {
+        var anchor = anchor[0].slice(12);
+        //alert(anchor);
+
+        var lines = document.body.innerHTML.split("\n");
+
+        for (var i=0; i<lines.length; i++)
+            {
+
+            if ( lines[i].includes(anchor) )
+                {
+                var index = lines[i+1].match(/toggle_entry\((\d+)\)/)[1]
+                toggle_entry(index);
+                break;
+                }
+
+            }
+        }
+    }
+
+window.onload = process_url
