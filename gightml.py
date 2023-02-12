@@ -1159,7 +1159,9 @@ class GIG_html():
                         links.append(link)
                         future = False
                     else:
-                        link = '<div style="display: inline" title="%s">%s</div>' % ( info, year )
+                        this_year = "<i>" + year + "</i>"
+                        if g.confirmed: this_year = year
+                        link = '<div style="display: inline" title="%s">%s</div>' % ( info, this_year )
                         links.append(link)
                         # break # don't include multiple future gigs on a single date
 
