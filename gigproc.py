@@ -184,7 +184,7 @@ class GIG_data():
                     this_set.ordered = False
                 if '[solo]' in splits[1]:
                     this_set.solo = True
-                # Comment out these two lines to suppress the band member processing
+                
                 if re.match( '.*{.*', splits[1] ):
                     for b in re.findall( '{([^}]+)}', splits[1]):
                         if b in self.ignore_band_artists.keys():
@@ -507,8 +507,16 @@ class GIG_data():
                             got = False
                             if not song.title: # Untitled
                                 continue
-                            if guest and song.solo: # solo performance cannot contain guest
-                                continue
+                            if guest and song.solo: 
+                                # the guest might be the requested artist, e.g. a solo
+                                # performance in band set (Palaces of Gold, 11-Feb-2023).
+                                guest_is_self = False
+                                for g in song.guests:
+                                    if a == g:
+                                        guest_is_self = True
+                                        break
+                                if not guest_is_self:
+                                    continue
                             if a in song.missing:
                                 continue
                             for got_song in usoa:

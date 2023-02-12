@@ -777,12 +777,17 @@ class GIG_html():
                         if event in song['events']:
                             symbol = 'X'
                             for s in event.sets:
-                                if a in [x.name for x in s.artists]:
+                                #if a in [x.name for x in s.artists]:
+                                # we can't rely on s.artists, because it doesn't include
+                                # guest performances, e.g. Palaces of Gold, 11-Feb-2023
+                                if True:
                                     for ss in s.songs:
                                         if ss.title == song['title']:
                                             if ss.solo:
+                                                # solo song
                                                 symbol = 'S'
                                             if s.solo and not ss.guests:
+                                                # solo song in solo set
                                                 symbol = 'S'
                                             if "partial" in ss.custom:
                                                 symbol = 'P'
