@@ -198,6 +198,10 @@ class GIG_html():
             elif gender == 'female':
                 title += ' (F)'
 
+            country = g.artists[0].country()
+            if country:
+                title += '&#10;' + 'Country: %s' % country
+
             #if acount[1] == 1: ag_fname = '""'
             alink = '<a href=%s title="%s">%s</a>' % ( ag_fname, title, g.artists[0].name )
 

@@ -31,6 +31,12 @@ class GIG_artist():
             gender = self.biog['gender']
         return gender
 
+    def country(self):
+        country = None
+        if self.biog and self.biog['country']:
+            country = self.biog['country']
+        return country
+
 class GIG_data():
     def __init__(self,root,verbose=False):
         self.root      = root
@@ -99,9 +105,10 @@ class GIG_data():
 
             for line in lines:
                 bio = {
-                    'dob'    : None,
-                    'gender' : None,
-                    'dod'    : None,
+                    'country' : None,
+                    'dob'     : None,
+                    'gender'  : None,
+                    'dod'     : None,
                     }
 
                 line = line.split('#')[0]
@@ -112,7 +119,10 @@ class GIG_data():
                 artist = splits[0]
 
                 if len(splits) > 1 and splits[1]:
-                    date_strings = splits[1].replace("-00-00", "-01-01").split()
+                    bio['country'] = splits[1].strip()
+
+                if len(splits) > 2 and splits[2]:
+                    date_strings = splits[2].replace("-00-00", "-01-01").split()
                     dates = [ datetime.strptime(d, '%Y-%m-%d').date() for d in date_strings ]
                     dates.sort()
                     bio["dob"] = dates[0]
@@ -127,11 +137,11 @@ class GIG_data():
                         #print("Mean date:", mean_date)
                         bio["dob"] = mean_date
 
-                if len(splits) > 2 and splits[2]:
-                    bio['gender'] = splits[2]
-
                 if len(splits) > 3 and splits[3]:
-                    bio['dod'] = datetime.strptime( splits[3], '%Y-%m-%d').date()
+                    bio['gender'] = splits[3]
+
+                if len(splits) > 4 and splits[4]:
+                    bio['dod'] = datetime.strptime( splits[4], '%Y-%m-%d').date()
 
                 self.artist_bios[artist] = bio
 
