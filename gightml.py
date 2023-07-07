@@ -12,8 +12,8 @@ class GIG_html():
         if plots:
             self.plotter = GIG_plot(gig_data)
 
-        # Add future years if generating html in November or December:
-        self.INCLUDE_FUTURE_YEARS = datetime.now().month > 10
+        # We always process future years, but only add the link late in the year:
+        self.LINK_TO_FUTURE_YEARS = datetime.now().month > 10
 
         # optional extras:
         self.do_covers = True           # mark covers
@@ -26,7 +26,7 @@ class GIG_html():
         self.do_calendar  = True
 
         # do the work:
-        self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(self.INCLUDE_FUTURE_YEARS) ]
+        self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(inc_future=True) ]
         self.years.sort()
         if self.do_playlists:
             gig_data.fill_in_playlist_links()
@@ -706,7 +706,7 @@ class GIG_html():
     def make_years_string(self,highlight_year=None):
         # years will include extras (artists, venues, etc.)
         years_string = ''
-        year_gigs = self.gig_data.get_unique_years(self.INCLUDE_FUTURE_YEARS)
+        year_gigs = self.gig_data.get_unique_years(True)
         for y in self.years:
             if y == '':
                 years_string += '\n<br>'
@@ -715,6 +715,10 @@ class GIG_html():
                 try:
                     # count gigs and add hover title
                     y_num = int(y)
+
+                    if y_num > datetime.now().year and not self.LINK_TO_FUTURE_YEARS:
+                        continue
+
                     n_events = 0
                     for gy,gc in year_gigs:
                         if gy == y_num: n_events = len(gc)
@@ -1210,7 +1214,7 @@ class GIG_html():
         index_string   = ''
         years_string_i = ''
          
-        for (y,c) in self.gig_data.get_unique_years(self.INCLUDE_FUTURE_YEARS):
+        for (y,c) in self.gig_data.get_unique_years(True):
             gigs_string = self.build_gigs_string(self.gig_data.gigs,y)
             years_string_h = self.make_years_string(y)
 
