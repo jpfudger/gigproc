@@ -154,15 +154,20 @@ class GIG_html():
         vcount = self.gig_data.gig_venue_times(gig)
         ycount = self.gig_data.gig_year_times(gig)
 
+        vcapacity = ""
+        venue_capacities = self.gig_data.get_venue_capacities()
+        if gig.venue in venue_capacities:
+            vcapacity = "&#10;" + "Capacity: %s" % venue_capacities[gig.venue]
+        
         clink = '<a href=' + cf_fname + ' title="Citycount: ' + ccount + '">' + gig.city + '</a>'
-        vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + vcount + '">' + gig.venue_nocity + '</a>'
+        vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + vcount + vcapacity + '">' + gig.venue_nocity + '</a>'
         ylink = '<a href=' + yg_fname + ' title="Yearcount: ' + ycount + '">' + gig.date.strftime("%Y") + '</a>' 
         day_name = gig.date.strftime("%A")
 
         setlist_string = '<div class=sl_title title="' + day_name+ '">\n' + \
                     clink + ' ' + vlink + '<br>' + \
                     link_prev + link_next + ' ' + \
-                    ordinal(day) + gig.date.strftime(" %B, ") + ylink + '</div>' + '\n'
+                    ordinal(day) + gig.date.strftime(" %B ") + ylink + '</div>' + '\n'
 
         # artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
 
