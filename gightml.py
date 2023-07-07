@@ -407,7 +407,7 @@ class GIG_html():
             ]
         with open( fname_html, 'w') as the_file:
             for l in lines:
-                the_file.write(l)
+                the_file.write(l + "\n")
     def make_stylesheet(self):
         fname_html = self.head + 'style.css'
 
@@ -454,8 +454,10 @@ class GIG_html():
             '    float: right;',
             '    top: 50;',
             '    right: 60;',
+            '    border-radius: 10px;',
+            '    overflow: hidden;',
             '    /*z-index: -1;*/',
-            '    display: block;',
+            '    display: none;  /* enabled selectively by javascript */',       
             '    }',
             '#header {',
             '    padding:10px;',
