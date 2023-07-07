@@ -130,6 +130,22 @@ function toggle_entry(id) {
     event.preventDefault();
     }
 
+function toggle_image_visibility() {
+    var image = document.getElementById("img");
+    if ( image.style.display == "block" )
+        { image.style.display = "none"; }
+    else
+        { image.style.display = "block"; }
+    }
+
+function toggle_image_cookie() {
+    if ( get_image_cookie() )
+        { del_image_cookie(); }
+    else
+        { set_image_cookie(); }
+
+    }
+
 shortcut.add("j",function() {
     next_link();
 	// var url = next_gig_url();
@@ -180,13 +196,22 @@ shortcut.add("c",function() {
     open_url(url);
     });
 
-function process_url() {
+shortcut.add("i",function() {
+    toggle_image_visibility()
+    });
+
+
+function set_image_cookie() { document.cookie = "ShowImages=1"; }
+function get_image_cookie() { return document.cookie.includes("ShowImages=1"); }
+function del_image_cookie() { document.cookie = "ShowImages=0"; }
+    
+function expand_cover_artist() // using url anchor
+    {
     var anchor = window.location.href.match(/covers\.html#[^#]+$/)
 
     if ( anchor )
         {
         var anchor = anchor[0].slice(12);
-        //alert(anchor);
 
         var lines = document.body.innerHTML.split("\n");
 
@@ -202,6 +227,28 @@ function process_url() {
 
             }
         }
+    }
+function set_image_visibility() // using cookie or url
+    {
+
+    show_images = get_image_cookie();
+
+    if ( !show_images )
+        {
+        var local = window.location.href.match(/file:\/\//);
+        var iparm = window.location.href.match(/\?i=1/);
+        show_images = local || iparm;
+        }
+
+    if ( show_images )
+        {
+        document.getElementById("img").style.display = "block";
+        }
+    }
+
+function process_url() {
+    expand_cover_artist();
+    set_image_visibility();
     }
 
 window.onload = process_url
