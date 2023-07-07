@@ -1305,7 +1305,7 @@ class GIG_html():
 
         for i, cover in enumerate(covers, start=1):
             string += '<a name="%s"></a>' % self.cover_artist_label(cover['cover_artist'])
-            string += '\n<a href=# onclick=toggle_entry(%d)>%s</a> (%d)' % ( i, cover['cover_artist'], cover['count'] )
+            string += '\n<a href=# onclick=toggle_entry(%d)>%s</a> (%d/%d)' % ( i, cover['cover_artist'], len(cover['songs']), cover['count'] )
             string += '\n    <ul class=collapse id=%d>' % i
             songs = []
             for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
@@ -1317,9 +1317,11 @@ class GIG_html():
                     versions.append( '%s' % link )
                     versions.sort()
                 songs.append( '\n    <li> ' + s + ' (' + (', '.join(versions)) + ')' )
+            
             songs.sort()
             string += ''.join(songs)
             string += '\n    </ul>'
             string += '\n    <br>'
+
         return string
 
