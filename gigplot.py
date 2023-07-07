@@ -600,6 +600,8 @@ class GIG_plot():
         bob_dates = []
         future_dates = []
         future_totals = []
+        ticket_dates = []
+        ticket_totals = []
         
         if gigs == None:
             return False
@@ -609,6 +611,13 @@ class GIG_plot():
             if g.future:
                 future_dates.append(g.date)
                 future_totals.append(running_total)
+                if g.confirmed:
+                    if totals and not ticket_totals:
+                        ticket_totals.append(totals[-1])
+                        ticket_dates.append(dates[-1])
+                    new_ticket_total = ticket_totals[-1] if ticket_totals else 0
+                    ticket_dates.append(g.date)
+                    ticket_totals.append(new_ticket_total + 1)
             else:
                 if 'Bob Dylan' in g.get_artists():
                     bob_totals.append(running_total)
@@ -637,7 +646,10 @@ class GIG_plot():
             line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
 
         if len(future_dates) > 1:
-            line2 = plt.plot(future_dates,future_totals,color=self.colour1,ls='--')
+            line2 = plt.plot(future_dates,future_totals,color=self.colour3,ls='--')
+
+        if len(ticket_dates) > 1:
+            line3 = plt.plot(ticket_dates,ticket_totals,color=self.colour1,ls='--')
 
         dots1 = plt.plot(blobs,blob_totals,color=self.colour2,marker='o',ls='',markeredgewidth=1,markeredgecolor=self.colour1)
         dots2 = plt.plot(bob_dates,bob_totals,color=self.colour4,marker='o',ls='',markeredgewidth=1,markeredgecolor=self.colour1)
@@ -659,8 +671,8 @@ class GIG_plot():
         ax.fill_between(dates, 0, totals, color=self.colour1)
 
         if len(dates) > 1 and len(future_dates) > 1 and line1:
-            plt.legend( (line1[0],line2[0]), 
-                        ('%d events' % year, 'Planned'), 
+            plt.legend( (line1[0],line3[0],line2[0]),
+                        ('%d events' % year, 'Planned events', 'Unconfirmed'), 
                         loc='upper left')
         elif len(dates) > 1 and line1:
             plt.legend((line1[0],), ('%d events' % year,), loc='upper left')
