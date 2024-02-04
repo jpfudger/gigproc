@@ -802,6 +802,12 @@ class GIG_html():
                                 if True:
                                     for ss in s.songs:
                                         if ss.title == song['title']:
+                                            if a in ss.guests:
+                                                # artist as guest in set
+                                                symbol = 'G'
+                                            if a in ss.set.band:
+                                                # artist featured in set
+                                                symbol = 'F'
                                             if ss.solo:
                                                 # solo song
                                                 symbol = 'S'
@@ -828,13 +834,16 @@ class GIG_html():
                                             ( cover_label, song['obj'].cover + ' cover', symbol )
                     if song['obj'].improv:
                         songtitle += ' ' + self.make_flag_note('improv')
-                    if a in song['obj'].guests:
-                        message = "Guesting in a %s set" % song['obj'].set.artists[0].name
-                        songtitle += ' ' + self.make_flag_note('custom', message)
-                    # this doesn't work, because "band" is an attribute on the set:
-                    if a in song['obj'].set.band:
-                        message = "Featuring in a %s set" % song['obj'].set.artists[0].name
-                        songtitle += ' ' + self.make_flag_note('custom', message)
+
+                    # Don't do this, because it's a property of the performance, not the song:
+                    # if a in song['obj'].guests:
+                    #     message = "Guesting in a %s set" % song['obj'].set.artists[0].name
+                    #     songtitle += ' ' + self.make_flag_note('custom', message)
+
+                    # Don't do this, because it's a property of the performance, not the song:
+                    # if a in song['obj'].set.band:
+                    #     message = "Featuring in a %s set" % song['obj'].set.artists[0].name
+                    #     songtitle += ' ' + self.make_flag_note('custom', message)
 
                     songcount = str(len(song['events']))
                     breakdown += self.row( [ songcount + self.sp(1), songtitle + self.sp(2), event_string ], 'rll' )

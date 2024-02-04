@@ -189,6 +189,8 @@ class GIG_data():
         #title = re.sub( r"(?<=[^?])\?$", '\1', title)
 
         # capitalise each word:
+        # but this doesn't capitalise words immediately after parentheses
+        # eg: Hangin' (at The Six Six Bar)
         title = ' '.join(w[0].upper() + w[1:] for w in title.split()) 
 
         # uncapitalise conjunctions:
@@ -529,16 +531,19 @@ class GIG_data():
                             got = False
                             if not song.title: # Untitled
                                 continue
-                            if guest and song.solo: 
-                                # the guest might be the requested artist, e.g. a solo
-                                # performance in band set (Palaces of Gold, 11-Feb-2023).
-                                guest_is_self = False
-                                for g in song.guests:
-                                    if a == g:
-                                        guest_is_self = True
-                                        break
-                                if not guest_is_self:
-                                    continue
+                            # I can't remember why this is necessary. It has the effect
+                            # that performances of "Astray" in "I Am Kloot" sets are ignored.
+                            # if guest and song.solo: 
+                            #     # the guest might be the requested artist, e.g. a solo
+                            #     # performance in band set (Palaces of Gold, 11-Feb-2023).
+                            #     guest_is_self = False
+                            #     for g in song.guests:
+                            #         if a == g:
+                            #             guest_is_self = True
+                            #             break
+                            #     if not guest_is_self:
+                            #         #print(f"Ignoring \"{song.title}\" on {gig.date}.")
+                            #         continue
                             if a in song.missing:
                                 continue
                             for got_song in usoa:
