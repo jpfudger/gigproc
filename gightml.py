@@ -155,9 +155,9 @@ class GIG_html():
         ycount = self.gig_data.gig_year_times(gig)
 
         vcapacity = ""
-        venue_capacities = self.gig_data.get_venue_capacities()
-        if gig.venue in venue_capacities:
-            vcapacity = "&#10;" + "Capacity: %s" % venue_capacities[gig.venue]
+        vdata = self.gig_data.get_venue_data()
+        if gig.venue in vdata and vdata[gig.venue]["capacity"] > 0:
+            vcapacity = "&#10;" + "Capacity: %s" % vdata[gig.venue]["capacity"]
         
         clink = '<a href=' + cf_fname + ' title="Towncount: ' + ccount + '">' + gig.city + '</a>'
         vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + vcount + vcapacity + '">' + gig.venue_nocity + '</a>'
@@ -920,14 +920,16 @@ class GIG_html():
         all_venues = self.gig_data.get_unique_venues()
         venues_string = str(len(self.gig_data.get_past_gigs())) + ' events at ' + \
                 str(len(all_venues)) + ' venues:<br><br>\n<table>'
-        venue_capacities = self.gig_data.get_venue_capacities()
+        vdata = self.gig_data.get_venue_data()
 
         n_gigs_for_last_venue = 0
         counter = 0
         for (v,c) in all_venues:
             counter += 1
             vfname = 'v' + str(counter).zfill(3)
-            vcapacity = f"{venue_capacities[v]:,}" if v in venue_capacities else None
+            vcapacity = None
+            if v in vdata and vdata[v]["capacity"] > 0:
+                vcapacity = vdata[v]["capacity"]
 
             v_name = v 
             # Add capacity to top of list of gigs at venue:

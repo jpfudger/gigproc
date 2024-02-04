@@ -53,6 +53,8 @@ class GIG_data():
         self.stats_by_year = []
         self.ignore_band_artists = self.get_ignore_artists()
 
+        self.venue_data = {} # cached: venue -> capacity, coordinates
+        self.city_data = {} # cached: city -> country
         self.unique_artists = None  # cached
         self.unique_artists_inc_future = None  # cached
         self.unique_venues = None   # cached
@@ -369,7 +371,7 @@ class GIG_data():
         commented = False
         com_level = -1
         last_blank = False
-        vcountries = self.get_venue_data()
+        cdata = self.get_city_data()
         with open(path) as f:
             lines = f.read().splitlines()
         for line in lines:
@@ -403,7 +405,7 @@ class GIG_data():
                     v = m1.group(2)
                     this_gig = GIG_gig(d, v, ticket)
                     try:
-                        this_gig.country = vcountries[this_gig.city]
+                        this_gig.country = cdata[this_gig.city]["country"]
                     except KeyError:
                         print("New city: %s. Defaulting to UK" % this_gig.city)
                         this_gig.country = "UK"
@@ -763,38 +765,55 @@ class GIG_data():
         zipped.reverse()
         return zipped
     def get_venue_data(self):
-        vcountries = {}
-        path = self.root + '/city_data'
-        with open(path) as f:
-            for line in f.readlines():
-                splits = line.split('|')
-                if len(splits) == 2:
-                    vcountries[splits[0].strip()] = splits[1].strip()
-        return vcountries
-    def get_venue_capacities(self):
-        vdata = {}
-        path = self.root + '/venue_data'
-        with open(path) as f:
-            for line in f.readlines():
-                splits = line.split('|')
-                if len(splits) > 1:
-                    ven = splits[0].strip()
-                    caps = []
-                    for c in splits[1:]:
-                        try:
-                            caps.append(int(c.strip()))
-                        except:
-                            pass
-                    if ven and caps:
-                        vdata[ven] = max(caps)
-        return vdata
+        # venue -> capacity, coordinates
+        if not self.venue_data:
+            venue_data_path = self.root + '/venue_data' # for capacities and coordinates
+
+            with open(venue_data_path) as f:
+                for line in f:
+                    splits = line.split('|')
+                    venue = None
+                    capacities = []
+                    coordinates = None
+
+                    if len(splits) > 0:
+                        venue = splits[0].strip()
+                    if len(splits) > 1:
+                        for c in splits[1:2]:
+                            try:
+                                capacities.append(int(c.strip()))
+                            except:
+                                pass
+                    if len(splits) > 3:
+                        latlong = splits[3].split(",")
+                        coordinates = ( float(latlong[0].strip()), float(latlong[1].strip()) )
+
+                    if venue:
+                        self.venue_data[venue] = { "capacity": max(capacities) if capacities else 0,
+                                                  "coordinates": coordinates,
+                                                }
+
+        return self.venue_data
+    def get_city_data(self):
+        # city -> country
+        if not self.city_data:
+            city_data_path = self.root + '/city_data' # for city -> country
+
+            with open(city_data_path) as f:
+                for line in f:
+                    splits = line.split('|')
+                    if len(splits) == 2:
+                        city = splits[0].strip()
+                        country = splits[1].strip()
+                        self.city_data[city] = { "country": country }
+
+        return self.city_data
     def get_unique_countries(self,inc_future=False):
+        cdata = self.get_city_data()
         countries = {}
-        path = self.root + '/venue_data'
-        v_countries = self.get_venue_data()
         for (city, gigs_past, gigs_future) in self.unique_cities():
-            if city in v_countries.keys():
-                country = v_countries[city]
+            if city in cdata:
+                country = cdata[city]["country"]
                 if not country in countries.keys():
                     countries[country] = []
                 countries[country] += gigs_past
