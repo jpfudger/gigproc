@@ -22,6 +22,9 @@ class GIG_artist():
             age = date.year - dob.year - ((date.month, date.day) < (dob.month, dob.day))
         return age
 
+    def approx(self):
+        return self.biog and self.biog["approx"]
+
     def deceased(self):
         return self.biog and self.biog['dod']
 
@@ -107,22 +110,33 @@ class GIG_data():
                 bio = {
                     'country' : None,
                     'dob'     : None,
+                    'approx'  : False, # if age is not precisely known, or is a band
                     'gender'  : None,
                     'dod'     : None,
                     }
 
                 line = line.split('#')[0]
-
+                
                 splits = line.split(':')
                 splits = [ x.strip() for x in splits ]
-
+                
                 artist = splits[0]
 
                 if len(splits) > 1 and splits[1]:
-                    bio['country'] = splits[1].strip()
+                    g = splits[1].strip()
+                    gender = None
+                    if g == "M":
+                        bio['gender'] = "male"
+                    elif g == "F":
+                        bio['gender'] = "female"
 
                 if len(splits) > 2 and splits[2]:
-                    date_strings = splits[2].replace("-00-00", "-01-01").split()
+                    bio['country'] = splits[2].strip()
+
+                if len(splits) > 3 and splits[3]:
+                    if "-00" in splits[3]:
+                        bio["approx"] = True
+                    date_strings = splits[3].replace("-00", "-01").split()
                     dates = [ datetime.strptime(d, '%Y-%m-%d').date() for d in date_strings ]
                     dates.sort()
                     bio["dob"] = dates[0]
@@ -136,9 +150,7 @@ class GIG_data():
                         #print("Multi-date:", dates) 
                         #print("Mean date:", mean_date)
                         bio["dob"] = mean_date
-
-                if len(splits) > 3 and splits[3]:
-                    bio['gender'] = splits[3]
+                        bio["approx"] = True
 
                 if len(splits) > 4 and splits[4]:
                     bio['dod'] = datetime.strptime( splits[4], '%Y-%m-%d').date()
@@ -734,7 +746,7 @@ class GIG_data():
         path = self.root + '/city_data'
         with open(path) as f:
             for line in f.readlines():
-                splits = line.split('#')
+                splits = line.split('|')
                 if len(splits) == 2:
                     vcountries[splits[0].strip()] = splits[1].strip()
         return vcountries
@@ -743,7 +755,7 @@ class GIG_data():
         path = self.root + '/venue_data'
         with open(path) as f:
             for line in f.readlines():
-                splits = line.split('#')
+                splits = line.split('|')
                 if len(splits) > 1:
                     ven = splits[0].strip()
                     caps = []

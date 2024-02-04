@@ -197,6 +197,10 @@ class GIG_html():
             age = str(age) if age else "??"
 
             title += '&#10;' + 'Age: %s' % age
+
+            if g.artists[0].approx():
+                title += "?"
+
             gender = g.artists[0].gender()
             if gender == 'male':
                 title += ' (M)'
