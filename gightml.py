@@ -706,7 +706,7 @@ class GIG_html():
                 else:
                     ccount = self.gig_data.gig_city_times(gig)
                     vcount = self.gig_data.gig_venue_times(gig)
-                    venue_str  = '<div class=greyflag title="Citycount: '+ccount+'">'+ gig.city+'</div>'
+                    venue_str  = '<div class=greyflag title="Towncount: '+ccount+'">'+ gig.city+'</div>'
                     venue_str += ' <div class=greyflag title="Venuecount: '+vcount+'">'+gig.venue_nocity+'</div>'
                     cols = [ str(i) + '.' + self.sp(1), name_str, date_str, venue_str ]
                     gigs_string += self.row( cols, 'rlll' )
