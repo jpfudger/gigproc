@@ -1309,8 +1309,11 @@ class GIG_data():
                       "n_new_artists": [], 
                       "n_headliners": [], 
                       "n_new_headliners": [],
+                      "n_male": 0,
+                      "n_female": 0,
                       "n_male_headliners": 0,
                       "n_female_headliners": 0,
+                      "ages": [],
                       "ages_of_headliners": [],
                       "ages_of_bob": [],
                       "n_venues": [],
@@ -1395,7 +1398,20 @@ class GIG_data():
                                 if aname == "Bob Dylan":
                                     d["ages_of_bob"].append(age)
 
+                        for artist in s.artists:
+                            gender = artist.gender()
+                            if gender == "male":
+                                d["n_male"] += 1
+                            elif gender == "female":
+                                d["n_female"] += 1
+
                         set_index += 1
+
+                    for a_name in g.get_artists():
+                        a = self.find_artist(a_name)
+                        age = a.age(g.date.date())
+                        if age:
+                            d["ages"].append(age)
 
         if year:
             for d in self.stats_by_year:
