@@ -893,10 +893,10 @@ class GIG_html():
             hover = ""
             if biog:
                 if biog["dob"]:
-                    hover = "Born: %s" % biog["dob"]
+                    hover = "Born: %s" % biog["dob"].strftime("%d-%b-%Y")
                 if biog["dod"]:
                     if hover: hover += "\n"
-                    hover += "Died: %s" % biog["dod"]
+                    hover += "Died: %s" % biog["dod"].strftime("%d-%b-%Y")
                     deceased = True
 
             link = '<a href=%s.html title="%s">%s</a>' % (afname, hover, a)
