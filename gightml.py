@@ -13,7 +13,7 @@ class GIG_html():
             self.plotter = GIG_plot(gig_data)
 
         # We always process future years, but only add the link late in the year:
-        self.LINK_TO_FUTURE_YEARS = datetime.now().month > 10
+        self.LINK_TO_FUTURE_YEARS = datetime.now().month >= 11
 
         # optional extras:
         self.do_covers = True           # mark covers
@@ -185,8 +185,8 @@ class GIG_html():
                 playlist_link = '\n<a href="' + g.playlist + '">&raquo;</a>\n'
 
             if g.band_only:
-                # if it's a dummy set for a band member, don't display it
-                continue
+                continue # if it's a dummy set for a band member, don't display it
+
             ag_fname = ''
             if linkback:
                 ag_fname = gig.link + '_a' + self.id_of_artist(g.artists[0].name) + '.html'
@@ -688,14 +688,8 @@ class GIG_html():
                 else:
                     ccount = self.gig_data.gig_city_times(gig)
                     vcount = self.gig_data.gig_venue_times(gig)
-
-                    vcapacity = ""
-                    venue_capacities = self.gig_data.get_venue_capacities()
-                    if gig.venue in venue_capacities:
-                        vcapacity = "&#10;" + "Capacity: %s" % venue_capacities[gig.venue]
-
-                    venue_str  = '<div class=greyflag title="Towncount: ' + ccount + '">'+ gig.city+'</div>'
-                    venue_str += ' <div class=greyflag title="Venuecount: ' + vcount + vcapacity + '">' + gig.venue_nocity + '</div>'
+                    venue_str  = '<div class=greyflag title="Citycount: '+ccount+'">'+ gig.city+'</div>'
+                    venue_str += ' <div class=greyflag title="Venuecount: '+vcount+'">'+gig.venue_nocity+'</div>'
                     cols = [ str(i) + '.' + self.sp(1), name_str, date_str, venue_str ]
                     gigs_string += self.row( cols, 'rlll' )
 
@@ -724,12 +718,16 @@ class GIG_html():
                 years_string += '\n<br>'
             else:
                 title = ''
+                future = False
                 try:
                     # count gigs and add hover title
                     y_num = int(y)
 
-                    if y_num > datetime.now().year and not self.LINK_TO_FUTURE_YEARS:
-                        continue
+                    if y_num > datetime.now().year:
+                        if self.LINK_TO_FUTURE_YEARS:
+                            future = True
+                        else:
+                            continue
 
                     n_events = 0
                     for gy,gc in year_gigs:
@@ -740,9 +738,14 @@ class GIG_html():
 
                 if y[-1] == '0':
                     years_string += '\n<br>'
-                years_string += '\n<div class=yr> <a '
-                if self.is_highlight_year( highlight_year, y ):
-                    years_string += 'class=highlight '
+
+                a_class = ""
+                if self.is_highlight_year(highlight_year, y):
+                    a_class += " highlight"
+                if future:
+                    a_class += " future"
+
+                years_string += '\n<div class=yr> <a class=\"%s\" ' % a_class.strip()
                 years_string += 'href=' + str(y).lower() + '.html' + title + '>' + str(y) + '</a> </div>'
         return years_string
     def make_artist_index_string(self,years_string_a):
@@ -1253,6 +1256,7 @@ class GIG_html():
 
         index_string   = ''
         years_string_i = ''
+        plot_string_i  = ''
          
         for (y,c) in self.gig_data.get_unique_years(True):
             gigs_string = self.build_gigs_string(self.gig_data.gigs,y)
@@ -1267,6 +1271,7 @@ class GIG_html():
             if y == self.gig_data.first_unseen().date.year:
                 index_string = gigs_string
                 years_string_i = years_string_h
+                plot_string_i = plot_string
 
             # It would be nice to display some stats on the current year:
 
@@ -1314,7 +1319,7 @@ class GIG_html():
 
         self.make_file( 'venues',    years_string_v,   venues_string,    '' )
         self.make_file( 'artists',   years_string_a,   artists_string,   '' )
-        self.make_file( 'index',     years_string_i,   index_string,     '' )
+        self.make_file( 'index',     years_string_i,   index_string,     plot_string_i )
 
         # if self.do_playlists:
         #     years_string_b = self.make_years_string("Tapes")
