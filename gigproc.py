@@ -581,13 +581,29 @@ class GIG_data():
             if gigs.future:
                 return gigs
     def calendar(self,verbose=False,month=None):
-        start = datetime(2016,1,1) # leap year
+        start = datetime(2016,1,1) # arbitrary leap year
 
         gig_days = 0
 
         dates = []
         gigs = []
         date_gig_counts = []
+
+        consecutive_gigs = []
+        for gig in self.gigs:
+            if len(consecutive_gigs) == 0:
+                consecutive_gigs.append(gig)
+            elif consecutive_gigs[-1].date.toordinal() + 1 == gig.date.toordinal():
+                consecutive_gigs.append(gig)
+            else:
+                for cgig in consecutive_gigs:
+                    cgig.consecutive = len(consecutive_gigs)
+                    # if len(consecutive_gigs) > 2:
+                    #     print(cgig.date, cgig.consecutive)
+                consecutive_gigs = [ gig ]
+
+            if gig.future: 
+                break
 
         for date in ( start + timedelta(days=n) for n in range(366) ):
             if month and date.month != month:
@@ -1399,6 +1415,7 @@ class GIG_gig():
         self.link    = ''
         self.citytimes = None
         self.venuetimes = None
+        self.consecutive = 0
         # self.img should really be the same as self.link 
         # (so multiple gigs per day can have individual images). 
         # But that would require renaming all the existing images.

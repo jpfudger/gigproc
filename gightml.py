@@ -1158,6 +1158,8 @@ class GIG_html():
             lines.append( '<td align="center" class="calendar_wide">%s</td>' % day )
         lines.append( '</tr>' )
 
+        max_consecutive = 0
+
         for date, gigs in zip(cal_dates,cal_gigs):
             if date.day == 1:
                 if date.month > 1:
@@ -1165,24 +1167,35 @@ class GIG_html():
                 lines.append('<tr>')
                 m_index = int(date.strftime("%m")) - 1
                 m_percent = month_day_percentages[m_index]
-                div = '<div title="%.1f%% coverage">%s</div>' % ( m_percent, date.strftime("%B") )
+                div = '<div title="%.1f%% coverage">%s</div>' % ( m_percent, date.strftime("%b") )
                 lines.append('<td class="calendar_wide">%s</td>' % div)
             if len(gigs) > 0:
                 future = True
                 links = []
                 for i,g in enumerate(gigs):
                     year = str(g.date.year)
-                    info = g.get_artists()[0] + ', ' + g.venue + ' (' + g.date.strftime('%A') + ')'
-                    if not g.future:
-                        link = '<a href=%s.html title="%s">%s</a>' % ( g.link, info, year )
-                        links.append(link)
-                        future = False
-                    else:
+                    artist = g.get_artists()[0] 
+                    info = artist + ', ' + g.venue + ' (' + g.date.strftime('%A') + ')'
+                    if g.consecutive > max_consecutive:
+                        max_consecutive = g.consecutive
+
+                    if g.future:
                         this_year = "<i>" + year + "</i>"
                         if g.confirmed: this_year = year
                         link = '<div style="display: inline" title="%s">%s</div>' % ( info, this_year )
                         links.append(link)
                         # break # don't include multiple future gigs on a single date
+                    else:
+                        classes = []
+                        if artist == "Bob Dylan": classes.append("dylan")
+                        if g.consecutive > 2: classes.append("consec-%d" % g.consecutive)
+                        aclass = ""
+                        if classes:
+                            aclass = " class=\"%s\" " % (" ".join(classes))
+                        
+                        link = '<a href=%s.html %s title="%s">%s</a>' % ( g.link, aclass, info, year )
+                        links.append(link)
+                        future = False
 
                 if future:
                     lines.append('<td class="calendar_empty">')
@@ -1197,6 +1210,12 @@ class GIG_html():
 
         lines.append('</tr>')
         lines.append('</table>')
+
+        links = [ '<a href="#" class=dylan onclick="cal_highlight_bob();">Bob Dylan</a>' ]
+        for i in range(3, max_consecutive + 1):
+            links.append(f'<a class="consec-{i}" href="#" onclick="cal_highlight_consecutive({i});">{i}-in-a-row</a>')
+        link_string = "Highlight " + (", ".join(links)) + ".<br><br>"
+        lines.insert(0, link_string)
 
         return "\n".join(lines)
     def generate_html_files(self):

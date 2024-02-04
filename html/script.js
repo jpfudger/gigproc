@@ -146,6 +146,50 @@ function toggle_image_cookie() {
 
     }
 
+var HIGHLIGHT_COLOUR = "cyan";
+
+function cal_highlight_bob() {
+    var links = document.getElementsByTagName("a");
+    for ( var i=0; i<links.length; i++ )
+        {
+        if ( links[i].classList.contains("dylan") ) {
+            if ( links[i].style.color == HIGHLIGHT_COLOUR ) {
+                links[i].style.color = "";
+                // links[i].style.fontWeight = "";
+                }
+            else {
+                links[i].style.color = HIGHLIGHT_COLOUR;
+                // links[i].style.fontWeight = "bold";
+                }
+            }
+        else {
+            links[i].style.color = "";
+            // links[i].style.fontWeight = "";
+            }
+        }
+    }
+
+function cal_highlight_consecutive(nr) {
+    var links = document.getElementsByTagName("a");
+    for ( var i=0; i<links.length; i++ )
+        {
+        if ( links[i].classList.contains("consec-" + nr.toString()) ) {
+            if ( links[i].style.color == HIGHLIGHT_COLOUR ) {
+                links[i].style.color = "";
+                // links[i].style.fontWeight = "";
+                }
+            else {
+                links[i].style.color = HIGHLIGHT_COLOUR;
+                // links[i].style.fontWeight = "bold";
+                }
+            }
+        else {
+            links[i].style.color = "";
+            // links[i].style.fontWeight = "";
+            }
+        }
+    }
+
 shortcut.add("j",function() {
     next_link();
 	// var url = next_gig_url();
