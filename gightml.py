@@ -945,7 +945,38 @@ class GIG_html():
                     self.plotter.general_plot(c, plot_fname, v)
                 vplot_link = '<img src="img/%s.png">' % vfname
 
-            self.make_file( vfname, years_string_v, venue_string, vplot_link )
+            venue_info_string = vplot_link
+            add_venue_stats = True
+
+            if add_venue_stats:
+                # first attempt
+                stats_string = ""
+                venue_artists = []
+                venue_headliners = []
+                days_of_week = [0] * 7 # Monday = 0
+
+                for g in c:
+                    if g.future: continue
+                    artists = g.get_artists()
+                    venue_artists += artists
+                    venue_headliners.append(artists[0])
+                    days_of_week[ g.date.weekday() ] += 1
+
+                stats_string = "<br>"
+                stats_string += "<br>Unique headliners: %d" % len(list(set(venue_headliners)))
+                stats_string += "<br>Unique artists: %d" % len(list(set(venue_artists)))
+                stats_string += "<br>"
+                stats_string += "<br>Mon: %d" % days_of_week[0]
+                stats_string += "<br>Tue: %d" % days_of_week[1]
+                stats_string += "<br>Wed: %d" % days_of_week[2]
+                stats_string += "<br>Thu: %d" % days_of_week[3]
+                stats_string += "<br>Fri: %d" % days_of_week[4]
+                stats_string += "<br>Sat: %d" % days_of_week[5]
+                stats_string += "<br>Sun: %d" % days_of_week[6]
+
+                venue_info_string += stats_string
+
+            self.make_file( vfname, years_string_v, venue_string, venue_info_string )
 
             for gig in c:
                 if gig.future:
