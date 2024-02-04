@@ -146,6 +146,56 @@ function toggle_image_cookie() {
 
     }
 
+function show_image(path) {
+    var divs = document.getElementsByClassName("graph-frame");
+
+    for ( var i=0; i<divs.length; i++ )
+        {
+        if ( divs[i].innerHTML.includes(path) )
+            {
+            divs[i].style.display = "block";
+            break;
+            }
+        }
+
+    }
+
+function hide_all_graphs() {
+    var divs = document.getElementsByClassName("graph-frame");
+    for ( var i=0; i<divs.length; i++ )
+        {
+        divs[i].style.display = "none";
+        }
+    }
+
+function cycle_graphs(forward=true) {
+    var divs = document.getElementsByClassName("graph-frame");
+    divs = Array.from(divs);
+    divs.push(divs[0]);
+
+    if ( !forward )
+        {
+        divs.reverse();
+        }
+
+    show_next = false;
+
+    for ( var i=0; i<divs.length; i++ )
+        {
+        if ( show_next )
+            {
+            divs[i].style.display = "block";
+            break;
+            }
+
+        if ( divs[i].style.display != "none" )
+            {
+            show_next = true;
+            divs[i].style.display = "none";
+            }
+        }
+    }
+
 var HIGHLIGHT_COLOUR = "cyan";
 
 function cal_highlight_bob() {
@@ -244,6 +294,9 @@ shortcut.add("i",function() {
     toggle_image_visibility()
     });
 
+shortcut.add("right",function() { cycle_graphs(true) });
+shortcut.add("left",function() { cycle_graphs(false) });
+
 
 function set_image_cookie() { document.cookie = "ShowImages=1"; }
 function get_image_cookie() { return document.cookie.includes("ShowImages=1"); }
@@ -279,6 +332,7 @@ function set_image_visibility() // using cookie or url
 
     if ( !show_images )
         {
+        // force visible images for local html, or with url parameter
         var local = window.location.href.match(/file:\/\//);
         var iparm = window.location.href.match(/\?i=1/);
         show_images = local || iparm;

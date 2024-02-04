@@ -458,10 +458,13 @@ class GIG_html():
             '    float: right;',
             '    top: 50;',
             '    right: 60;',
-            '    border-radius: 10px;',
+            #'    border-radius: 10px;',
             '    overflow: hidden;',
             '    /*z-index: -1;*/',
             '    display: none;  /* enabled selectively by javascript */',       
+            '    }',
+            'img {',
+            '    border-radius: 10px;',
             '    }',
             '#header {',
             '    padding:10px;',
@@ -504,6 +507,21 @@ class GIG_html():
             '#footer {',
             '    padding:10px;',
             '    background:transparent;',
+            '    }',
+            '#popup {',
+            '    max-height: 80%;',
+            '    border: 2px solid;',
+            '    border-radius: 20px;',
+            '    }',
+            '.graph-frame {',
+            '    display: none;',
+            '    top: 0;',
+            '    left: 0;',
+            '    width: 100%;',
+            '    height: 100%;',
+            '    padding: 5%;',
+            '    z-index: 1001;',
+            '    position: fixed;',
             '    }',
             '.collapse {',
             '    display: none',
@@ -1097,41 +1115,61 @@ class GIG_html():
         return string
     def make_graphs_index_string(self):
         graphs = []
+        divs = []
 
         if self.plotter:
-            self.plotter.year_growth('html/img/plot_year_growth.png')
-            self.plotter.total_progress('html/img/plot_cumulative.png')
-            self.plotter.month_growth('html/img/plot_month_growth.png')
-            self.plotter.artist_growth('html/img/plot_artist_growth.png')
-            self.plotter.venue_growth('html/img/plot_venue_growth.png')
-            #self.plotter.relative_progress('html/img/plot_relative_progress.png')
-            self.plotter.days_growth('html/img/plot_days_growth.png')
-            #self.plotter.top_venue_growth(9,'html/img/plot_top_venue_growth.png')
-            self.plotter.h_index('html/img/plot_h_index.png')
-            #self.plotter.freq_dist('html/img/plot_freq_dist.png')
-            self.plotter.artist_demographics('html/img/plot_ages.png', \
+            self.plotter.events_by_year('html/img/plot_events_by_year.png')
+            self.plotter.artists_by_year('html/img/plot_artists_by_year.png')
+            self.plotter.venues_by_year('html/img/plot_venues_by_year.png')
+
+            self.plotter.total_progress('html/img/plot_cumulative_events.png')
+            self.plotter.artist_demographics('html/img/plot_age_distribution.png', \
                                      'html/img/plot_average_ages.png', \
                                      'html/img/plot_genders.png' )
+            self.plotter.age_range_by_year('html/img/plot_age_range_by_year.png')
+            self.plotter.events_by_day_and_month('html/img/plot_events_by_day_and_month.png')
+            self.plotter.top_venues(10,'html/img/plot_top_venues.png')
+            #self.plotter.top_artists(10,'html/img/plot_top_artists.png')
 
-        graphs.append('img/plot_year_growth.png')
-        #graphs.append('img/plot_month_growth.png')
-        graphs.append('img/plot_artist_growth.png')
-        graphs.append('img/plot_venue_growth.png')
-        graphs.append('img/plot_cumulative.png')
-        #graphs.append('img/plot_relative_progress.png')
-        #graphs.append('img/plot_days_growth.png')
-        #graphs.append('img/plot_top_venue_growth.png')
-        #graphs.append('img/plot_freq_dist.png')
-        #graphs.append('img/plot_h_index.png')
-        graphs.append('img/plot_ages.png')
-        graphs.append('img/plot_genders.png')
+            self.plotter.h_index('html/img/plot_h_index.png')
+            #self.plotter.freq_dist('html/img/plot_freq_dist.png')
 
-        string = '<br> <br> <center>\n'
+        graphs.append('img/plot_events_by_year.png')
+        graphs.append('img/plot_artists_by_year.png')
+        graphs.append('img/plot_venues_by_year.png')
+        
+        graphs.append('img/plot_cumulative_events.png')
+        graphs.append('img/plot_age_range_by_year.png')
+        graphs.append('img/plot_age_distribution.png')
+
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_events_by_year.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_artists_by_year.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_venues_by_year.png></div>')
+        
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_cumulative_events.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_age_range_by_year.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_age_distribution.png></div>')
+        
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_events_by_day_and_month.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_genders.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_h_index.png></div>')
+        
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_top_venues.png></div>')
+        #divs.append('<div class=graph-frame onlick=hide_all_graphs();><img id=popup src=img/plot_freq_dist.png></div>')
+
+        string = ''
+
+        for div in divs:
+            string += div + '\n'
+
+        string += '<br> <br> <center>\n'
         count = 0
 
-        for graph in graphs:
+        for i, graph in enumerate(graphs):
+            #width = 24 if i >= 6 else 32
+            width = 32
             count += 1
-            string += '<img src="' + graph + '" style="width:30%;"><nbsp>'
+            string += '<img onclick=show_image("%s"); src="%s" style="width:%d%%;"><nbsp>' % (graph, graph, width)
             #if count % 2 == 0:
                 #string += '<br>'
             string += '\n'
