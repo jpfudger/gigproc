@@ -177,14 +177,16 @@ class GIG_plot():
 
         ind = range(1,len(years)+1)
 
-        bar_tot = ax.bar( ind, total_counts, align='center', \
-                          color=self.colour1, edgecolor=self.colour1 )
-
         if plot_future:
+            # plot future first, so that totals go in front
             bar_future = ax.bar( ind, future_counts, align='center', \
                                  color=self.colour3, edgecolor=self.colour1 )
 
+        bar_tot = ax.bar( ind, total_counts, align='center', \
+                          color=self.colour1, edgecolor=self.colour1 )
+
         if plot_up_to_day:
+            relative_counts[-1] = 0
             bar_rel = ax.bar( ind, relative_counts, align='center', \
                               color=self.colour2, edgecolor=self.colour1 )
 
@@ -205,7 +207,7 @@ class GIG_plot():
                     bar_future[0]]
 
             keys = ['Total events',
-                    'Up to %s' % datestr,
+                    'Past years up to %s' % datestr,
                     'Dylan events',
                     'Planned events']
         elif plot_future:
@@ -835,7 +837,8 @@ class GIG_plot():
         #print(event_idx)
         #print(new_songs)
 
-        plot_percentage_change = len(unique_songs) > 78
+        plot_percentage_change = False
+        #plot_percentage_change = len(unique_songs) > 78
         if plot_percentage_change:
             percentage_change = []
             percentage_change_dates = []
