@@ -300,7 +300,7 @@ class GIG_plot():
         plt.xticks(ind,[str(xx)[2:4] for xx in years])
 
         plt.legend((bar1[0], bar2[0], bar3[0]), \
-                   ('Total venues', 'New venues', 'New cities'), \
+                   ('Total venues', 'New venues', 'New towns'), \
                    loc='upper left')
 
         ax.set_axisbelow(True)

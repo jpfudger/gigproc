@@ -159,7 +159,7 @@ class GIG_html():
         if gig.venue in venue_capacities:
             vcapacity = "&#10;" + "Capacity: %s" % venue_capacities[gig.venue]
         
-        clink = '<a href=' + cf_fname + ' title="Citycount: ' + ccount + '">' + gig.city + '</a>'
+        clink = '<a href=' + cf_fname + ' title="Towncount: ' + ccount + '">' + gig.city + '</a>'
         vlink = '<a href=' + vg_fname + ' title="Venuecount: ' + vcount + vcapacity + '">' + gig.venue_nocity + '</a>'
         ylink = '<a href=' + yg_fname + ' title="Yearcount: ' + ycount + '">' + gig.date.strftime("%Y") + '</a>' 
         day_name = gig.date.strftime("%A")
@@ -688,8 +688,14 @@ class GIG_html():
                 else:
                     ccount = self.gig_data.gig_city_times(gig)
                     vcount = self.gig_data.gig_venue_times(gig)
-                    venue_str  = '<div class=greyflag title="Citycount: '+ccount+'">'+ gig.city+'</div>'
-                    venue_str += ' <div class=greyflag title="Venuecount: '+vcount+'">'+gig.venue_nocity+'</div>'
+
+                    vcapacity = ""
+                    venue_capacities = self.gig_data.get_venue_capacities()
+                    if gig.venue in venue_capacities:
+                        vcapacity = "&#10;" + "Capacity: %s" % venue_capacities[gig.venue]
+
+                    venue_str  = '<div class=greyflag title="Towncount: ' + ccount + '">'+ gig.city+'</div>'
+                    venue_str += ' <div class=greyflag title="Venuecount: ' + vcount + vcapacity + '">' + gig.venue_nocity + '</div>'
                     cols = [ str(i) + '.' + self.sp(1), name_str, date_str, venue_str ]
                     gigs_string += self.row( cols, 'rlll' )
 
@@ -951,7 +957,7 @@ class GIG_html():
             if len(gigs_past) > 0:
                 n_cities += 1
 
-        venues_string += '\n<br>%d cities:<br><br>\n<table>' % n_cities
+        venues_string += '\n<br>%d towns:<br><br>\n<table>' % n_cities
 
         n_gigs_for_last_city = 0
         counter = 0
@@ -1287,7 +1293,7 @@ class GIG_html():
                 year_stats += "<li> %d artists (%d new)" % ( n_artists, n_new_artists )
                 year_stats += "<li> %d headliners (%d new) (%d male) (%d female)" % ( n_headliners, n_new_headliners, n_male_headliners, n_female_headliners )
                 year_stats += "<li> %d venues (%d new)" % ( n_venues, n_new_venues )
-                year_stats += "<li> %d cities (%d new)" % ( n_cities, n_new_cities )
+                year_stats += "<li> %d towns (%d new)" % ( n_cities, n_new_cities )
                 year_stats += "<li> %d countries (%d new)" % ( n_countries, n_new_countries )
                 year_stats += "</ul>"
                 plot_string += "<br>" + year_stats
