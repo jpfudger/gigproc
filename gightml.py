@@ -233,6 +233,13 @@ class GIG_html():
                 fn = self.make_flag_note( 'guest', "Guested in another set", asup ) 
                 setlist_string += '\n<br> ' + alink + ' ' + fn
 
+            if g.notes:
+                #note_flag = "<div class=flag title=\"%s\">&cong;</div>;" % "\n".join(g.notes)
+                #setlist_string += note_flag
+                setlist_string += "\n<br>"
+                for note in g.notes:
+                    setlist_string += f"\n<div class=note>{note}</div>"
+
             setlist_string += playlist_link
 
             band_string = ''
@@ -596,6 +603,12 @@ class GIG_html():
             '    font-family: "Courier new", monospace;',
             '    display: inline;',
             '    }',
+            '.note {'
+            '    font-style: italic;'
+            '    color: ' + col_maintext + ';'
+            '    text-indent: 22px;'
+            '    padding-top: 10px;'
+            '    }'
             'a.highlight {',
             '    color:' + col_highlight + ';',
             '    font-weight: bold;',

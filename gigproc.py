@@ -182,6 +182,13 @@ class GIG_data():
         # This function builds a GIG_song and appends it to this_set.
         # It also updates the set flags if necessary.
 
+        m_note = re.search("@Note\[(.*)\]", line)
+
+        if m_note:
+            text = m_note.group(1)
+            this_set.notes.append(text)
+            return
+
         splits = line.split('---')
         title = splits[0]
         title = re.sub( r"\s*---.*$", '', title)
@@ -1456,6 +1463,7 @@ class GIG_gig():
         self.citytimes = None
         self.venuetimes = None
         self.consecutive = 0
+        self.notes = []
         # self.img should really be the same as self.link 
         # (so multiple gigs per day can have individual images). 
         # But that would require renaming all the existing images.
@@ -1552,6 +1560,7 @@ class GIG_set():
         self.solo       = False
         self.playlist   = ''
         self.artisttimes = 0
+        self.notes = []
     def append_song(self, song):
         self.songs.append(song)
         song.set = self
