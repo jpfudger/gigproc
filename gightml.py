@@ -3,6 +3,9 @@ import time
 from datetime import datetime  
 from gigproc.gigplot import GIG_plot
 
+def convert_unicode_to_html(string):
+    return string.encode('ascii', 'xmlcharrefreplace').decode('ascii')
+
 class GIG_html():
     def __init__(self, gig_data, head, playlists=False, plots=True):
         self.gig_data = gig_data
@@ -321,6 +324,7 @@ class GIG_html():
                             song_times = None
 
                     sn = s.title if s.title else '???'
+                    sn = convert_unicode_to_html(sn)
                     if sn == '???':
                         if s.quote != None:
                             sn = '<div class=greyflag title=' + s.quote + '>' + sn + '</div>'
