@@ -861,8 +861,8 @@ class GIG_html():
                                             if "partial" in ss.custom:
                                                 symbol = 'P'
                                             break
-                            title = song['title'] + ' / ' + event.venue + \
-                                                    ' / ' + event.date.strftime("%d %b %Y")
+                            title = song['title'] + '&#10;' + event.venue + \
+                                                    '&#10;' + event.date.strftime("%d %b %Y")
                             link = event.link + '_' + afname + '.html'
                             event_string += '<a title="%s" href="%s">%s</a>' % (title, link, symbol)
                         else:
@@ -1442,7 +1442,7 @@ class GIG_html():
             for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
                 versions = []
                 for a, g in zip(artists,gigs):
-                    info = a + ', ' + g.venue
+                    info = a + '&#10;' + g.venue
                     link = '<a href=%s.html title="%s">%s</a>' \
                             % ( g.link, info, g.date.strftime('%d-%b-%Y') )
                     versions.append( '%s' % link )
