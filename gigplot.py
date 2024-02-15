@@ -1131,6 +1131,24 @@ class GIG_plot():
                 else:
                     graph_freq_bob.append(0)
 
+            dob = date(1983,5,6)
+            graph_freq_me = []
+            
+            if False:
+                # plot number of gigs when I was that age
+                my_ages = []
+                for gig in self.gig_data.gigs:
+                    if gig.future: continue
+                    age = gig.date.year - dob.year
+                    age -= ((gig.date.month, gig.date.day) < (dob.month, dob.day))
+                    my_ages.append(age)
+
+                for age in graph_ages:
+                    graph_freq_me.append(my_ages.count(age))
+
+                #print(graph_ages[0])
+                #print(graph_freq_me)
+
             fig, ax = plt.subplots()
             ax.set_axisbelow(True)
             ax.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -1140,6 +1158,10 @@ class GIG_plot():
                           color=self.colour2, edgecolor="black")
             bar2 = ax.bar(graph_ages, graph_freq_bob, width=1, align='center', \
                           color=self.colour4, edgecolor="black")
+
+            if graph_freq_me:
+                dots = ax.scatter(graph_ages, graph_freq_me, marker="*", color=self.colour4)
+
             plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
             plt.legend( (bar0[0],bar1[0],bar2[0]), \
