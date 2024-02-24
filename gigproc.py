@@ -1125,6 +1125,9 @@ class GIG_data():
             for s in g.sets:
                 for song in s.songs:
                     if song.cover:
+                        if song.title is None:
+                            #print("Ignoring null song title by " + song.cover)
+                            continue
                         this_dict = None
                         for cover in covers:
                             if cover['cover_artist'] == song.cover:
