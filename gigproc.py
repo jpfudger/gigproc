@@ -1363,7 +1363,23 @@ class GIG_data():
                         continue
 
                     d["n_events"] += 1
-                    if g.date.timetuple().tm_yday <= today.date().timetuple().tm_yday:
+
+                    # make date_limit object: current day in year of gig
+
+                    g_is_leap_year = g.date.year % 4 == 0 and \
+                                    (g.date.year % 100 != 0 or g.date.year % 400 == 0)
+
+                    month = today.date().month
+                    day = today.date().day
+
+                    if month == 2 and day == 29 and not g_is_leap_year:
+                        # avoid leap day in a non-leap year
+                        month = 3
+                        day = 1
+
+                    date_limit = date(g.date.year, month, day)
+                
+                    if g.date.date() <= date_limit:
                         d["n_relative"] += 1
 
                     set_index = 0
