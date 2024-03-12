@@ -182,6 +182,12 @@ class GIG_data():
         # This function builds a GIG_song and appends it to this_set.
         # It also updates the set flags if necessary.
 
+        for pair in [ ("(",")"), ("{","}"), ("<",">"), ("[","]") ]:
+            if pair[0] in line and not pair[1] in line:
+                print(f"Mismatched {pair} in line:")
+                print("   ", line)
+                raise Exception("Mismatched parens")
+
         m_note = re.search("@Note\[(.*)\]", line)
 
         if m_note:
