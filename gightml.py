@@ -915,6 +915,9 @@ class GIG_html():
                     if hover: hover += "\n"
                     hover += "Died: %s" % biog["dod"].strftime("%d-%b-%Y")
                     deceased = True
+                country = biog["country"] if biog["country"] else "??"
+                if hover: hover += "\n"
+                hover += 'Country: %s' % country
 
             link = '<a href=%s.html title="%s">%s</a>' % (afname, hover, a)
             if deceased:
@@ -974,6 +977,8 @@ class GIG_html():
                 venue_headliners = []
                 days_of_week = [0] * 7 # Monday = 0
 
+                gigs_in_year = {}
+
                 for g in c:
                     if g.future: continue
                     artists = g.get_artists()
@@ -981,6 +986,15 @@ class GIG_html():
                     venue_headliners.append(artists[0])
                     days_of_week[ g.date.weekday() ] += 1
 
+                    if not g.date.year in gigs_in_year:
+                        gigs_in_year[g.date.year] = 0
+
+                    gigs_in_year[g.date.year] += 1
+
+                max_gigs_in_year = max(gigs_in_year.values())
+                max_years = [ y for y in gigs_in_year if gigs_in_year[y] == max_gigs_in_year]
+                max_years_str = ",".join([ str(y) for y in sorted(max_years) ])
+    
                 stats_string = "<br>"
                 stats_string += "<br>Unique headliners: %d" % len(list(set(venue_headliners)))
                 stats_string += "<br>Unique artists: %d" % len(list(set(venue_artists)))
@@ -992,6 +1006,8 @@ class GIG_html():
                 stats_string += "<br>Fri: %d" % days_of_week[4]
                 stats_string += "<br>Sat: %d" % days_of_week[5]
                 stats_string += "<br>Sun: %d" % days_of_week[6]
+                stats_string += "<br>"
+                stats_string += "<br>Max gigs in year: %d (%s)" % (max_gigs_in_year, max_years_str)
 
                 venue_info_string += stats_string
 
@@ -1372,22 +1388,23 @@ class GIG_html():
                 n_new_artists = len(stats["n_new_artists"])
                 n_headliners = len(stats["n_headliners"])
                 n_new_headliners = len(stats["n_new_headliners"])
+                new_headliners_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_headliners"])))
                 n_male_headliners = stats["n_male_headliners"]
                 n_female_headliners = stats["n_female_headliners"]
                 n_venues = len(stats["n_venues"])
                 n_new_venues = len(stats["n_new_venues"])
-                new_venues_hover = "&#10;".join(sorted(stats["n_new_venues"]))
+                new_venues_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_venues"])))
                 n_cities = len(stats["n_cities"])
                 n_new_cities = len(stats["n_new_cities"])
-                new_cities_hover = "&#10;".join(sorted(stats["n_new_cities"]))
+                new_cities_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_cities"])))
                 n_countries = len(stats["n_countries"])
                 n_new_countries = len(stats["n_new_countries"])
-                new_countries_hover = "&#10;".join(sorted(stats["n_new_countries"]))
+                new_countries_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_countries"])))
 
                 year_stats =  "<br><ul>"
                 year_stats += "<li> %d events (%d new dates)" % ( n_events, n_new_dates )
                 year_stats += "<li> %d artists (%d new)" % ( n_artists, n_new_artists )
-                year_stats += "<li> %d headliners (%d new) (%d male) (%d female)" % ( n_headliners, n_new_headliners, n_male_headliners, n_female_headliners )
+                year_stats += "<li> %d headliners (%d male) (%d female) (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_headliners, new_headliners_hover, n_male_headliners, n_female_headliners, n_new_headliners )
                 year_stats += "<li> %d venues (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_venues, new_venues_hover, n_new_venues )
                 year_stats += "<li> %d towns (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_cities, new_cities_hover, n_new_cities )
                 year_stats += "<li> %d countries (<div class=greyflag title=\"%s\">%d new</a>)" % ( n_countries, new_countries_hover, n_new_countries )
