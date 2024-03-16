@@ -1404,7 +1404,7 @@ class GIG_html():
                 year_stats =  "<br><ul>"
                 year_stats += "<li> %d events (%d new dates)" % ( n_events, n_new_dates )
                 year_stats += "<li> %d artists (%d new)" % ( n_artists, n_new_artists )
-                year_stats += "<li> %d headliners (%d male) (%d female) (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_headliners, new_headliners_hover, n_male_headliners, n_female_headliners, n_new_headliners )
+                year_stats += "<li> %d headliners (%d male) (%d female) (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_headliners, n_male_headliners, n_female_headliners, new_headliners_hover, n_new_headliners )
                 year_stats += "<li> %d venues (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_venues, new_venues_hover, n_new_venues )
                 year_stats += "<li> %d towns (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_cities, new_cities_hover, n_new_cities )
                 year_stats += "<li> %d countries (<div class=greyflag title=\"%s\">%d new</a>)" % ( n_countries, new_countries_hover, n_new_countries )
