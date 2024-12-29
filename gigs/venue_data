@@ -43,6 +43,7 @@ Dublin Royal Hospital Kilmainham    | 23000 |       | 53.3431037674, -6.30311980
 Earls Barton Kontra Roots Club      |       |       | 52.2685149177, -0.7482083249
 Edinburgh Playhouse                 | 3059  |       | 55.9568675422, -3.1853860730
 Edinburgh Murrayfield Stadium       | 60000 |       | 55.9421792928, -3.2408078671
+Edinburgh Usher Hall                | 2200  |       | 55.9472403740, -3.2049722798
 Gateshead Sage                      | 1640  |       | 54.9677137732, -1.6017767683
 Glasgow SECC                        | 3000  |       | 55.8600348624, -4.2853187365
 Hertford St. Andrews                |       |       | 51.7961278753, -0.0822002812
@@ -75,7 +76,7 @@ London Cecil Sharp House            | 300   |       | 51.5381474478, -0.14930345
 London Clapham Grand                |       |       | 51.4631005521, -0.1694007771
 London Coronet Theatre              | 195   |       | 51.5085763226, -0.1981467456
 London Dingwalls                    | 500   |       | 51.5412512298, -0.1457437129
-London Hackney EartH Theatre        | 1200  |       | 51.5510893212, -0.0756269345
+London Hackney EartH Theatre        | 700   |       | 51.5510893212, -0.0756269345
 London Electric Ballroom            | 1500  |       | 51.5396980435, -0.1430059968
 London Emirates Stadium             | 60260 |       | 51.5550465894, -0.1084427401
 London Finsbury Park                | 30000 |       | 51.5676661352, -0.1028974143
@@ -124,11 +125,14 @@ London Scala                        | 1145  |       | 51.5307520820, -0.12073355
 London Shepherd's Bush Empire       | 2000  |       | 51.5034848841, -0.2243974723
 London Slaughtered Lamb             | 120   |       | 51.5233427461, -0.1012099210
 London Soho Review Bar              | 285   |       | 51.5126070124, -0.1340462124
-London St. James Piccadilly         | 450   |       | 51.5088067901, -0.1368135970
 London St. Giles-in-the-Fields      | 300   |       | 51.5153009497, -0.1283639892
+London St. James Piccadilly         | 450   |       | 51.5088067901, -0.1368135970
 London St. Luke's                   | 450   |       | 51.5251962455, -0.0940425716
 London St. Pancras Old Church       | 120   |       | 51.5349487076, -0.1301225706
+London St. Paul's Cathedral         | 3500  |       | 51.5137651780, -0.0982647693
+London Sutton Sound Lounge          | 200   |       | 51.3665236914, -0.1941641207
 London Theatre Royal                | 2196  |       | 51.5128175329, -0.1204121632
+London Troubadour                   | 120   |       | 51.4887877085, -0.1917125326
 London Troxy                        | 3100  |       | 51.5130736316, -0.0440714610
 London Union Chapel                 | 900   |       | 51.5447457590, -0.1027804701
 London Village Underground          | 700   |       | 51.5236385494, -0.0785040740
@@ -160,7 +164,7 @@ Nottingham Royal Concert Hall       | 3364  |       | 52.9552249730, -1.15132681
 Oxford New Theatre                  | 1800  |       | 51.7539335626, -1.2600297987
 Paris Grand Rex                     | 2800  |       | 48.8705131292,  2.3477166357
 Royston Folk Club (Old Bull)        | 120   |       | 52.0460190192, -0.0226045918
-Royston Folk Club                   | 100   |       | 52.0527653218, -0.0228251185
+Royston Folk Club (British Legion)  | 100   |       | 52.0527653218, -0.0228251185
 Sheffield Arena                     | 13600 |       | 53.3999648979, -1.4188424290
 Sheffield Cafe #9                   | 50    |       | 53.3590552452, -1.4879043664
 Sheffield Firth Hall                | 400   |       | 53.3813609615, -1.4886468883
@@ -169,6 +173,7 @@ Sheffield Leadmill                  | 900   |       | 53.3761462682, -1.46484318
 Sheffield Memorial Hall             | 500   |       | 53.3807564660, -1.4723675033
 Sheffield Plug                      | 1200  |       | 53.3766107969, -1.4715706453
 Sheffield Queen's Social Club       | 400   |       | 53.3726441598, -1.4638887876
+Shepreth Plough                     |       |       | 52.1110114387,  0.0322433073
 Southampton Brook                   | 600   |       | 50.9328584524, -1.3833179924
 Southampton Guildhall               | 1749  |       | 50.9080274982, -1.4063345042
 Southampton Talking Heads           | 260   |       | 50.9094923954, -1.4097999533
