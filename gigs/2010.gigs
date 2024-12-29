@@ -109,11 +109,11 @@ For You
 }}}
 {{{ 17-Apr-2010 [Cambridge Junction J1]
 {{{ Lou Reed
---- With the Metal Machine Trio.
---- An evening of deep noise.
---- No support. 
---- No songs. 
---- No encore.
+--- @Note[With the Metal Machine Trio.]
+--- @Note[An evening of deep noise.]
+--- @Note[No support.]
+--- @Note[No songs.]
+--- @Note[No encore.]
 }}}
 }}}
 {{{ 22-Apr-2010 [Cambridge Corn Exchange]
@@ -489,7 +489,7 @@ Sweet Tooth
 I Hear Them All
     This Land Is Your Land      --- <Woody Guthrie>
 Look At Miss Ohio
-To Be Young (Is To Be Sad ...)  --- <Ryan Adams>
+To Be Young (Is To Be Sad, Is To Be High)  --- <Ryan Adams>
 It's Too Easy
 Method Acting
     Cortez The Killer           --- <Neil Young>

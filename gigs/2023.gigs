@@ -209,12 +209,12 @@ Oh Where
 {{{ 11-Feb-2023 [Cambridge Junction J2]
 {{{ Magpie Arc
 --- {Nancy Kerr} {Findlay Napier} {Martin Simpson}
-Barbara Allen        --- [solo] {Nancy Kerr} <Trad>
-Silver Cities        --- [solo] {Nancy Kerr}
-Unnameable Radio     --- [solo] {Findlay Napier}
-Piece of my Heart    --- [solo] {Findlay Napier}
-Palaces of Gold      --- [solo] {Martin Simpson} <Leon Rosselson>
-New Harmony          --- [solo] {Martin Simpson} <Craig Johnson>
+Barbara Allen        --- [solo] {Nancy Kerr} <Trad> {-Findlay Napier} {-Martin Simpson}
+Silver Cities        --- [solo] {Nancy Kerr} {-Findlay Napier} {-Martin Simpson}
+Unnameable Radio     --- [solo] {Findlay Napier} {-Nancy Kerr} {-Martin Simpson}
+Piece of my Heart    --- [solo] {Findlay Napier} {-Nancy Kerr} {-Martin Simpson}
+Palaces of Gold      --- [solo] {Martin Simpson} <Leon Rosselson> {-Findlay Napier} {-Nancy Kerr}
+New Harmony          --- [solo] {Martin Simpson} <Craig Johnson> {-Findlay Napier} {-Nancy Kerr}
 The Cutty Wren       --- <Trad>
 Pans of Biscuits
 
@@ -301,7 +301,7 @@ Ghost Town
 Drawn to Darkness
 How to Hear
 Into Your Grief
-The Boy in the Frame
+Boy in the Frame
 Sitting in the Dark
 Tongue-Tied
 Goodnight Elisabeth --- [solo]
@@ -517,7 +517,7 @@ Dirty Rain
 New York, New York      --- [partial] piano, aborted
 New York, New York      --- guitar
 Old York, Old York      --- [improv]
-My Answering Bell
+Answering Bell
 Meadowlake Street
 Crossed Out Name
 Why Do They Leave?
@@ -535,7 +535,7 @@ To Be Without You
 Haunted House
 We Disappear
 Firecracker
-To Be Young (Is To Be Sad ...)
+To Be Young (Is To Be Sad, Is To Be High)
 Come Pick Me Up
 }}}
 }}}
@@ -762,7 +762,7 @@ Broken Record
 Latchkey
 Amy
 Dream House
-In Between --- Jack [solo]
+Inbetween --- Jack [solo]
 Love is a Kind of Sadness
 }}}
 }}}
@@ -770,7 +770,7 @@ Love is a Kind of Sadness
 {{{ William Crighton
 --- [solo]
 Priest
-??? --- "Billionaires sail off into space"
+Sex, Death and Choices
 Woman Like You
 2000 Clicks
 Jesus Blues
@@ -811,7 +811,8 @@ Hills of Mexico             --- <Roscoe Holcomb>
 Lady of the Lake
 Now is the Cool of the Day  --- <Jean Ritchie>
 
-Am I Born To Die?
+And Am I Born To Die?
+    Hell Among the Yearlings
 North Country               --- "She's Gone, She's Gone"
 Sally Ann
      Money in Both Pockets
@@ -819,7 +820,7 @@ Wild Bill Jones             --- <Dock Boggs>
 Irish Polka
 Copper Kettle               --- <Albert Frank Beddoe>
 
-???                         --- "Instrumental"
+Old Blue Bonnet             --- "Instrumental" maybe?
 }}}
 }}}
 {{{ 06-Jul-2023 [London Hyde Park]
@@ -937,7 +938,7 @@ Drawn to Darkness
 Untangling
 Skimming Stones
 Letter
-The Boy In The Frame
+Boy In The Frame
 Love You Like I Did
 Bigger Than My Body
 Sitting In The Dark
@@ -1021,9 +1022,9 @@ Wild Mountain Thyme       --- <Trad>           {Jacob Collier} {Madison Cunningh
 --- {Kimberley Rew}
 --- {Morris Windsor}
 --- {Lee Cave-Berry}
-Cynthia Mask                --- [solo]
-I Saw Nick Drake            --- [solo]
-I Am This Thing             --- [solo]
+Cynthia Mask                --- [solo] {-Kimberley Rew} {-Morris Windsor} {-Lee Cave-Berry}
+I Saw Nick Drake            --- [solo] {-Kimberley Rew} {-Morris Windsor} {-Lee Cave-Berry}
+I Am This Thing             --- [solo] {-Kimberley Rew} {-Morris Windsor} {-Lee Cave-Berry}
 The Wreck of the Arthur Lee --- {-Kimberley Rew} {-Lee Cave-Berry}
 I Often Dream of Trains     --- {-Morris Windsor} {-Lee Cave-Berry}
 The Shuffle Man
@@ -1389,12 +1390,12 @@ Sun to Sun
 {{{ Jake Blount
 --- [solo]
 African American
-???                         --- "Fiddle instrumental"
-City Called Heaven          --- <Trad>
-Now is the Cool of the Day  --- <Jean Ritchie>
-Hard Time Killin' Floor     --- <Skip James>
-We're Gonna Hunt the Buffalo
-Haul Away Joe               --- <Trad>
+Bonaparte's Retreat          --- <Trad> [instrumental]
+City Called Heaven           --- <Trad>
+Now is the Cool of the Day   --- <Jean Ritchie>
+Hard Time Killin' Floor      --- <Skip James>
+We're Gonna Hunt the Buffalo --- [instrumental]
+Haul Away Joe                --- <Trad>
 }}}
 {{{ Nora Brown
 --- {Stephanie Coleman}
@@ -1404,8 +1405,9 @@ Morphine                --- [solo]
 Chilly Winds            --- [solo]
 Springtime of Life      --- <Ola Belle Reed> {Reed Stutz}
 Copper Kettle           --- <Albert Frank Beddoe>
-The Very Day I'm Gone
-Am I Born to Die?
+The Very Day I'm Gone (Rambling Woman)
+And Am I Born to Die?   --- <Doc Watson>
+    Hell Among the Yearlings
 }}}
 {{{ Erik Frandsen
 --- [unordered]
@@ -1463,7 +1465,7 @@ Talking Sailor                      --- <Woody Guthrie>
 {{{ Fatboy Wilson and Old Viejo Bones
 Hand Me Down My Walking Cane
 Single Girl, Married Girl
-New St James Infirmary Blues
+St. James Infirmary Blues                  --- <Trad>
 Floating Bridge                            --- <John Estes>
 Song in spanish
 Working on the Hill                        --- {Nora Brown}
