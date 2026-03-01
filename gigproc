@@ -58,12 +58,12 @@ if __name__ == "__main__":
     elif options.html:
         html_generator = gigproc.GIG_html(gig_data,'./html/', options.playlists)
     elif options.runs:
-        gig_data.longest_gap()
-        gig_data.longest_run()
-        gig_data.longest_run_of_different_venues()
-        gig_data.longest_run_of_different_venues(cities=True)
-        gig_data.longest_gap_between_artist_events()
-        gig_data.longest_gap_between_venue_events()
+        gig_data.longest_gap(shell=True)
+        gig_data.longest_run(shell=True)
+        gig_data.longest_run_of_different_venues(shell=True)
+        gig_data.longest_run_of_different_venues(cities=True, shell=True)
+        gig_data.longest_gap_between_artist_events(shell=True)
+        gig_data.longest_gap_between_venue_events(shell=True)
     elif options.growth:
         gig_data.growth()
     elif options.fuzzy:
