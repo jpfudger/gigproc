@@ -264,6 +264,8 @@ class GIG_data():
                     for x in re.findall( r'\[([0-9A-Za-z- ]+)\]', splits[1]):
                         if x == 'solo':
                             song.solo = True
+                        elif x == 'notsolo':
+                            song.notsolo = True
                         elif x == 'debut':
                             song.debut = True
                         elif x == 'improv':
@@ -1675,6 +1677,7 @@ class GIG_song():
         self.guests      = []
         self.missing     = []
         self.solo        = False
+        self.notsolo     = False
         self.first_time  = False
         self.set_opener  = False
         self.debut       = False
