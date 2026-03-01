@@ -274,8 +274,23 @@ class GIG_data():
                             song.custom.append(x)
                 if '<' in splits[1]:
                     m = re.match( '.*<(.*)>.*', splits[1] )
+
                     if m:
-                        song.cover = m.group(1)
+                        cover_splits = m.group(1).split(";")
+                        song.cover = cover_splits[0].strip()
+
+                        if song.cover.startswith("Tradl"):
+                            raise Exception("Bad cover: Tradl. Did you mean Trad?")
+
+                        if len(cover_splits) > 1:
+                            for sub in cover_splits[1:]:
+                                sub = sub.lower()
+                                if "child" in sub:
+                                    sub = sub.replace("child", "").strip()
+                                    song.child = int(sub)
+                                elif "roud" in sub:
+                                    sub = sub.replace("roud", "").strip()
+                                    song.roud = int(sub)
                 if '"' in splits[1]:
                     m = re.match( '.*(".*").*', splits[1])
                     if m:
@@ -332,9 +347,9 @@ class GIG_data():
                     playlist["artist"] = splits[1].strip()
                 else:
                     splits = path.split('/')
-                    playlist["artist"] = splits[5]
-                    if ',' in splits[5]:
-                        names = splits[5].split(',')
+                    playlist["artist"] = splits[4]
+                    if ',' in splits[4]:
+                        names = splits[4].split(',')
                         if len(names) == 2:
                             playlist["artist_alt"] = names[1].strip() + " " + names[0].strip()
                             #print(playlist["artist_alt"])
@@ -1667,6 +1682,8 @@ class GIG_song():
         self.request     = False
         self.quote       = None
         self.cover       = None
+        self.child       = 0
+        self.roud        = 0
         self.custom      = []
         self.count       = 0
         self.set         = None
