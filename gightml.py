@@ -27,6 +27,7 @@ class GIG_html():
         self.do_graphs    = True
         self.do_covers_list = True
         self.do_calendar  = True
+        self.do_stats = True
 
         # do the work:
         self.years = [ str(y) for (y,c) in self.gig_data.get_unique_years(inc_future=True) ]
@@ -1748,11 +1749,13 @@ class GIG_html():
     def generate_html_files(self):
         self.make_stylesheet()
 
-        extras = [ 'Artists', 'Venues' ]
+        extras = [ 'Artists', 'Venues', '' ]
         # if self.do_playlists:
         #     extras += [ 'Tapes' ]
         if self.do_graphs:
             extras += [ 'Graphs' ]
+        if self.do_stats:
+            extras += [ 'Stats' ]
         if self.do_covers_list:
             extras += [ 'Covers' ]
         if self.do_calendar:
@@ -1782,37 +1785,46 @@ class GIG_html():
                 years_string_i = years_string_h
                 plot_string_i = plot_string
 
-            # It would be nice to display some stats on the current year:
+            days_of_week = [0] * 7 # Monday = 0
+            for g in c:
+                if g.future: continue
+                days_of_week[ g.date.weekday() ] += 1
 
             stats = self.gig_data.get_stats_by_year(y)
 
             if stats and stats["n_events"] > 0:
                 n_events = stats["n_events"]
-                n_new_dates = stats["n_new_dates"]
+                n_new_dates = len(stats["n_new_dates"])
+                new_dates = [d.strftime("%d %b") for d in sorted(stats["n_new_dates"])]
+                new_dates_hover = "+ " + ("&#10;+ ".join(new_dates))
                 n_artists = len(stats["n_artists"])
                 n_new_artists = len(stats["n_new_artists"])
                 n_headliners = len(stats["n_headliners"])
                 n_new_headliners = len(stats["n_new_headliners"])
-                new_headliners_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_headliners"])))
+                new_headliners_hover = "+ " + ("&#10;+ ".join(sorted(stats["n_new_headliners"])))
                 n_male_headliners = stats["n_male_headliners"]
                 n_female_headliners = stats["n_female_headliners"]
                 n_venues = len(stats["n_venues"])
                 n_new_venues = len(stats["n_new_venues"])
-                new_venues_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_venues"])))
+                new_venues_hover = "+ " + ("&#10;+ ".join(sorted(stats["n_new_venues"])))
                 n_cities = len(stats["n_cities"])
                 n_new_cities = len(stats["n_new_cities"])
-                new_cities_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_cities"])))
+                new_cities_hover = "+ " + ("&#10;+ ".join(sorted(stats["n_new_cities"])))
                 n_countries = len(stats["n_countries"])
                 n_new_countries = len(stats["n_new_countries"])
-                new_countries_hover = "- " + ("&#10;- ".join(sorted(stats["n_new_countries"])))
+                new_countries_hover = "+ " + ("&#10;+ ".join(sorted(stats["n_new_countries"])))
 
                 year_stats =  "<br><ul>"
-                year_stats += "<li> %d events (%d new dates)" % ( n_events, n_new_dates )
+                year_stats += "<li> %d events (<div class=greyflag title=\"%s\">%d new dates</div>)" % ( n_events, new_dates_hover, n_new_dates )
                 year_stats += "<li> %d artists (%d new)" % ( n_artists, n_new_artists )
                 year_stats += "<li> %d headliners (%d male) (%d female) (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_headliners, n_male_headliners, n_female_headliners, new_headliners_hover, n_new_headliners )
                 year_stats += "<li> %d venues (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_venues, new_venues_hover, n_new_venues )
                 year_stats += "<li> %d towns (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_cities, new_cities_hover, n_new_cities )
-                year_stats += "<li> %d countries (<div class=greyflag title=\"%s\">%d new</a>)" % ( n_countries, new_countries_hover, n_new_countries )
+                year_stats += "<li> %d countries (<div class=greyflag title=\"%s\">%d new</div>)" % ( n_countries, new_countries_hover, n_new_countries )
+
+                year_stats += "<li>M%d T%d W%d T%d F%d S%d S%d" % \
+                ( days_of_week[0], days_of_week[1], days_of_week[2], days_of_week[3], 
+                  days_of_week[4], days_of_week[5], days_of_week[6], )
                 year_stats += "</ul>"
                 plot_string += "<br>" + year_stats
 
@@ -1846,22 +1858,35 @@ class GIG_html():
 
         if self.do_covers_list:
             years_string_c = self.make_years_string("Covers")
-            covers_string = self.make_covers_string()
-            self.make_file( 'covers',    years_string_c,   covers_string,  '' )
+            covers_string, top_covers_string = self.make_covers_string()
+            self.make_file( 'covers',    years_string_c,   covers_string,  top_covers_string )
 
         if self.do_calendar:
             years_string_c = self.make_years_string("Calendar")
             calendar_string = self.make_calendar_string()
             self.make_file( 'calendar', years_string_c, calendar_string, '' )
 
+        if self.do_stats:
+            years_string_r = self.make_years_string("Stats")
+            runs_string = self.make_runs_string()
+            self.make_file( 'stats', years_string_r, runs_string, '' )
+
+        if True:
+            years_string_a = self.make_years_string("Ages")
+            ages_string = self.make_ages_string()
+            self.make_file("ages", years_string_a, ages_string, "")
+
         return
     def make_covers_string(self):
         covers = self.gig_data.get_covers()
-        string = '\n<ol>'
+        string = '\nMost-covered artists:\n<br><ol>'
+        song_strings = []
+        top_index = 990
 
         for i, cover in enumerate(covers, start=1):
+            string += '<li value=%d>' % cover['count']
             string += '<a name="%s"></a>' % self.cover_artist_label(cover['cover_artist'])
-            string += '\n<a href=# onclick=toggle_entry(%d)>%s</a> (%d/%d)' % ( i, cover['cover_artist'], len(cover['songs']), cover['count'] )
+            string += '\n<a href=# onclick=toggle_entry(%d)>%s</a> (%d songs)' % ( i, cover['cover_artist'], len(cover['songs']))
             string += '\n    <ul class=collapse id=%d>' % i
             songs = []
             for s, artists, gigs in zip( cover['songs'], cover['artists'], cover['gigs'] ):
@@ -1870,14 +1895,185 @@ class GIG_html():
                     info = a + '&#10;' + g.venue
                     link = '<a href=%s.html title="%s">%s</a>' \
                             % ( g.link, info, g.date.strftime('%d-%b-%Y') )
-                    versions.append( '%s' % link )
-                    versions.sort()
-                songs.append( '\n    <li> ' + s + ' (' + (', '.join(versions)) + ')' )
+                    top_link = a + " (" + link + ")"
+                    versions.append((link, top_link))
+                versions.sort(key=lambda v: v[0])
+                songs.append( '\n<li> ' + s + ' (' + (', '.join([v[0] for v in versions])) + ')' )
+
+                if len(versions) > 1:
+                    top_index += 1
+                    song_string = "<a href=# onclick=toggle_entry(99%d)>%s</a>" % (top_index, s)
+                    song_string += " (" + cover["cover_artist"] + ")"
+                    song_string += "<ul class=collapse id=99%d>" % top_index
+                    for v in versions:
+                        song_string += "<li>" + v[1]
+                    song_string += "</ul><br>"
+                    
+                    song_strings.append( (song_string, len(versions), s) )
             
             songs.sort()
             string += ''.join(songs)
             string += '\n    </ul>'
             string += '\n    <br>'
+
+        string += '</ol>'
+
+        # song_strings.sort(key=lambda s: -s[1])
+        # song_strings = song_strings
+
+        top_songs_string = '\nMost-covered songs:\n<br><ol>'
+        song_strings.sort(key=lambda s: (-s[1], s[2]))
+        for song_string in song_strings:
+            top_songs_string += "<li value=%d>%s" % ( song_string[1], song_string[0] )
+        top_songs_string += "<li value=1>(Single occurrences omitted)" 
+        top_songs_string += "</ol>"
+        
+        return string, top_songs_string
+    def make_runs_string(self):
+        #cur_gap, gaps = self.gig_data.longest_gap()
+        longest_runs = self.gig_data.longest_run()
+        cur_venue_run, venue_runs = self.gig_data.longest_run_of_different_venues(cities=False)
+        cur_cities_run, cities_runs = self.gig_data.longest_run_of_different_venues(cities=True)
+        longest_artist_gap, longest_gap_artists, longest_gap_a_events = self.gig_data.longest_gap_between_artist_events()
+        longest_venue_gap, longest_gap_venues, longest_gap_v_events = self.gig_data.longest_gap_between_venue_events()
+
+        lines = []
+
+        # lines = [ "Current gap is %d days (since %s)." % \
+        #         ( cur_gap[0], cur_gap[1].date.strftime("%d-%b-%Y") ) ] 
+        # lines += [ "" ]
+        # start_year = 2010
+        # ngaps = 10
+        # lines += [ "Longest %d gaps since %d:" % (ngaps, start_year) ] 
+        # for gap in gaps:
+        #     date1 = gap[1].date.strftime("%d-%b-%Y") if gap[1] else '           '
+        #     date2 = gap[2].date.strftime("%d-%b-%Y") if gap[2] else '           '
+        #     lines += [ "%s days (%s -> %s)" % ( str(gap[0]).rjust(4), date1, date2 ) ] 
+        # lines += [ "" ]
+
+        lines += [ "Longest run was %d gigs, which occurred %d times:" % \
+                ( len(longest_runs[0]), len(longest_runs) ) ]
+        lines += [ "" ]
+        for run in longest_runs:
+            for g in run:
+                headliner = g.sets[0].artists[0].name
+                datelink = "<a href=\"%s.html\">%s</a>" % ( g.link, g.date.strftime("%d-%b-%Y") )
+                lines += [ ("&nbsp;" * 5) + datelink + "&nbsp;" + headliner + " (" + g.venue + ")" ]
+            lines += [ "" ]
+        lines += [ "" ]
+
+        lines += [ f'Current run of different venues is {len(cur_venue_run)}.' ]
+        lines += [ f'Longest run of different venues is {len(venue_runs[0])}, which occurred {len(venue_runs)} times:' ]
+
+        lines += [ "" ]
+        for l in venue_runs:
+            for g in l:
+                headliner = g.sets[0].artists[0].name
+                datelink = "<a href=\"%s.html\">%s</a>" % ( g.link, g.date.strftime("%d-%b-%Y") )
+                lines += [ ("&nbsp;" * 5) + datelink + "&nbsp;" + headliner + " (" + g.venue + ")" ]
+            lines += [ "" ]
+
+        lines += [ "" ]
+        lines += [ f'Current run of different towns is {len(cur_cities_run)}.']
+        lines += [ f'Longest run of different towns is {len(cities_runs[0])}, which occurred {len(cities_runs)} times:' ]
+
+        lines += [ "" ]
+        for l in cities_runs:
+            for g in l:
+                headliner = g.sets[0].artists[0].name
+                datelink = "<a href=\"%s.html\">%s</a>" % ( g.link, g.date.strftime("%d-%b-%Y") )
+                lines += [ ("&nbsp;" * 5) + datelink + "&nbsp;" + headliner + " (" + g.venue + ")" ]
+            lines += [ "" ]
+
+        lines += [ "" ]
+        lines += [ f'Longest gap between gigs is {longest_artist_gap.days} days ({int(longest_artist_gap.days / 365)} years) for {len(longest_gap_artists)} artists:']
+
+        lines += [ "" ]
+        for artist, events in zip(longest_gap_artists, longest_gap_a_events):
+            date1 = events[0].date.date()
+            venue1 = events[0].venue
+            datelink1 = "<a href=\"%s.html\">%s</a>" % ( events[0].link, date1.strftime("%d-%b-%Y") )
+            date2 = events[1].date.date()
+            venue2 = events[1].venue
+            datelink2 = "<a href=\"%s.html\">%s</a>" % ( events[1].link, date2.strftime("%d-%b-%Y") )
+            lines += [ ("&nbsp;" * 5) + datelink1 + "&nbsp;" + artist + " (" + venue1 + ")" ]
+            lines += [ ("&nbsp;" * 5) + datelink2 + "&nbsp;" + artist + " (" + venue2 + ")" ]
+
+        lines += [ "" ]
+        lines += [ f'  Longest gap between gigs is {longest_venue_gap.days} days ({int(longest_venue_gap.days / 365)} years) for {len(longest_gap_venues)} venues:']
+
+        lines += [ "" ]
+        for venue, events in zip(longest_gap_venues, longest_gap_v_events):
+            headliner1 = events[0].sets[0].artists[0].name
+            date1 = events[0].date.date()
+            datelink1 = "<a href=\"%s.html\">%s</a>" % ( events[0].link, date1.strftime("%d-%b-%Y") )
+            headliner2 = events[1].sets[0].artists[0].name
+            date2 = events[1].date.date()
+            datelink2 = "<a href=\"%s.html\">%s</a>" % ( events[1].link, date2.strftime("%d-%b-%Y") )
+            lines += [ ("&nbsp;" * 5) + datelink1 + "&nbsp;" + headliner1 + " (" + venue + ")" ]
+            lines += [ ("&nbsp;" * 5) + datelink2 + "&nbsp;" + headliner2 + " (" + venue + ")" ]
+
+        lines += [ "" ]
+        lines += [ "" ]
+        lines += [ "" ]
+
+        string = "<br>".join(lines)
+        return string
+    def make_ages_string(self):
+        ages = {}
+        for gig in self.gig_data.gigs:
+            if gig.future: continue
+            for artist in gig.get_artists():
+                artist_obj = self.gig_data.find_artist(artist)
+                age = artist_obj.age(gig.date)
+                if age:
+                    if age not in ages:
+                        ages[age] = []
+                    ages[age].append(gig)
+
+        string = ""
+        for i_age, age in enumerate(reversed(sorted(ages.keys()))):
+            ul_line = ""
+            n_artists_for_age = 0
+            n_headliners_for_age = 0
+
+            for gig in ages[age]:
+                ul_line += "\n<li> <a href=%s.html>%s</a>" % ( gig.link, gig.date.strftime("%d-%b-%Y") )
+                n_artists_for_gig = 0
+
+                for i_artist, artist in enumerate(gig.get_artists()):
+                    artist_obj = self.gig_data.find_artist(artist)
+                    artist_age = artist_obj.age(gig.date)
+
+                    if artist_age and age and artist_age == age:
+                        if artist_obj.biog and artist_obj.biog['dod']:
+                            artist += "&dagger;"
+
+                        if artist_obj.biog and artist_obj.biog['dob']:
+                            dob = artist_obj.biog['dob']
+
+                            if gig.date.month == dob.month and gig.date.day == dob.day:
+                                artist = "<b>" + artist + " ***</b>"
+
+                        if i_artist > 0:
+                            artist = "<i>" + artist + "</i>"
+                        else:
+                            n_headliners_for_age += 1
+
+                        if n_artists_for_gig > 0:
+                            ul_line += ","
+
+                        ul_line += " " + artist
+
+                        n_artists_for_age += 1
+                        n_artists_for_gig += 1
+
+            line = f"<a href=# onclick=toggle_entry({i_age})>{age}</a>"
+            line += f" ({n_headliners_for_age}/{n_artists_for_age})"
+            line += f"\n<ul class=collapse id={i_age}>"
+            line += ul_line
+            line += "</ul><br>\n"
+            string += line
 
         return string
 
