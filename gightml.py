@@ -176,6 +176,11 @@ class GIG_html():
 
         # artists = [ x[0] for x in self.gig_data.get_unique_artists() ]
 
+        for i, note in enumerate(gig.notes):
+            setlist_string += '\n<br>' + '[<i>' + note + '</i>]'
+            if i == len(g.notes):
+                setlist_string += '<br>'
+
         main_artists = [ s.artists[0].name for s in gig.sets if not s.guest_only ]
 
         for g in gig.sets:
@@ -243,9 +248,8 @@ class GIG_html():
                 #setlist_string += note_flag
                 setlist_string += "\n<br>"
                 for note in g.notes:
-                    setlist_string += f"\n<div class=note>{note}</div>"
-
-            setlist_string += playlist_link
+                    #setlist_string += f"\n<div class=note>{note}</div>"
+                    setlist_string += '\n<br>' + self.sp(3) + '[<i>' + note + '</i>]'
 
             band_string = ''
             if g.band:
@@ -276,7 +280,11 @@ class GIG_html():
                             break
 
                     band_links.append(blink)
-                band_string = '\n<br><br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + ']'
+
+                if not g.notes:
+                    band_string += '<br>'
+
+                band_string += '\n<br>' + self.sp(3) + '[Featuring ' + ', '.join(band_links) + ']'
             setlist_string += band_string
 
             proc_guests = []
@@ -288,7 +296,7 @@ class GIG_html():
                         continue
                     if guest in g.band:
                         continue
-                    elif not proc_guests and not band_string:
+                    elif not proc_guests and not band_string and not g.notes:
                         setlist_string += '<br>'
                     asup = gig.get_artists().index(guest)
                     ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
