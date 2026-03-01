@@ -564,6 +564,15 @@ class GIG_data():
                                 continue
                             # I can't remember why this is necessary. It has the effect
                             # that performances of "Astray" in "I Am Kloot" sets are ignored.
+
+                            # Solo performances by Robyn Hitchcock in a set with guests
+                            # (e.g. 06-Sep-2024) should not be solo performances of the guests.
+
+                            # So how do we support the I Am Kloot behaviour and
+                            # the Robyn Hitchcock behaviour?
+
+                            # For now we can work around it by subtracting the guests.
+
                             # if guest and song.solo: 
                             #     # the guest might be the requested artist, e.g. a solo
                             #     # performance in band set (Palaces of Gold, 11-Feb-2023).
@@ -629,7 +638,7 @@ class GIG_data():
         for gig in self.gigs:
             if len(consecutive_gigs) == 0:
                 consecutive_gigs.append(gig)
-            elif consecutive_gigs[-1].date.toordinal() + 1 == gig.date.toordinal():
+            elif consecutive_gigs[-1].date.toordinal() + 1 == gig.date.toordinal() and not gig.future:
                 consecutive_gigs.append(gig)
             else:
                 for cgig in consecutive_gigs:
@@ -1234,6 +1243,10 @@ class GIG_data():
         venues = self.get_unique_venues()
         venues = [ x[0] for x in venues ]
 
+        covered_artists = self.get_covers()
+        for ca in covered_artists:
+            self.print_fuzzy_matches(ca["songs"], "Covers (" + ca["cover_artist"] + ")")
+
         self.print_fuzzy_matches(artists, 'Artists')
         self.print_fuzzy_matches(venues, 'Venues')
     def get_covers(self,verbose=False):
@@ -1270,7 +1283,27 @@ class GIG_data():
                             this_dict['artists'].append([])
                             this_dict['gigs'].append([])
 
-                        this_dict['artists'][idx].append(s.artists[0].name)
+                        artist = None
+
+                        # use first artist who is not in the missing list:
+
+                        potential_artists = [a.name for a in s.artists]  + s.band + song.guests
+
+                        for a in potential_artists:
+                            if a in song.missing:
+                                continue
+                            artist = a
+                            break
+
+                        if not artist:
+                            # sometimes the main artist leaves the stage and the band plays a song
+                            artist = s.artists[0].name + "'s band"
+                            #print(potential_artists)
+                            #print(f"No artist for cover of {song.title} on {g.date.date()}")
+
+                        # artist = s.artists[0].name # the set headliner might not be performer!
+
+                        this_dict['artists'][idx].append(artist)
                         this_dict['gigs'][idx].append(g)
 
         covers = sorted(covers, key=lambda x: x['cover_artist'], reverse=False )
@@ -1314,11 +1347,16 @@ class GIG_data():
                     if song.debut:
                         if len(s.artists[0].name) > width:
                             width = len(s.artists[0].name)
-                        debuts.append( [ song.title, s.artists[0].name, g ] )
+
+                        song_title = song.title if song.title else "???"
+
+                        artist_name = s.artists[0].name
+                        if artist_name in song.missing:
+                            artist_name = song.guests[0]
+
+                        debuts.append( [ song_title, artist_name, g ] )
 
         debuts.sort(key=lambda x: x[2].date)
-
-
 
         for song in debuts:
             print( "%s : %s : %s" % ( song[2].date.strftime("%Y-%b-%d"), song[1].ljust(width), song[0] ) )
@@ -1451,7 +1489,7 @@ class GIG_data():
             for (y,c) in y_gigs:
                 d = { "year": y, 
                       "n_events": 0,
-                      "n_new_dates": 0,
+                      "n_new_dates": [],
                       "n_artists": [], 
                       "n_new_artists": [], 
                       "n_headliners": [], 
@@ -1470,6 +1508,7 @@ class GIG_data():
                       "n_countries": [],
                       "n_new_countries": [],
                       "n_future": 0,
+                      "n_future_confirmed": 0,
                       "n_dylan": 0,     # not in future!
                       "n_relative": 0,  # number of gigs up to today
                     }
@@ -1478,6 +1517,10 @@ class GIG_data():
                 for g in c:
                     if g.future:
                         d["n_future"] += 1
+
+                        if g.confirmed:
+                            d["n_future_confirmed"] += 1
+
                         continue
 
                     d["n_events"] += 1
@@ -1505,7 +1548,7 @@ class GIG_data():
 
                     if day_of_year not in all_dates:
                         all_dates.append(day_of_year)
-                        d["n_new_dates"] += 1
+                        d["n_new_dates"].append(g.date)
 
                     if not g.venue in all_venues:
                         all_venues.append(g.venue)
