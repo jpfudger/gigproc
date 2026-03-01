@@ -173,6 +173,10 @@ class GIG_html():
         if vcount.startswith("1/"):
             new_venue_flag = ' ' + self.make_flag_note("first_time")
 
+        country = ''
+        if gig.country != "UK":
+            country = "&lt;" + gig.country + "&gt; "
+
         setlist_string = '<div class=sl_title title="' + day_name+ '">\n' + \
                     country + clink + ' ' + vlink + new_venue_flag + '<br>' + \
                     link_prev + link_next + ' ' + \
@@ -275,6 +279,10 @@ class GIG_html():
                     elif gender == 'female':
                         title += ' (F)'
 
+                    country = b_obj.country()
+                    if country:
+                        title += '&#10;' + 'Country: %s' % country
+
                     blink = '<a href=' + bg_fname + ' title="' + title + '">' + b + '</a>'
 
                     if g_acount[0] == 1:
@@ -321,7 +329,10 @@ class GIG_html():
                     elif gender == 'female':
                         title += ' (F)'
 
-                    #if acount[1] == 1: ag_fname = '""'
+                    country = b_obj.country()
+                    if country:
+                        title += '&#10;' + 'Country: %s' % country
+
                     glink = '<a href=' + ag_fname + ' title="' + title + '">' + guest + '</a>'
 
                     if g_acount[0] == 1:
@@ -854,6 +865,10 @@ class GIG_html():
                 else:
                     if vcount.startswith("1/"):
                         venue_str += ' ' + self.make_flag_note("first_time")
+
+                    if gig.country != "UK":
+                        venue_str = "&lt;" + gig.country + "&gt; " + venue_str
+
                     cols = [ str(i) + '.' + self.sp(1), name_str, date_str, venue_str ]
                     gigs_string += self.row( cols, 'rlll' )
 
