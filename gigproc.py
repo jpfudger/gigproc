@@ -64,9 +64,9 @@ class GIG_data():
         self.unique_songs_of_artist = {} # cached
         self.playlist_gigs = []
 
-        self.time = time.clock()
+        self.time = time.perf_counter()
         self.build_gig_data()
-        self.time = time.clock() - self.time
+        self.time = time.perf_counter() - self.time
         if self.verbose:
             print("Generated gig data in %.2f seconds" % self.time)
     def __str__(self):
@@ -81,14 +81,14 @@ class GIG_data():
         n_years   = " " + str(len(years))
 
         string = ( ""
-         "\n          /---------------------\ "
+         "\n          /---------------------\\ "
          "\n          |                     | "
          "\n          |     %s years       | "
          "\n          |     %s gigs        | "
          "\n          |     %s venues      | "
          "\n          |     %s artists     | "
          "\n          |                     | "
-         "\n          \---------------------/ "
+         "\n          \\---------------------/ "
          "\n"
          ) % ( n_years, n_gigs, n_venues, n_artists )
 
@@ -188,8 +188,7 @@ class GIG_data():
                 print("   ", line)
                 raise Exception("Mismatched parens")
 
-        m_note = re.search("@Note\[(.*)\]", line)
-
+        m_note = re.search(r"@Note\[(.*)\]", line)
         if m_note:
             text = m_note.group(1)
             this_set.notes.append(text)
@@ -214,7 +213,7 @@ class GIG_data():
         #     title = re.sub( ' (' + w + ') ', 
         #         lambda m: ' ' + m.group(1).lower() + ' ', title )
 
-        if re.match('^\s*$', title):
+        if re.match(r'^\s*$', title):
             # process set flags
             title = None
             if len(splits) > 1:
@@ -240,7 +239,7 @@ class GIG_data():
                         print(path)
         else:
             # process song flags and append
-            if re.match( '\?+', title ):
+            if re.match( r'\?+', title ):
                 title = None
             song = GIG_song(title)
             song.count = 1
@@ -248,7 +247,7 @@ class GIG_data():
                 if oldsong.title == song.title:
                     song.count += 1
             song.set_opener = opener
-            if re.match( '^\s+', line )  :
+            if re.match( r'^\s+', line )  :
                 # if the line is indented, it's part of a medley
                 song.medley = True;
             if len(splits) > 1:
@@ -262,7 +261,7 @@ class GIG_data():
                             song.guests.append(guest)
                 if '[' in splits[1]:
                     #song.custom = re.findall( '\[([0-9A-Za-z- ]+)\]', splits[1])
-                    for x in re.findall( '\[([0-9A-Za-z- ]+)\]', splits[1]):
+                    for x in re.findall( r'\[([0-9A-Za-z- ]+)\]', splits[1]):
                         if x == 'solo':
                             song.solo = True
                         elif x == 'debut':
@@ -294,9 +293,9 @@ class GIG_data():
         splits = n.split('+')
         for split in splits:
             name = split
-            name = re.sub( '\s*---.*', '', name )
+            name = re.sub( r'\s*---.*', '', name )
             name = name.strip()
-            name = re.sub( '^The\s+', '', name )
+            name = re.sub( r'^The\s+', '', name )
             names.append(name)
 
         artists = [ self.find_artist(n) for n in names ]
@@ -388,10 +387,10 @@ class GIG_data():
         with open(path) as f:
             lines = f.read().splitlines()
         for line in lines:
-            mopen = re.match('^\{\{\{ (.*)',line)
-            mclose = re.match('^\}\}\}',line)
-            mblank = re.match('^\s*$',line)
-            mc = re.match('^\{\{\{\s*---',line)
+            mopen = re.match(r'^\{\{\{ (.*)',line)
+            mclose = re.match(r'^\}\}\}',line)
+            mblank = re.match(r'^\s*$',line)
+            mc = re.match(r'^\{\{\{\s*---',line)
             if mc:
                 commented = True
                 if com_level == -1:
@@ -406,10 +405,10 @@ class GIG_data():
                 if line.endswith("--- [ticket]"):
                     ticket = True
                     line = line[:-12]
-                m1 = re.match('^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$', line)
+                m1 = re.match(r'^(\d\d-[A-Z][a-z][a-z]-\d\d\d\d) \[(.*)\]\s*$', line)
                 date_regex = "%d-%b-%Y"
                 if not m1:
-                    m1 = re.match('^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$', line)
+                    m1 = re.match(r'^(\d\d\.\d\d\.\d\d\d\d) \[(.*)\]\s*$', line)
                     date_regex = "%d.%m.%Y"
                 if commented:
                     pass
