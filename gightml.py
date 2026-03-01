@@ -169,8 +169,12 @@ class GIG_html():
         ylink = '<a href=' + yg_fname + ' title="Yearcount: ' + ycount + '">' + gig.date.strftime("%Y") + '</a>' 
         day_name = gig.date.strftime("%A")
 
+        new_venue_flag = ''
+        if vcount.startswith("1/"):
+            new_venue_flag = ' ' + self.make_flag_note("first_time")
+
         setlist_string = '<div class=sl_title title="' + day_name+ '">\n' + \
-                    clink + ' ' + vlink + '<br>' + \
+                    country + clink + ' ' + vlink + new_venue_flag + '<br>' + \
                     link_prev + link_next + ' ' + \
                     ordinal(day) + gig.date.strftime(" %B ") + ylink + '</div>' + '\n'
 
@@ -273,6 +277,9 @@ class GIG_html():
 
                     blink = '<a href=' + bg_fname + ' title="' + title + '">' + b + '</a>'
 
+                    if g_acount[0] == 1:
+                        blink += ' ' + self.make_flag_note("first_time")
+
                     for s in g.songs:
                         if b in s.guests:
                             asup = gig.get_artists().index(b)
@@ -302,6 +309,7 @@ class GIG_html():
                     ag_fname = gig.link + '_a' + self.id_of_artist(guest) + '.html'
                     g_acount = self.gig_data.gig_artist_times(gig,guest)
                     title = "Artistcount: %d/%d" % ( g_acount[0], g_acount[1] )
+                    first_time = g_acount[0] == 1
 
                     b_obj = self.gig_data.find_artist(guest)
                     age = b_obj.age(gig.date)
@@ -315,6 +323,10 @@ class GIG_html():
 
                     #if acount[1] == 1: ag_fname = '""'
                     glink = '<a href=' + ag_fname + ' title="' + title + '">' + guest + '</a>'
+
+                    if g_acount[0] == 1:
+                        glink += ' ' + self.make_flag_note("first_time")
+
                     setlist_string += '\n<br>' + self.sp(3) + '[Guesting ' + glink + ' '
                     setlist_string += self.make_flag_note( 'guest', guest, asup )
                     setlist_string += ']'
@@ -757,9 +769,14 @@ class GIG_html():
                 #     # pad single digit with a space
                 #     day = '&nbsp;' + day
 
-                date_str = '<div class=date title=%s>%s</div>' % \
+                first_date = ""
+                if self.gig_data.first_time_on_date(gig.date):
+                    first_date = " " + self.make_flag_note("first_time")
+
+                date_str = '<div class=date title=%s>%s%s</div>' % \
                             ( gig.date.strftime("%A"), 
-                              gig.date.strftime("%d %b %Y"))
+                              gig.date.strftime("%d %b %Y"),
+                              first_date )
 
                 name_str = gig.sets[0].artists[0].name
 
@@ -786,22 +803,57 @@ class GIG_html():
                     if link_suffix:
                         link += '_' + link_suffix
                     name_str2 = name_str
-                    name_str = '<a '
+                    name_str = '<a class="scrollable" '
+
                     if match_id == gig.index:
-                        name_str += 'class=highlight '
+                        name_str = '<a class="scrollable highlight" '
+
                     artist = force_artist if force_artist else gig.sets[0].artists[0].name
                     acount = self.gig_data.gig_artist_times(gig, artist)
                     title = "Artistcount: %d/%d" % ( acount[0], acount[1] )
                     name_str += 'href=' + link + '.html title="' + title + '">' + name_str2 + '</a>'
+                    if acount[0] == 1:
+                        name_str += ' ' + self.make_flag_note("first_time")
+
+                ccount = self.gig_data.gig_city_times(gig)
+                vcount = self.gig_data.gig_venue_times(gig)
+                vfname = 'v' + self.id_of_venue(gig.venue) + '.html'
+
+                cfname = 'c' + self.id_of_city(gig.city) + '.html'
+                city_link = f'<a class=hidden-link href={cfname}>{gig.city}</a>'
+                venue_str  = f'<div class=greyflag title="Towncount: {ccount}">{city_link}</div>'
+
+                if vcount.startswith(r"0/"):
+                    venue_str += f' <div class="greyflag" title="Venuecount: {vcount}">{gig.venue_nocity}</div>'
+                else:
+                    venue_link = f'<a class=hidden-link href={vfname}>{gig.venue_nocity}</div>'
+                    venue_str += f' <div class="greyflag hidden-link" title="Venuecount: {vcount}">{venue_link}</div>'
 
                 if gig.future:
                     conf = "* " if gig.confirmed else ""
-                    gigs_string += self.row( [ conf + self.sp(1), name_str, date_str, gig.venue ], 'rlll' )
+                    if vcount.startswith(r"0/"):
+                        venue_str += ' ' + self.make_flag_note("first_time")
+                    else:
+                        venue_str = f"<a class=hidden-link href={vfname}>{venue_str}</a>"
+
+                    if gig.country != "UK":
+                        venue_str = "&lt;" + gig.country + "&gt; " + venue_str
+                    
+                    _acount = self.gig_data.gig_artist_times(gig, gig.sets[0].artists[0].name)
+                    if _acount[0] == 0:
+                        name_str += ' ' + self.make_flag_note("first_time")
+                    else:
+                        afname = 'a' + self.id_of_artist(name_str) + ".html"
+
+                        title = "Artistcount: %d/%d" % ( _acount[0], _acount[1] )
+                        name_str = f"<div class=greyflag title={title}>{name_str}</div>"
+
+                        name_str = f"<a class=hidden-link href={afname}>{name_str}</a>"
+
+                    gigs_string += self.row( [ conf + self.sp(1), name_str, date_str, venue_str ], 'rlll' )
                 else:
-                    ccount = self.gig_data.gig_city_times(gig)
-                    vcount = self.gig_data.gig_venue_times(gig)
-                    venue_str  = '<div class=greyflag title="Towncount: '+ccount+'">'+ gig.city+'</div>'
-                    venue_str += ' <div class=greyflag title="Venuecount: '+vcount+'">'+gig.venue_nocity+'</div>'
+                    if vcount.startswith("1/"):
+                        venue_str += ' ' + self.make_flag_note("first_time")
                     cols = [ str(i) + '.' + self.sp(1), name_str, date_str, venue_str ]
                     gigs_string += self.row( cols, 'rlll' )
 
