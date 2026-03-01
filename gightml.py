@@ -746,7 +746,7 @@ class GIG_html():
             return False
         elif str(h) == str(y):
             return True
-    def make_years_string(self,highlight_year=None):
+    def make_years_string_old(self,highlight_year=None):
         # years will include extras (artists, venues, etc.)
         years_string = ''
         year_gigs = self.gig_data.get_unique_years(True)
@@ -784,6 +784,162 @@ class GIG_html():
 
                 years_string += '\n<div class=yr> <a class=\"%s\" ' % a_class.strip()
                 years_string += 'href=' + str(y).lower() + '.html' + title + '>' + str(y) + '</a> </div>'
+        return years_string
+
+    def make_decades_grid(self,years,year_gigs,highlight_year=None):
+        decades = []
+        for y in self.years:
+            try:
+                y = int(y)
+                d = int( str(y)[0:3] + "0" )
+                decades.append(d)
+            except ValueError:
+                pass
+        decades = list(set(decades))
+        decades.sort()
+
+        decades_string = ''
+
+        for i in range(10):
+            for decade in decades:
+                y = str(decade + i)
+
+                current = int(y) == datetime.now().year
+                future = int(y) > datetime.now().year
+
+                link = None
+                link_classes = [ "scrollable" ]
+                title = ''
+
+                if y in self.years:
+                    link = y + ".html"
+
+                if self.is_highlight_year(highlight_year, y):
+                    link_classes.append("highlight")
+
+                for gy,gc in year_gigs:
+                    if gy == int(y): 
+                        n_events = len(gc)
+                        title = ' title="%d events"' % n_events
+                        break
+
+                if future:
+                    link_classes.append("future")
+
+                    if not self.LINK_TO_FUTURE_YEARS:
+                        link = None
+
+                if link:
+                    classes = " class=\"%s\"" % (" ".join(link_classes))
+                    decades_string += f"<div class=yr_d> <a{classes}{title} href={link}>{y[2:]}</a> </div>\n"
+                else:
+                    decades_string += f"<div class=yr_d_empty> &nbsp; </div>\n"
+                    #decades_string += f"<div class=yr_d> {y[2:]} </div>\n"
+
+            decades_string += "<br>\n"
+
+        return decades_string
+
+    def make_years_string(self,highlight_year=None):
+        # years will include extras (artists, venues, etc.)
+        years_string = ''
+        year_gigs = self.gig_data.get_unique_years(inc_future=False)
+        cur_decade = None
+        done_decades = False
+
+        for y in self.years:
+            current = False
+            future = False
+            if y == '':
+                years_string += '\n<br>'
+            else:
+                link = y
+                decade = None
+                if y.startswith("2"):
+                    current = int(y) == datetime.now().year
+                    future = int(y) > datetime.now().year
+
+                    if not done_decades:
+                        done_decades = True
+                        years_string += self.make_decades_grid(self.years, year_gigs, highlight_year)
+
+                    continue
+
+                    decade = y[0:3] + "0"
+
+                    if decade != cur_decade or current or future:
+                        if future or cur_decade is None:
+                            pass
+                        else:
+                            years_string += '\n    </div>'
+                            years_string += '\n</div>'
+
+                        if current:
+                            years_string += '\n<br>'
+                        elif future:
+                            pass
+                        else:
+                            hl_class = ""
+                            if highlight_year and decade:
+                                # also highlight collapsed decade
+                                if decade == str(highlight_year)[0:3] + "0":
+                                    if highlight_year < datetime.now().year:
+                                        hl_class = " highlight"
+
+                            years_string += '\n<div class="yr dropdown">'
+                            years_string += '\n    <a class="dropdown-button%s">%ss</a>' % (hl_class, decade)
+                            years_string += '\n    <div class=dropdown-content>'
+
+                        cur_decade = decade
+
+                title = ''
+                try:
+                    # count gigs and add hover title
+
+                    if future:
+                        if self.LINK_TO_FUTURE_YEARS:
+                            future = True
+                        else:
+                            continue
+
+                    n_events = 0
+                    for gy,gc in year_gigs:
+                        if gy == int(y): 
+                            n_events = len(gc)
+                    title = ' title="%d events"' % n_events
+                except ValueError:
+                    pass
+
+                #if y[-1] == '0':
+                    #years_string += '\n<br>'
+
+                onclick = ""
+                data_tag = ""
+                link_classes = [ "scrollable" ]
+
+                if self.is_highlight_year(highlight_year, y):
+                    link_classes.append("highlight")
+                if future:
+                    link_classes.append("future")
+
+                if y.startswith("2"):
+                    classes = " class=\"%s\"" % (" ".join(link_classes))
+                    years_string += '\n    <div class=yr> <a%s href="%s.html">%s</a> </div>' % (classes, y, y)
+                else:
+                    classes = " class=\"%s\"" % (" ".join(link_classes))
+                    years_string += '\n<div class=yr> <a%s href="%s.html">%s</a> </div>' % (classes, y.lower(), y )
+
+
+        # add up/down buttons for easier year navigation
+        tri_left = "&#9664;" # "&lt;"
+        tri_right = "&#9654;" # "&rt;"
+        years_string += '\n<br>'
+        years_string += '\n<div class=yr>'
+        years_string += '<a href=# title="k" onclick="prev_link();">%s</a>' % tri_left
+        years_string += '&nbsp; &nbsp; &nbsp;'
+        years_string += '<a href=# title="j" onclick="next_link();">%s</a>' % tri_right
+        years_string += '</div>'
+
         return years_string
     def make_artist_index_string(self,years_string_a):
         all_artists = self.gig_data.get_unique_artists()
