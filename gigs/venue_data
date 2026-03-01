@@ -1,10 +1,12 @@
 Alfriston Old Chapel                |       |       | 50.8073606841,  0.1572339920
+Baldock Folk Club                   |       |       | 51.9906313797, -0.1930608955
 Basingstoke Anvil                   | 1400  |       | 51.2669259654, -1.0895550758
 Bedford Corn Exchange               | 400   |       | 52.1360056327, -0.4674206614
 Bedford Ent Shed                    | 150   |       | 52.1371995349, -0.4538796835
 Bedford Harpur Cellar Bar           |       |       | 52.1371299669, -0.4665794622
 Bedford Harpur Suite                | 150   |       | 52.1361687125, -0.4680133889
 Bedford St. Peter's                 |       |       | 52.1393710985, -0.4662998193
+Belfast Waterfront Hall             | 2250  |       | 54.5974474692, -5.9200051024
 Bergamo di Lazzaretto               |       |       | 45.7099049429,  9.6790441448
 Berlin Arena                        | 17000 |       | 52.5062881505, 13.4436423267
 Birmingham NEC                      | 15685 |       | 52.4511764792, -1.7211895020
@@ -15,6 +17,7 @@ Brighton Chalk                      |       |       | 50.8199976952, -0.13842073
 Brighton Dome                       | 1700  |       | 50.8236727616, -0.1380734733
 Brighton Komedia                    | 415   | 280   | 50.8248951623, -0.1394352733
 Brighton Komedia Studio             | 140   | 100   | 50.8248951623, -0.1394352733
+Brighton Prince Albert              | 100   |       | 50.8283179507, -0.1407373421
 Bury St Edmunds Apex                | 500   |       | 52.2458190247,  0.7102857461
 Cambridge Blue Moon                 | 100   |       | 52.2049111233,  0.1367468593
 Cambridge Boathouse                 |       |       | 52.2140107157,  0.1236170181
@@ -23,12 +26,15 @@ Cambridge CB2                       |       |       | 52.2049657718,  0.13434912
 Cambridge Clare Hall College        |       |       | 52.2043109157,  0.1045067105
 Cambridge Corn Exchange             | 1849  |       | 52.2044050471,  0.1196875402
 Cambridge Folk Festival             | 14000 |       | 52.1871908647,  0.1666740400
+Cambridge Footlight Cellars         | 120   |       | 52.2087037907,  0.1195825129
 Cambridge Great St. Mary's          |       |       | 52.2053022219,  0.1182398267
 Cambridge Haymakers                 |       |       | 52.2174424255,  0.1393715267
 Cambridge Junction J1               | 850   |       | 52.1908880918,  0.1365063402
 Cambridge Junction J2               | 220   |       | 52.1908880918,  0.1365063402
 Cambridge Junction J3               | 60    |       | 52.1908880918,  0.1365063402
 Cambridge Mash                      | 300   |       | 52.2065444173,  0.1200597114
+Cambridge Mumford Theatre           | 270   |       | 52.2032072559,  0.1343721651
+Cambridge NCI Centre                | 100   |       | 52.2147477002,  0.1184354078
 Cambridge Parker's Piece            |       |       | 52.2013280373,  0.1267266320
 Cambridge Portland Arms             | 200   |       | 52.2145578973,  0.1247690421
 Cambridge Six Six Bar               |       |       | 52.2054442786,  0.1339318997
@@ -53,10 +59,12 @@ Hull Bonus Arena                    | 2900  |       | 53.7418605010, -0.34129787
 Kilkenny Nowlan Park                | 27000 |       | 52.6564360238, -7.2396563308
 Leeds Fox and Newt                  | 80    |       | 53.7999979514, -1.5594430621
 Leicester O2 Academy                | 1600  |       | 52.6219238310, -1.1253164625
+Liverpool Anfield Stadium           | 61276 |       | 53.4308195017, -2.9608200848
 Liverpool Clarence Dock             | 25000 |       | 53.3994966368, -2.9911342917
 Liverpool Mountford Hall            | 2300  |       | 53.4056505778, -2.9659192525
 Liverpool Philharmonic Hall         | 1700  |       | 53.4011402709, -2.9697635675
 London 100 Club                     | 350   |       | 51.5161088186, -0.1353449158
+London 229                          | 620   |       | 51.5235868547, -0.1444452999
 London Alexandra Palace Theatre     | 1400  |       | 51.5945030336, -0.1303930818
 London Balham The Bedford           | 250   |       | 51.4427351310, -0.1494151067
 London Barbican Hall                | 1943  |       | 51.5202822748, -0.0937877787
@@ -71,12 +79,13 @@ London Brooklyn Bowl                | 800   |       | 51.5037847931,  0.00291421
 London Bush Hall                    | 400   |       | 51.5063989718, -0.2316831199
 London Cadogan Hall                 | 953   |       | 51.4937841374, -0.1572333166
 London Cafe Oto                     | 200   |       | 51.5469358410, -0.0747731736
-London Campfire Club                |       |       | 51.5349706143, -0.1094570772
 London Cecil Sharp House            | 300   |       | 51.5381474478, -0.1493034593
 London Clapham Grand                |       |       | 51.4631005521, -0.1694007771
 London Coronet Theatre              | 195   |       | 51.5085763226, -0.1981467456
+London Culpeper Community Garden    |       |       | 51.5349706143, -0.1094570772
+London Cutty Sark                   |       |       | 51.4831435181, -0.0097097199
 London Dingwalls                    | 500   |       | 51.5412512298, -0.1457437129
-London Hackney EartH Theatre        | 700   |       | 51.5510893212, -0.0756269345
+London EartH Theatre                | 700   |       | 51.5510893212, -0.0756269345
 London Electric Ballroom            | 1500  |       | 51.5396980435, -0.1430059968
 London Emirates Stadium             | 60260 |       | 51.5550465894, -0.1084427401
 London Finsbury Park                | 30000 |       | 51.5676661352, -0.1028974143
@@ -84,12 +93,13 @@ London Forum                        | 2300  |       | 51.5521634395, -0.14216702
 London Garage (Downstairs)          | 620   |       | 51.5467155647, -0.1039147793
 London Garage (Upstairs)            | 150   |       | 51.5467155647, -0.1039147793
 London Gibson Guitar Studio         |       |       | 51.5183327382, -0.1355705910
+London Golden Hinde                 | 100   |       | 51.5069269280, -0.0902735359
 London Grace                        | 150   |       | 51.5467816142, -0.1040551283
 London Green Note                   | 50    |       | 51.5377026823, -0.1456616386
 London Hackney St. Johns            | 1800  |       | 51.5492261214, -0.0532988274
 London Hammersmith Apollo           | 3500  | 5000  | 51.4911396354, -0.2246102021
 London Hammersmith Regal Room       | 150   |       | 51.4893136471, -0.2232778573
-London Heaven                       | 1625  |       | 51.5082421794, -0.1239503452
+London Heaven                       | 1100  |       | 51.5082421794, -0.1239503452
 London Hospital Club                | 300   |       | 51.5147112263, -0.1245391186
 London Hoxton Bar and Kitchen       | 450   |       | 51.5275085410, -0.0818200145
 London Hoxton Hall                  | 227   |       | 51.5317987819, -0.0800260769
@@ -97,14 +107,16 @@ London Hyde Park                    | 65000 |       | 51.5064226508, -0.15651975
 London Indigo O2                    | 2750  |       | 51.5037847931,  0.0029142189
 London Islington Academy            | 800   |       | 51.5343424145, -0.1058942095
 London Islington Assembly Hall      | 890   |       | 51.5416082718, -0.1023570065
+London Jazz Cafe                    | 450   |       | 51.5386761146, -0.1430404607
 London Kings Place                  | 420   |       | 51.5347964719, -0.1218002086
 London Kings Place Hall 2           | 200   |       | 51.5347964719, -0.1218002086
 London Koko                         | 1410  |       | 51.5347364926, -0.1382224272
 London Lafayette                    | 600   |       | 51.5342757048, -0.1256906364
 London Lexington                    | 200   |       | 51.5317872688, -0.1114520603
+London Lower Third                  | 200   |       | 51.5155302459, -0.1291542644
 London Luminaire                    | 250   |       | 51.5442037111, -0.2010154094
 London Moth Club                    | 300   |       | 51.5457143430, -0.0545620524
-London Nell's                       | 200   |       | 51.4923415432, -0.2073235107
+London Nell's Jazz and Blues        | 200   |       | 51.4923415432, -0.2073235107
 London O2 Arena                     | 20000 |       | 51.5030173354,  0.0031584814
 London Old Queen's Head             | 180   |       | 51.5372135040, -0.1003745309
 London Olympic Park                 | 60000 |       | 51.5434360797, -0.0138432048
@@ -116,7 +128,7 @@ London Purcell Room                 | 295   |       | 51.5064771733, -0.11631409
 London Queen Elizabeth Hall         | 900   |       | 51.5065866741, -0.1165261051
 London Regent's Park                | 1200  |       | 51.5280920509, -0.1543981069
 London Rock Garden                  | 250   |       | 51.5118584784, -0.1229979530
-London Hackney Round Chapel         | 300   |       | 51.5522579557, -0.0520191247
+London Hackney Round Chapel         | 800   |       | 51.5522579557, -0.0520191247
 London Roundhouse                   | 1700  |       | 51.5432219101, -0.1519144933
 London Roundhouse Sackler Space     | 200   |       | 51.5434679787, -0.1523247642
 London Royal Albert Hall            | 5275  |       | 51.5010072479, -0.1774936710
@@ -139,8 +151,9 @@ London Village Underground          | 700   |       | 51.5236385494, -0.07850407
 London Water Rats                   | 200   |       | 51.5290230879, -0.1195254176
 London Wembley Arena                | 12500 |       | 51.5580436878, -0.2825695434
 London Wembley Stadium              | 90000 |       | 51.5559846479, -0.2796391610
+London West Hampstead Arts Club     | 100   |       | 51.5510141319, -0.2014059679
 Manchester Apollo                   | 3500  |       | 53.4695189120, -2.2221099462
-Manchester Arena                    | 21000 |       | 53.4883095993, -2.2441171718
+Manchester MEN Arena                | 21000 |       | 53.4883095993, -2.2441171718
 Manchester Bridgewater Hall         | 2355  |       | 53.4756471401, -2.2458429706
 Manchester Etihad Stadium           | 55097 |       | 53.4831470212, -2.2003842579
 Manchester Opera House              | 1920  |       | 53.4788250568, -2.2513939148
@@ -158,6 +171,7 @@ Norwich Waterfront                  | 700   |       | 52.6246864690,  1.30275009
 Nottingham Arena                    | 10000 |       | 52.9527807168, -1.1395842443
 Nottingham Bodega Club              | 220   |       | 52.9537482008, -1.1459657549
 Nottingham Maze                     | 200   |       | 52.9642839075, -1.1527191455
+Nottingham Playhouse                | 760   |       | 52.9538865653, -1.1561790664
 Nottingham Rescue Rooms             | 450   |       | 52.9561621562, -1.1535046580
 Nottingham Rock City                | 2000  |       | 52.9560467120, -1.1538658106
 Nottingham Royal Concert Hall       | 3364  |       | 52.9552249730, -1.1513268168
@@ -165,10 +179,12 @@ Oxford New Theatre                  | 1800  |       | 51.7539335626, -1.26002979
 Paris Grand Rex                     | 2800  |       | 48.8705131292,  2.3477166357
 Royston Folk Club (Old Bull)        | 120   |       | 52.0460190192, -0.0226045918
 Royston Folk Club (British Legion)  | 100   |       | 52.0527653218, -0.0228251185
+Royston St. John The Baptist        |       |       | 52.0478755841, -0.0215055908
 Sheffield Arena                     | 13600 |       | 53.3999648979, -1.4188424290
 Sheffield Cafe #9                   | 50    |       | 53.3590552452, -1.4879043664
 Sheffield Firth Hall                | 400   |       | 53.3813609615, -1.4886468883
 Sheffield Greystones                | 120   |       | 53.3642838707, -1.5161550225
+Sheffield Hallamshire Hotel         | 100   |       | 53.3806042999, -1.4779451123
 Sheffield Leadmill                  | 900   |       | 53.3761462682, -1.4648431804
 Sheffield Memorial Hall             | 500   |       | 53.3807564660, -1.4723675033
 Sheffield Plug                      | 1200  |       | 53.3766107969, -1.4715706453
@@ -178,6 +194,7 @@ Southampton Brook                   | 600   |       | 50.9328584524, -1.38331799
 Southampton Guildhall               | 1749  |       | 50.9080274982, -1.4063345042
 Southampton Talking Heads           | 260   |       | 50.9094923954, -1.4097999533
 St Albans City Hall                 | 856   |       | 51.7528888292, -0.3363838728
+Stockholm Fallan Hallgrand          | 2400  |       | 59.2929312604, 18.0781224913
 Stockholm Waterfront                | 3000  |       | 59.3299691308, 18.0554589841
 Winchester Railway Inn              | 150   |       | 51.0666872998, -1.3223146153
 Worthing Assembly Hall              |       |       | 50.8148389869, -0.3724902749
