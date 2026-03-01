@@ -55,7 +55,60 @@ class GIG_plot():
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
         #plt.title("Venue Growth (Top %d)" % top_n)
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
+
+        if dest:
+            plt.tight_layout()
+            fig.set_size_inches(*self.graph_size)
+            fig.savefig(dest)
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
+    def top_artists(self,top_n=5,dest=None):
+        self.n_graphs += 1
+
+        fig, ax = plt.subplots()
+        artists = self.gig_data.get_unique_artists()[0:top_n]
+        first_date = self.gig_data.get_unique_years()[0][1][0].date
+        all_dates = [ first_date ]
+        anames = []
+        for (a,gs) in artists:
+            anames.append(a)
+            for g in gs:
+                all_dates.append(g.date)
+
+        all_dates.sort()
+
+        for (a,gs) in artists:
+            counts = []
+            for d in all_dates:
+                counts.append(0)
+
+            for g in gs:
+                indx = all_dates.index(g.date)
+                for i in range(indx,len(all_dates)):
+                    counts[i] += 1
+
+            plt.plot(all_dates,counts,linewidth=2)
+
+        ax.legend(anames,loc='upper left')
+        ax.set_xlim(datetime(all_dates[0].year-1,1,1),datetime(all_dates[-1].year+1,1,1))
+        ax.set_ylim(0,len(artists[0][1])+1)
+
+        years = [ x.year for x in all_dates ] 
+        years = list(set(years))
+        years.sort()
+        years = list( range( years[0], years[-1]+1 ) )
+        labels = [ str(x)[2:4] for x in years ]
+        years = [ date(year=y, month=1, day=1) for y in years ]
+        plt.xticks( years, labels )
+
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+
+        #plt.title("Venue Growth (Top %d)" % top_n)
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
             plt.tight_layout()
@@ -92,7 +145,51 @@ class GIG_plot():
         plt.xlim( [0, len(years)+1] )
 
         #plt.title("Total artists seen per year")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
+
+        if dest:
+            plt.tight_layout()
+            fig.set_size_inches(*self.graph_size)
+            fig.savefig(dest)
+            plt.close()
+        else:
+            plt.show(block=False)
+    def percentage_new_artists_by_year(self,dest=None):
+        fig, ax = plt.subplots()
+        self.n_graphs += 1
+
+        years            = [ d["year"]                  for d in self.stats if d["n_events"] > 0]
+        n_artists        = [ len(d["n_artists"])        for d in self.stats if d["n_events"] > 0]
+        n_new_artists    = [ len(d["n_new_artists"])    for d in self.stats if d["n_events"] > 0]
+        n_headliners     = [ len(d["n_headliners"])     for d in self.stats if d["n_events"] > 0]
+        n_new_headliners = [ len(d["n_new_headliners"]) for d in self.stats if d["n_events"] > 0]
+
+        perc_new_artists = []
+        perc_new_headliners = []
+
+        for n, n_new in zip(n_artists, n_new_artists):
+            perc_new_artists.append(100 * n_new / n)
+
+        for n, n_new in zip(n_headliners, n_new_headliners):
+            perc_new_headliners.append(100 * n_new / n)
+
+        ind = range(1,len(years)+1)
+        bar1 = ax.bar( ind, perc_new_artists, align='center', \
+                color=self.colour1, edgecolor=self.colour1 )
+        bar2 = ax.bar( ind, perc_new_headliners, align='center', \
+                       color=self.colour2, edgecolor=self.colour1 )
+        plt.xticks(ind,[str(xx)[2:4] for xx in years])
+
+        plt.legend((bar1[0], bar2[0]), \
+                   ('% new artists', '% new headliners'), \
+                   loc='upper right')
+
+        ax.set_axisbelow(True)
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        plt.xlim( [0, len(years)+1] )
+
+        #plt.title("Total artists seen per year")
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
             plt.tight_layout()
@@ -148,7 +245,7 @@ class GIG_plot():
             legend_text = ('Events by day/month', )
 
         plt.legend(legend_bars, legend_text, loc='upper left')
-        #fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        #fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
             plt.tight_layout()
@@ -166,21 +263,28 @@ class GIG_plot():
         relative_counts  = [ d["n_relative"]    for d in self.stats if d["n_events"] > 0]
         dylan_counts     = [ d["n_dylan"]       for d in self.stats if d["n_events"] > 0]
         future_counts    = [ d["n_future"]      for d in self.stats if d["n_events"] > 0]
+        ticket_counts    = [ d["n_future_confirmed"] for d in self.stats if d["n_events"] > 0]
 
         for i, year in enumerate(years):
             if future_counts[i] > 0:
                 future_counts[i] += total_counts[i]
+            if ticket_counts[i] > 0:
+                ticket_counts[i] += total_counts[i]
 
         plot_up_to_day = future_counts[-1] > 0
         plot_future = (future_counts[-1] > 0) and (not end_date)
-        #plot_up_to_day = True
+        if sum(relative_counts[:-1]) == 0:
+            plot_up_to_day = False
 
         ind = range(1,len(years)+1)
 
         if plot_future:
             # plot future first, so that totals go in front
-            bar_future = ax.bar( ind, future_counts, align='center', \
+            bar_future = ax.bar( ind, ticket_counts, align='center', \
                                  color=self.colour3, edgecolor=self.colour1 )
+
+            # bar_ticket = ax.bar( ind, ticket_counts, align='center', \
+            #                  color=self.colour5, edgecolor=self.colour1 )
 
         bar_tot = ax.bar( ind, total_counts, align='center', \
                           color=self.colour1, edgecolor=self.colour1 )
@@ -204,21 +308,29 @@ class GIG_plot():
             data = [bar_tot[0], 
                     bar_rel[0], 
                     bar_dyl[0],
-                    bar_future[0]]
+                    bar_future[0],
+                    #bar_ticket[0],
+                    ]
 
             keys = ['Total events',
                     'Past years up to %s' % datestr,
                     'Dylan events',
-                    'Planned events']
+                    'Planned events',
+                    #'Confirmed events',
+                    ]
         elif plot_future:
             #print("GOT FUTURE")
             data = [bar_tot[0], 
                     bar_dyl[0],
-                    bar_future[0]]
+                    bar_future[0],
+                    #bar_ticket[0],
+                    ]
 
             keys = ['Total events',
                     'Dylan events',
-                    'Planned events']
+                    'Planned events',
+                    #'Confirmed events',
+                    ]
         else:
             #print("GOT NO FUTURE")
             data = [bar_tot[0],
@@ -233,7 +345,7 @@ class GIG_plot():
         plt.xlim( [0, len(years)+1] )
 
         #plt.title("Year Histogram")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
             plt.tight_layout()
@@ -270,7 +382,7 @@ class GIG_plot():
         plt.xlim( [0, len(years)+1] )
 
         #plt.title("Total venues seen per year")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
             plt.tight_layout()
@@ -410,7 +522,7 @@ class GIG_plot():
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
 
         #plt.title("Frequency Distribution of Artists")
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
             plt.tight_layout()
@@ -461,7 +573,10 @@ class GIG_plot():
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
         plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
                   datetime.strptime(str(years[-1].year+1),"%Y")])
-        plt.ylim([0, 600])
+
+        plt.ylim([0, 700])
+        #from matplotlib.ticker import MultipleLocator
+        #ax.yaxis.set_major_locator(MultipleLocator(50))
 
         if dest:
             plt.tight_layout()
@@ -508,6 +623,71 @@ class GIG_plot():
             fig.set_size_inches(*self.graph_size)
             fig.savefig("total_gradient.png")
             plt.close()
+    def big_cities_by_year(self,dest=None):
+        self.n_graphs += 1
+        fig, ax = plt.subplots()
+
+        years            = [ d["year"]          for d in self.stats if d["n_events"] > 0]
+        total_counts     = [ d["n_events"]      for d in self.stats if d["n_events"] > 0]
+        relative_counts  = [ d["n_relative"]    for d in self.stats if d["n_events"] > 0]
+        dylan_counts     = [ d["n_dylan"]       for d in self.stats if d["n_events"] > 0]
+        future_counts    = [ d["n_future"]      for d in self.stats if d["n_events"] > 0]
+        ticket_counts    = [ d["n_future_confirmed"] for d in self.stats if d["n_events"] > 0]
+
+        years = []
+        london_counts = []
+        cambridge_counts = []
+        other_counts = []
+
+        gigs_by_year = self.gig_data.get_unique_years()
+        gigs_by_year.sort()
+
+        for (y,c) in gigs_by_year:
+            # running_total += 1 # comment this out for cumulative annual count
+            years.append(datetime.strptime(str(y),"%Y"))
+            london_counts.append(0)
+            cambridge_counts.append(0)
+            other_counts.append(0)
+
+            for g in c:
+                if g.future: continue
+
+                if g.city == "London":
+                    london_counts[-1] += 1
+                elif g.city == "Cambridge":
+                    cambridge_counts[-1] += 1
+                else:
+                    other_counts[-1] += 1
+
+
+        fig, ax = plt.subplots()
+
+        line1 = plt.plot(years, london_counts)
+        line2 = plt.plot(years, cambridge_counts)
+        line3 = plt.plot(years, other_counts)
+
+        plt.xticks(years,[xx.strftime("%y") for xx in years])
+
+        plt.legend((line1[0],line2[0],line3[0]), 
+                   ('London', 'Cambridge', 'Other'),
+                   loc='upper left')
+
+        ax.set_axisbelow(True)
+
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        #plt.xlim([datetime.strptime(str(years[0].year-1),"%Y"),
+                  #datetime.strptime(str(years[-1].year+1),"%Y")])
+
+        #plt.ylim( bottom=0, top=max(artist_h_values + venue_h_values) + 1 )
+
+        if dest:
+            plt.tight_layout()
+            fig.set_size_inches(*self.graph_size)
+            fig.savefig(dest)
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
 
     def total_progress_wrt_target(self, dest=None):
         gigs_by_year = self.gig_data.get_unique_years()
@@ -599,12 +779,16 @@ class GIG_plot():
         gigs_by_year = self.gig_data.get_unique_years()
         gigs_by_year.sort()
 
+        new_hdl_ages_in_year = {}
         hdl_ages_in_year = {}
         all_ages_in_year = {}
+
+        headliners_seen = set()
 
         for (y,c) in gigs_by_year:
             hdl_ages_in_year[y] = []
             all_ages_in_year[y] = []
+            new_hdl_ages_in_year[y] = []
 
             for g in c:
                 d = g.date.date()
@@ -613,6 +797,10 @@ class GIG_plot():
 
                 if age:
                     hdl_ages_in_year[y].append(age)
+
+                    if artist not in headliners_seen:
+                        headliners_seen.add(artist)
+                        new_hdl_ages_in_year[y].append(age)
 
                 for s in g.sets:
                     for artist in s.artists:
@@ -627,13 +815,25 @@ class GIG_plot():
         hdl_ages_max = []
         hdl_ages_ave = []
 
+        new_hdl_ages_min = []
+        new_hdl_ages_max = []
+
         all_ages_min = []
         all_ages_max = []
 
         for y in years:
+            new_hdl_ages = new_hdl_ages_in_year[y]
             hdl_ages = hdl_ages_in_year[y]
             total = sum(hdl_ages)
             average = total / len(hdl_ages_in_year[y])
+
+            if new_hdl_ages:
+                new_hdl_ages_min.append(min(new_hdl_ages))
+                new_hdl_ages_max.append(max(new_hdl_ages) - min(new_hdl_ages))
+            else:
+                # in 2004 I didn't see any new headliners!
+                new_hdl_ages_min.append(0)
+                new_hdl_ages_max.append(0)
 
             hdl_ages_ave.append(average)
             hdl_ages_min.append(min(hdl_ages))
@@ -648,6 +848,9 @@ class GIG_plot():
                       color=self.colour3, edgecolor='black')
         bar2 = ax.bar(years, hdl_ages_max, bottom=hdl_ages_min, align='center', 
                       color=self.colour1, edgecolor='black')
+        #bar3 = ax.bar(years, new_hdl_ages_max, bottom=new_hdl_ages_min, align='center',
+                      #color=self.colour2, edgecolor='black')
+
         line1 = plt.plot(years, hdl_ages_ave, color=self.colour2)
         # dots1 = plt.plot(years, hdl_ages_ave, color=self.colour2, marker='o',ls='',
         #                  markeredgewidth=1,markeredgecolor=self.colour1)
@@ -688,7 +891,9 @@ class GIG_plot():
         future_totals = []
         ticket_dates = []
         ticket_totals = []
-        
+        ideal_dates = []
+        ideal_totals = []
+
         if gigs == None:
             return False
 
@@ -713,6 +918,19 @@ class GIG_plot():
                 future_dates = [ g.date ]
                 future_totals = [ running_total ]
 
+        if len(future_dates) > 1:
+            ideal_dates = [ date(year, 1, 1) ]
+            ideal_totals = [ 0 ]
+
+            while len(ideal_totals) <= 52:
+                next_date = ideal_dates[-1] + timedelta(days=7)
+                next_total = ideal_totals[-1] + 1
+                ideal_dates.append(next_date)
+                ideal_totals.append(next_total)
+
+            #print(ideal_dates)
+            #print(ideal_totals)
+
         months = [ date(year=year, month=x, day=1) for x in range(1,13) ]
 
         fig, ax = plt.subplots()
@@ -729,6 +947,10 @@ class GIG_plot():
         line_past = None
         line_planned = None
         line_unconfirmed = None
+        line_ideal = None
+
+        if len(ideal_dates) > 1:
+            line_ideal = plt.plot(ideal_dates, ideal_totals, ls='dotted', color='lightgreen')
 
         if len(dates) > 1:
             line_past = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
@@ -767,16 +989,17 @@ class GIG_plot():
 
         if line_planned:
             legend_lines.append(line_planned[0])
-            name = 'Planned'
-            if not line_past:
-                name = '%d planned' % year
+            name = '%d tickets' % year
             legend_names.append(name)
 
         if line_unconfirmed:
             legend_lines.append(line_unconfirmed[0])
-            name = 'Unconfirmed'
-            if not line_past and not line_planned:
-                name = '%d unconfirmed' % year
+            name = '%d maybes' % year
+            legend_names.append(name)
+
+        if line_ideal:
+            legend_lines.append(line_ideal[0])
+            name = 'Target: 1 event/week'
             legend_names.append(name)
 
 
@@ -837,7 +1060,7 @@ class GIG_plot():
         #print(event_idx)
         #print(new_songs)
 
-        plot_percentage_change = False
+        plot_percentage_change = True
         #plot_percentage_change = len(unique_songs) > 78
         if plot_percentage_change:
             percentage_change = []
@@ -846,7 +1069,11 @@ class GIG_plot():
             for songs, event in zip(event_songs, events):
                 if prev_songs:
                     n_common = len( set(songs) & set(prev_songs) )
-                    percentage = 100 * (len(songs) - n_common) / len(songs)
+                    try:
+                        percentage = 100 * (len(songs) - n_common) / len(songs)
+                    except ZeroDivisionError:
+                        print(f"Zero songs for gig: {event.date} ({artist})")
+                        percentage = 100
                     percentage_change.append(percentage)
                     percentage_change_dates.append(event.date)
                 prev_songs = songs
@@ -862,6 +1089,8 @@ class GIG_plot():
         line1 = plt.plot(dates,new_songs)
         dots1 = plt.plot(dates,new_songs,color=self.colour2,marker='o',ls='',markeredgewidth=1,markeredgecolor=self.colour1)
         dots2 = plt.plot(support_dates,support_new_songs,color=self.colour1,marker='o',ls='')
+
+        #plt.xlim([dates[0].year, dates[-1].year])
 
         legend_lines = [ line1[0] ]
         legend_text = [ "Unique song count: " + artist ]
@@ -889,6 +1118,89 @@ class GIG_plot():
         else:
             plt.show(block=False)
             plt.show()
+    def artist_song_histogram(self,artist,events,unique_songs,dest=None):
+        frequency = {}
+
+        for song in unique_songs:
+            total = len(song['events'])
+            if total in frequency:
+                frequency[total] += 1
+            else:
+                frequency[total] = 1
+
+        numbers = list(range(1,max(frequency.keys())+1))
+
+        totals = []
+        for number in numbers:
+            if number in frequency:
+                totals.append(frequency[number])
+            else:
+                totals.append(0)
+
+        fig, ax = plt.subplots()
+        ax.set_axisbelow(True)
+
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    
+        bar1 = ax.bar( numbers, totals, align='center', color=self.colour1 )
+
+        plt.legend( (bar1[0],), ('Song frequency distribution',))
+        plt.xlim(0,numbers[-1]+1)
+
+        plt.grid(b=True, which='both')
+
+        if dest:
+            plt.tight_layout()
+            fig.set_size_inches(*self.graph_size)
+            fig.savefig( dest)
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
+    def artist_songs_per_event(self,artist,events,unique_songs,dest=None):
+        # plots the evolution of the songs/event ratio
+        dates = []
+        songs_per_event = []
+        current_songs = []
+
+        artist_events = []
+
+        for song in unique_songs:
+            artist_events += song['events']
+
+        artist_events = list(set(artist_events))
+        artist_events.sort(key=lambda e: e.date)
+
+        for i, event in enumerate(artist_events):
+            for song in unique_songs:
+                if event in song['events']:
+                    current_songs.append(song['title'])
+
+            current_songs = list(set(current_songs))
+
+            songs_per_event.append( len(current_songs) / (i+1) )
+            dates.append(event.date)
+
+        fig, ax = plt.subplots()
+        ax.set_axisbelow(True)
+
+        line1 = plt.plot(dates, songs_per_event, color=self.colour1)
+
+        # plt.legend( (bar1[0],), ('Song frequency distribution',))
+        # plt.xlim(0,numbers[-1]+1)
+
+        plt.grid(b=True, which='both')
+
+        if dest:
+            plt.tight_layout()
+            fig.set_size_inches(*self.graph_size)
+            fig.savefig( dest)
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
+
     def song_freq_dist(self,unique_songs,dest=None):
         counts = [ len(s['events']) for s in unique_songs ]
         max_count = max(counts)
@@ -911,7 +1223,7 @@ class GIG_plot():
 
         plt.legend( (bar1[0],), ('Freq dist',), loc='upper right' )
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
-        fig.canvas.set_window_title("Figure %d" % self.n_graphs)
+        fig.canvas.manager.set_window_title("Figure %d" % self.n_graphs)
 
         if dest:
             plt.tight_layout()
@@ -1015,6 +1327,8 @@ class GIG_plot():
         totals_future = []
         dates = []
         totals = []
+        bob_totals = []
+        bob_dates = []
 
         for gig in gigs:
             if gig.future:
@@ -1029,6 +1343,10 @@ class GIG_plot():
                     totals.append(1)
                 else:
                     totals.append( totals[-1] + 1 )
+
+                if "Bob Dylan" in gig.get_artists():
+                    bob_totals.append(totals[-1])
+                    bob_dates.append(gig.date)
 
         dates_future.insert( 0, dates[-1] )
         totals_future.insert( 0, 0 )
@@ -1049,6 +1367,8 @@ class GIG_plot():
         line1 = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
         line2 = plt.plot(dates_future,totals_future,color=self.colour1,ls='--')
         dots1 = plt.plot(dates,totals,color=self.colour2,marker='o',ls='',\
+                         markeredgewidth=1,markeredgecolor=self.colour1)
+        dots2 = plt.plot(bob_dates,bob_totals,color=self.colour4,marker='o',ls='',\
                          markeredgewidth=1,markeredgecolor=self.colour1)
 
         plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
@@ -1151,7 +1471,7 @@ class GIG_plot():
 
             fig, ax = plt.subplots()
             ax.set_axisbelow(True)
-            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+            #ax.yaxis.set_major_locator(MaxNLocator(integer=True))
             bar0 = ax.bar(graph_ages, graph_freq_all, width=1, align='center', \
                           color=self.colour1, edgecolor="black")
             bar1 = ax.bar(graph_ages, graph_freq_head, width=1, align='center', \
@@ -1166,7 +1486,7 @@ class GIG_plot():
 
             plt.legend( (bar0[0],bar1[0],bar2[0]), \
                         ('Ages', 'of headliners', 'of Dylan'), \
-                        loc='upper left', ncol=3, fontsize="small")
+                        loc='upper right', ncol=1, fontsize="small")
 
             if dest_ages:
                 plt.tight_layout()
@@ -1194,15 +1514,18 @@ class GIG_plot():
                 bar4 = plt.bar(years, n_female_h, align='center', color=self.colour1, edgecolor='black')
                 #plt.ylim(bottom=-65, top=65)
             else:
-                bar1 = plt.bar(years, n_male_h, align='center', color=self.colour1, edgecolor='black')
-                bar2 = plt.bar(years, n_female_h, align='center', color=self.colour2, edgecolor='black')
+                offset = 0.2
+                years_dec = [ y - offset for y in years ]
+                years_inc = [ y + offset for y in years ]
+                bar_m = plt.bar(years_dec, n_male_h,   width=0.4, align='center', color=self.colour1, edgecolor='black')
+                bar_f = plt.bar(years_inc, n_female_h, width=0.4, align='center', color=self.colour2, edgecolor='black')
                 plt.ylim(bottom=0)
 
             plt.xticks(years,[str(xx)[2:] for xx in years])
-            plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+            plt.grid(b=True, axis='y', which='both') #, color='0.65',linestyle='-')
 
             plt.xlim([years[0]-1, years[-1]+1])
-            plt.legend( (bar1[0],bar2[0]), \
+            plt.legend( (bar_m[0],bar_f[0]), \
                         ('Male headliners', 'Female headliners'), \
                         loc='upper left' )
 
@@ -1214,4 +1537,193 @@ class GIG_plot():
             else:
                 plt.show(block=False)
                 plt.show()
+
+    def distance_from_previous(self,dest):
+        # plot distance from previous
+        vdata = self.gig_data.get_venue_data()
+        #print(vdata)
+
+        dates = []
+        distances = []
+        prev_coords = None
+        units = "miles"
+
+        extreme_nsew = [None, None, None, None]
+        extreme_gigs = [None, None, None, None]
+
+        missing_venue_coords = []
+
+        annotations = []
+
+        n_gigs = 0
+
+        for gig in self.gig_data.gigs:
+            if gig.future: continue
+            n_gigs += 1
+
+            try:
+                coordinates = vdata[gig.venue]["coordinates"]
+            except KeyError:
+                missing_venue_coords.append(gig.venue)
+                continue
+
+            #print(coordinates)
+
+            if prev_coords:
+                distance = self.haversine(coordinates, prev_coords, units)
+                #print("Distance from previous: %.2f %s" % (distance, units))
+                distances.append(distance)
+                dates.append(gig.date)
+
+                if distance > 200:
+                    if gig.country != "UK" or gig.city in ( "Edinburgh", "Belfast" ):
+                        print(f"Annotate: {gig.city} {gig.date.year}")
+                        annotation = { "city": gig.city,
+                                       "date": gig.date,
+                                       "distance": distance
+                                      }
+                        annotations.append(annotation)
+
+            if not extreme_nsew[0] or coordinates[0] > extreme_nsew[0]:
+                extreme_nsew[0] = coordinates[0]
+                extreme_gigs[0] = gig
+
+            if not extreme_nsew[1] or coordinates[0] < extreme_nsew[1]:
+                extreme_nsew[1] = coordinates[0]
+                extreme_gigs[1] = gig
+
+            if not extreme_nsew[2] or coordinates[1] > extreme_nsew[2]:
+                extreme_nsew[2] = coordinates[1]
+                extreme_gigs[2] = gig
+
+            if not extreme_nsew[3] or coordinates[1] < extreme_nsew[3]:
+                extreme_nsew[3] = coordinates[1]
+                extreme_gigs[3] = gig
+
+            prev_coords = coordinates
+
+        if missing_venue_coords:
+            msg = f"Missing coordinates for {len(missing_venue_coords)} venues:"
+            msg += ",".join(missing_venue_coords)
+            raise msg
+
+        print("Furthest North (Latitude %.2f):  %s" % (extreme_nsew[0], extreme_gigs[0].venue))
+        print("Furthest South (Latitude %.2f):  %s" % (extreme_nsew[1], extreme_gigs[1].venue))
+        print("Furthest East  (Longitude %.2f): %s" % (extreme_nsew[2], extreme_gigs[2].venue))
+        print("Furthest West  (Longitude %.2f): %s" % (extreme_nsew[3], extreme_gigs[3].venue))
+        print()
+
+        total_distance = sum(distances)
+
+        if units == "km":
+            equators = total_distance / 40075
+        elif units in ("mi", "miles"):
+            equators = total_distance / 24901
+        else:
+            raise Exception("Invalid unit: " + units)
+
+        print("Total distance travelled: %.2f %s = %.2f equators" % (total_distance, units, equators))
+        average = total_distance / n_gigs
+
+        text = f"Total distance travelled for {n_gigs} events:" \
+               + f"\n= {total_distance:.2f} {units}" \
+               + f"\n= {equators:.2f} earth circumferences" \
+               + f"\n= {average:.2f} {units} per event"
+
+        y_label = f"Geodesic distance from previous ({units})"
+
+        self.plot_by_year(dates, distances, y_label, dest, text, annotations)
+    def haversine(self, latlong1, latlong2, units="km"):
+        # return great circle distance in kilometers between two points 
+        import math
+
+        # convert decimal degrees to radians 
+        lon1, lat1, lon2, lat2 = map(math.radians,# [lon1, lat1, lon2, lat2])
+                                     [ latlong1[1], latlong1[0], latlong2[1], latlong2[0] ] )
+
+        # haversine formula 
+        dlon = lon2 - lon1 
+        dlat = lat2 - lat1 
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a)) 
+
+        if units == "km":
+            radius = 6371
+        elif units in ("mi", "miles"):
+            radius = 3956
+        else:
+            raise Exception("Invalid unit: " + units)
+
+        return c * radius
+    def plot_by_year(self, dates, values, ylabel, dest, text_box=None, annotations={}):
+        fig, ax = plt.subplots()
+
+        artist_line1 = plt.plot(dates,values) #,linewidth=2.0)
+
+        if text_box:
+            box_props = dict(boxstyle='round', facecolor='wheat', alpha=1.0)
+            ax.text(0.05, 0.95, text_box, transform=ax.transAxes, fontsize=14,
+                    verticalalignment='top', bbox=box_props)
+
+        for a in annotations:
+            a_city = a["city"]
+            a_date = a["date"]
+            a_distance = a["distance"]
+            #label = f"{a_city} {a_date.year}"
+            label = a_city
+            coords = ( a_date, a_distance )
+            label_coords = ( 0, 25 ) # offset pixels
+            align = "center"
+
+            if a_city == "New York":
+                label_coords = ( -40, -10 ) # offset pixels
+
+            if a_city == "Bergamo":
+                label_coords = ( 0, 50 )
+
+            if a_city == "Kilkenny" or a_city == "Paris":
+                label_coords = ( 20, 30 )
+
+            if a_city == "Edinburgh" and a_date.year == 2008:
+                align = "left"
+
+            if a_city == "Edinburgh" and a_date.year == 2023:
+                align = "right"
+
+
+            ax.annotate( label, xy=coords, xycoords='data',
+                    xytext=label_coords, textcoords='offset pixels',
+                    #arrowprops=dict(facecolor='black', shrink=0.05),
+                    horizontalalignment=align, verticalalignment='top')
+
+        plt.ylabel(ylabel)
+
+        import matplotlib.dates as mdate
+
+        years = [ d.year for d in dates ]
+        years = list(set(years))
+        years.append( years[-1] + 1 )
+        years.sort()
+        xlabels = [ str(y)[2:] for y in years ]
+        years = [ date(y, 1, 1) for y in years ]
+        plt.xticks( years, xlabels )
+
+        plt.grid(b=True, which='both') #, color='0.65',linestyle='-')
+        plt.xlim([ years[0], years[-1] ])
+        plt.ylim( bottom=-50, top=3500 )
+
+        ax.fill_between(dates, 0, values)
+
+        #graph_size = (13, 6) # not the usual graph size
+        graph_size = self.graph_size
+        graph_size = ( 3*graph_size[0], 1.5*graph_size[1] ) # double the x-range
+
+        if dest:
+            plt.tight_layout()
+            fig.set_size_inches(*graph_size)
+            fig.savefig(dest, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.show()
 
