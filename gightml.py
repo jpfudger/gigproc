@@ -1118,9 +1118,19 @@ class GIG_html():
 
                 if len(c) > 3:
                     plot_fname = 'html/img/' + afname + '.png'
+                    #hist_fname = 'html/img/' + afname + '_hist.png'
+                    #plot_perc_fname = 'html/img/' + afname + '_perc.png'
+
                     if self.plotter:
                         self.plotter.song_breakdown(a,events,unique_songs,plot_fname)
+                        #self.plotter.artist_song_histogram(a,events,unique_songs,hist_fname)
+                        #self.plotter.artist_songs_per_event(a,events,unique_songs,plot_perc_fname)
+
                     breakdown += '\n<br>\n<img class=png src="img/' + afname + '.png"><br>\n'
+                    breakdown += '<br>'
+                    #breakdown += '\n<br>\n<img class=png src="img/' + afname + '_hist.png"><br>\n'
+                    #breakdown += '\n<br>\n<img class=png src="img/' + afname + '_perc.png"><br>\n'
+
                     #plot_fname2 = 'html/img/' + afname + '_fd.png'
                     #if self.plotter:
                         #self.plotter.song_freq_dist(unique_songs,plot_fname2)
@@ -1128,8 +1138,37 @@ class GIG_html():
                 # else:
                 #     breakdown += '\n<br> \n' + '='*50
 
-                breakdown += '<br><br>Breakdown of %d songs across %d events (%.2f songs/event):<br>' \
-                                % ( len(unique_songs), len(c), len(unique_songs) / float(len(c)) )
+                artist_venues = []
+                n_artist_headlines = 0
+                artist_cities = []
+                artist_countries = []
+                days_of_week = [0] * 7 # Monday = 0
+
+                for gig in c:
+                    artist_venues.append(gig.venue)
+                    artist_cities.append(gig.city)
+                    artist_countries.append(gig.country)
+                    days_of_week[ gig.date.weekday() ] += 1
+                    if gig.get_artists()[0] == a:
+                        n_artist_headlines += 1
+
+                n_venues = len(set(artist_venues)) 
+                n_cities = len(set(artist_cities))
+                n_countries = len(set(artist_countries))
+                song_per_event = len(unique_songs) / float(len(c))
+
+                dow = "M%d T%d W%d T%d F%d S%d S%d" % \
+                ( days_of_week[0], days_of_week[1], days_of_week[2], days_of_week[3], 
+                  days_of_week[4], days_of_week[5], days_of_week[6], )
+
+                breakdown += "<ul>"
+                breakdown += f"<li>{len(c)} events ({n_artist_headlines} as headliner)"
+                breakdown += f"<li>{n_venues} venues"
+                breakdown += f"<li>{n_cities} cities"
+                breakdown += f"<li>{n_countries} countries"
+                breakdown += f"<li>{dow}"
+                breakdown += f"<li>{len(unique_songs)} songs ({song_per_event:.2f} songs/event)"
+                breakdown += f"</ul>"
 
                 breakdown += '\n<table class=nowrap>'
                 breakdown += '\n<br>'
@@ -1252,9 +1291,6 @@ class GIG_html():
                 vcapacity = vdata[v]["capacity"]
 
             v_name = v 
-            # Add capacity to top of list of gigs at venue:
-            #if vcapacity:
-                #v_name += " (%s)" % vcapacity
 
             all_vgigs = self.gig_data.all_gigs_of_venue(v,True) # need to include future gigs here!
             venue_string = self.build_gigs_string( all_vgigs, None, vfname, v_name )
@@ -1294,20 +1330,26 @@ class GIG_html():
                 max_gigs_in_year = max(gigs_in_year.values())
                 max_years = [ y for y in gigs_in_year if gigs_in_year[y] == max_gigs_in_year]
                 max_years_str = ",".join([ str(y) for y in sorted(max_years) ])
+
+                # To do: add capacity
+                # Add link to google maps:
+                # https://www.google.com/maps?q=latitude,longitude
     
                 stats_string = "<br>"
-                stats_string += "<br>Unique headliners: %d" % len(list(set(venue_headliners)))
-                stats_string += "<br>Unique artists: %d" % len(list(set(venue_artists)))
-                stats_string += "<br>"
-                stats_string += "<br>Mon: %d" % days_of_week[0]
-                stats_string += "<br>Tue: %d" % days_of_week[1]
-                stats_string += "<br>Wed: %d" % days_of_week[2]
-                stats_string += "<br>Thu: %d" % days_of_week[3]
-                stats_string += "<br>Fri: %d" % days_of_week[4]
-                stats_string += "<br>Sat: %d" % days_of_week[5]
-                stats_string += "<br>Sun: %d" % days_of_week[6]
-                stats_string += "<br>"
-                stats_string += "<br>Max gigs in year: %d (%s)" % (max_gigs_in_year, max_years_str)
+                stats_string += "<ul>"
+                if vcapacity:
+                    stats_string += f"<li>Capacity: {vcapacity:,}"
+                if map_link:
+                    stats_string += f"<li>Coordinates: {map_link}"
+                stats_string += "<br><br>"
+                stats_string += f"<li>{len(c)} events"
+                stats_string += f"<li>{len(list(set(venue_headliners)))} headliners"
+                stats_string += f"<li>{len(list(set(venue_artists)))} artists"
+                stats_string += f"<li>Most gigs in a year: {max_gigs_in_year} ({max_years_str})"
+                stats_string += "<li>M%d T%d W%d T%d F%d S%d S%d" % \
+                ( days_of_week[0], days_of_week[1], days_of_week[2], days_of_week[3], 
+                  days_of_week[4], days_of_week[5], days_of_week[6], )
+                stats_string += "</ul>"
 
                 venue_info_string += stats_string
 
@@ -1322,9 +1364,12 @@ class GIG_html():
                 setlist_string = self.gig_setlist_string( gig, True, c, suffix)
                 self.make_file( link, years_string_v, venue_string_h, setlist_string, gig.img )
 
-            hover = ""
+            hover_text = ""
             if vcapacity:
-                hover = 'title="Capacity: %s"' % vcapacity
+                hover_text += "Capacity: %s" % vcapacity
+            # if map_link:
+            #     hover_text += "&#10; <a href=%s>Google Maps Link</a>" % map_link
+            hover = "title=\"%s\"" % hover_text
 
             link = '<a href=' + vfname + '.html>' + v + '</a>'
             link = '<a href=%s.html %s>%s</a>' % (vfname, hover, v)
@@ -1356,10 +1401,39 @@ class GIG_html():
             counter += 1
             cfname = 'c' + str(counter).zfill(3)
 
-            unique_venues_for_city = []
+            unique_venues_for_city = set()
+            unique_artists_for_city = set()
+            unique_headliners_for_city = set()
+            days_of_week = [0] * 7 # Monday = 0
+
+            gigs_in_year = {}
+            dow_string = None
+            max_gigs_in_year = None
+        
             for g in gigs_past:
-                if g.venue not in unique_venues_for_city:
-                    unique_venues_for_city.append(g.venue)
+                unique_venues_for_city.add(g.venue)
+                days_of_week[ g.date.weekday() ] += 1
+                for i, a in enumerate(g.get_artists()):
+                    if i == 0:
+                        unique_headliners_for_city.add(a)
+                    unique_artists_for_city.add(a)
+                if not g.date.year in gigs_in_year:
+                    gigs_in_year[g.date.year] = 0
+                gigs_in_year[g.date.year] += 1
+
+            if gigs_in_year:
+                max_gigs_in_year = max(gigs_in_year.values())
+                max_years = [ y for y in gigs_in_year if gigs_in_year[y] == max_gigs_in_year]
+                max_years_str = ",".join([ str(y) for y in sorted(max_years) ])
+
+                dow_string = "M%d " % days_of_week[0] \
+                           + "T%d " % days_of_week[1] \
+                           + "W%d " % days_of_week[2] \
+                           + "T%d " % days_of_week[3] \
+                           + "F%d " % days_of_week[4] \
+                           + "S%d " % days_of_week[5] \
+                           + "S%d" % days_of_week[6]
+
             title = "\"%d venues\"" % len(unique_venues_for_city)
 
             clink = '<a href=' + cfname + '.html title=' + title + '>' + city + '</a>' 
@@ -1367,6 +1441,17 @@ class GIG_html():
             all_cgigs = gigs_past + gigs_future;
 
             city_string = self.build_gigs_string( all_cgigs, None, cfname, city )
+
+            city_stats = '\n<ul>'
+            city_stats += f"\n<li> Total gigs: {len(gigs_past)}"
+            city_stats += f"\n<li> Headliners: {len(unique_headliners_for_city)}"
+            city_stats += f"\n<li> Artists: {len(unique_artists_for_city)}"
+            city_stats += f"\n<li> Venues: {len(unique_venues_for_city)}"
+            if max_gigs_in_year:
+                city_stats += f"\n<li> Most gigs in a year: {max_gigs_in_year} ({max_years_str})"
+            if dow_string:
+                city_stats += f"\n<li> {dow_string}" 
+            city_stats += '\n</ul>'
 
             cplot_link = ''
             # Plot city growth
@@ -1376,7 +1461,7 @@ class GIG_html():
             #         self.plotter.general_plot(gigs_past+gigs_future,plot_fname,"City growth: " + city)
             #     cplot_link = '<img src="img/%s.png">' % cfname
 
-            self.make_file( cfname, years_string_v, city_string, cplot_link )
+            self.make_file( cfname, years_string_v, city_string, city_stats )
 
             for gig in all_cgigs:
                 suffix = '_' + cfname
