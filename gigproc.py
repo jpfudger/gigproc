@@ -1575,6 +1575,7 @@ class GIG_gig():
         # a gig was added retrospectively (thus incrementing all subsequent gig indices).
         self.img     = 'img/' + date.strftime('%Y_%m_%d') + '.gif'
         self.artists = None # cached
+        self.artists_main = None # cached
     def __str__(self):
         # print formatter
         string = ""
