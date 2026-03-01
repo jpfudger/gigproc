@@ -194,6 +194,11 @@ class GIG_data():
             this_set.notes.append(text)
             return
 
+        m_with = re.search(r"@With\[(.*)\]", line)
+        if m_with:
+            this_set.friends += m_with.group(1).split(",")
+            return
+
         splits = line.split('---')
         title = splits[0]
         title = re.sub( r"\s*---.*$", '', title)
@@ -231,12 +236,12 @@ class GIG_data():
                                 self.ignore_band_artists[b] = True
                         else:
                             this_set.band.append(b)
-                if '@' in splits[1]:
-                    path = line.split('@')[1].strip()
-                    path = r'/home/jpf/Music/' + path
-                    this_set.playlist = path
-                    if not os.path.exists(path):
-                        print(path)
+                # if '@' in splits[1]:
+                #     path = line.split('@')[1].strip()
+                #     path = r'/home/jpf/Music/' + path
+                #     this_set.playlist = path
+                #     if not os.path.exists(path):
+                #         print(path)
         else:
             # process song flags and append
             if re.match( r'\?+', title ):
@@ -254,7 +259,7 @@ class GIG_data():
                 # song flags:
                 if '{' in splits[1]:
                     #song.guests += re.findall( '{([0-9A-Za-z- ]+)}', splits[1])
-                    for guest in re.findall( '{([0-9A-Za-z- ]+)}', splits[1]):
+                    for guest in re.findall( '{([^}]+)}', splits[1]):
                         if guest[0] == '-':
                             song.missing.append(guest[1:])
                         else:
@@ -401,6 +406,7 @@ class GIG_data():
         com_level = -1
         last_blank = False
         cdata = self.get_city_data()
+        this_gig = None
         with open(path) as f:
             lines = f.read().splitlines()
         for line in lines:
@@ -461,6 +467,12 @@ class GIG_data():
             elif level == 2 and not commented:
                 self.process_song_line(line,this_set,last_blank)
                 last_blank = False
+            elif level == 1 and this_gig:
+                mnote = re.match(r'^--- @Note\[(.*)\]', line)
+                if mnote:
+                    #print(f"Appending note ({mnote.group(1)}) to gig on {this_gig.date.date()}")
+                    this_gig.notes.append(mnote.group(1))
+
     def build_gig_data(self):
         for f in glob.glob(self.root + '/*.gigs'):
             self.get_data_from_file(f)
@@ -1756,6 +1768,7 @@ class GIG_set():
         self.playlist   = ''
         self.artisttimes = 0
         self.notes = []
+        self.friends = []
     def append_song(self, song):
         self.songs.append(song)
         song.set = self
