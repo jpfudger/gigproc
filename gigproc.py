@@ -694,6 +694,11 @@ class GIG_data():
         
         vengigs.sort(key=lambda x: x.index)
         return vengigs
+    def first_time_on_date(self, date):
+        for gig in self.gigs:
+            if date.day == gig.date.day and date.month == gig.date.month:
+                return gig.date.year >= date.year
+        return False
     def generate_unique_artists(self,inc_future=False):
         artists = []
         artgigs = []
@@ -1101,6 +1106,34 @@ class GIG_data():
             print()
 
         return longest_gap, longest_gap_venues, longest_gap_events
+
+    def smallest_venues(self, shell=False):
+        gigs = self.get_past_gigs()[:]
+        data = self.get_venue_data()
+
+        capacities = {}
+
+        for g in gigs:
+            if g.venue in data:
+                cap = data[g.venue]["capacity"]
+
+                if cap == 0:
+                    continue
+
+                if cap not in capacities:
+                    capacities[cap] = []
+
+                capacities[cap].append(g)
+
+        if shell:
+            cap_keys = list(capacities.keys())
+            cap_keys.sort()
+
+            for c in cap_keys:
+                print(c)
+                for g in capacities[c]:
+                    print("    " + g.stub())
+
     def relative_progress(self):
         year = datetime.today().year
         yday = datetime.today().timetuple().tm_yday
@@ -1639,13 +1672,27 @@ class GIG_gig():
             this_set = GIG_set([bb])
             this_set.band_only = True
             self.sets.append(this_set)
-    def get_artists(self):
-        if not self.artists:
-            self.artists = []
-            for s in self.sets:
-                if not s.artists[0].name in self.artists:
-                    self.artists.append(s.artists[0].name)
-        return self.artists
+    def get_artists(self, ignore_band_and_guests=False):
+        if ignore_band_and_guests:
+            if not self.artists_main:
+                self.artists_main = []
+                for s in self.sets:
+                    if ignore_band_and_guests and (s.band_only or s.guest_only):
+                        continue
+                    if not s.artists[0].name in self.artists_main:
+                        self.artists_main.append(s.artists[0].name)
+            return self.artists_main
+
+        else:
+            if not self.artists:
+                self.artists = []
+                for s in self.sets:
+                    if not s.artists[0].name in self.artists:
+                        self.artists.append(s.artists[0].name)
+            return self.artists
+    def headliner(self):
+        artists = self.get_artists()
+        return artists[0]
     def stub(self):
         # short printer
         headliner = self.sets[0].artists[0].name
