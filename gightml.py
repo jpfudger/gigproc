@@ -1300,7 +1300,8 @@ class GIG_html():
             if len(c) > 3:
                 plot_fname = 'html/img/' + vfname + '.png'
                 if self.plotter:
-                    self.plotter.general_plot(c, plot_fname, v)
+                    #self.plotter.general_plot(c, plot_fname, v)
+                    self.plotter.general_plot(all_vgigs, plot_fname, v)
                 vplot_link = '<img src="img/%s.png">' % vfname
 
             venue_info_string = vplot_link
@@ -1580,10 +1581,13 @@ class GIG_html():
             self.plotter.age_range_by_year('html/img/plot_age_range_by_year.png')
             self.plotter.events_by_day_and_month('html/img/plot_events_by_day_and_month.png')
             self.plotter.top_venues(10,'html/img/plot_top_venues.png')
-            #self.plotter.top_artists(10,'html/img/plot_top_artists.png')
+            self.plotter.top_artists(10,'html/img/plot_top_artists.png')
 
             self.plotter.h_index('html/img/plot_h_index.png')
+            self.plotter.big_cities_by_year('html/img/plot_big_cities.png')
+            self.plotter.percentage_new_artists_by_year('html/img/plot_perc_new_artists.png')
             #self.plotter.freq_dist('html/img/plot_freq_dist.png')
+            self.plotter.distance_from_previous('html/img/plot_distance_from_previous.png')
 
         graphs.append('img/plot_events_by_year.png')
         graphs.append('img/plot_artists_by_year.png')
@@ -1592,6 +1596,16 @@ class GIG_html():
         graphs.append('img/plot_cumulative_events.png')
         graphs.append('img/plot_age_range_by_year.png')
         graphs.append('img/plot_age_distribution.png')
+
+        graphs.append('img/plot_events_by_day_and_month.png')
+        graphs.append('img/plot_genders.png')
+        graphs.append('img/plot_perc_new_artists.png')
+
+        graphs.append('img/plot_top_venues.png')
+        graphs.append('img/plot_top_artists.png')
+        graphs.append('img/plot_big_cities.png')
+
+        graphs.append('img/plot_distance_from_previous.png')
 
         divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_events_by_year.png></div>')
         divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_artists_by_year.png></div>')
@@ -1606,7 +1620,11 @@ class GIG_html():
         divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_h_index.png></div>')
         
         divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_top_venues.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_top_artists.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_big_cities.png></div>')
         #divs.append('<div class=graph-frame onlick=hide_all_graphs();><img id=popup src=img/plot_freq_dist.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_perc_new_artists.png></div>')
+        divs.append('<div class=graph-frame onclick=hide_all_graphs();><img id=popup src=img/plot_distance_from_previous.png></div>')
 
         string = ''
 
@@ -1620,6 +1638,8 @@ class GIG_html():
             #width = 24 if i >= 6 else 32
             width = 32
             count += 1
+            if "distance_from_previous" in graph:
+                width *= 2
             string += '<img onclick=show_image("%s"); src="%s" style="width:%d%%;"><nbsp>' % (graph, graph, width)
             #if count % 2 == 0:
                 #string += '<br>'
