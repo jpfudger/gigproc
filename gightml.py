@@ -83,6 +83,8 @@ class GIG_html():
     def make_flag_note(self, ftype, force_title = None, sup = None ):
         if ftype == 'solo':
             return '<div class=flag title="Solo performance">&sect;</div>'
+        if ftype == 'notsolo':
+            return '<div class=flag title="Non-solo performance"><s>&sect;</s></div>'
         elif ftype == 'improv':
             return '<div class=flag title="Improvisation">&#8225;</div>' # double dagger
         elif ftype == 'debut':
