@@ -10,7 +10,7 @@ class GIG_html():
     def __init__(self, gig_data, head, playlists=False, plots=True):
         self.gig_data = gig_data
         self.head = head
-        self.time = time.clock()
+        self.time = time.perf_counter()
         self.plotter = None
         if plots:
             self.plotter = GIG_plot(gig_data)
@@ -36,7 +36,7 @@ class GIG_html():
             gig_data.fill_in_playlist_links()
         self.generate_html_files()
 
-        self.time = time.clock() - self.time
+        self.time = time.perf_counter() - self.time
         print("Generated html/plots in %.2f seconds" % self.time)
 
     # HTML Generation
@@ -252,6 +252,8 @@ class GIG_html():
                 fn = self.make_flag_note( 'guest', "Guested in another set", asup ) 
                 setlist_string += '\n<br> ' + alink + ' ' + fn
 
+            setlist_string += playlist_link
+
             if g.notes:
                 #note_flag = "<div class=flag title=\"%s\">&cong;</div>;" % "\n".join(g.notes)
                 #setlist_string += note_flag
@@ -263,6 +265,7 @@ class GIG_html():
             band_string = ''
             if g.band:
                 band = list(set(g.band[:]))
+                band.sort()
                 band_links = []
                 for b in band:
                     g_acount = self.gig_data.gig_artist_times(gig,b)
@@ -769,10 +772,11 @@ class GIG_html():
         return string
     def build_gigs_string(self,gigs,y=None,link_suffix=None,file_title=None,force_artist=None,match_id=0):
         gigs_string = "<br>"
-        if file_title:
-            gigs_string += file_title + ': <br> <br>'
+        #if file_title:
+            #gigs_string += file_title + ': <br> <br>'
         gigs_string += '\n<table>'
         i = 0
+
         for gig in gigs:
             if y == None or gig.date.year == y:
                 i += 1
@@ -1288,8 +1292,13 @@ class GIG_html():
             counter += 1
             vfname = 'v' + str(counter).zfill(3)
             vcapacity = None
-            if v in vdata and vdata[v]["capacity"] > 0:
-                vcapacity = vdata[v]["capacity"]
+            map_link = None
+            if v in vdata:
+                if vdata[v]["capacity"] > 0:
+                    vcapacity = vdata[v]["capacity"]
+                coords = vdata[v]["coordinates"]
+                map_url = "http://www.google.com/maps?q=%f,%f" % coords
+                map_link = "<a href=%s>%f,%f</a>" % ( map_url, coords[0], coords[1] )
 
             v_name = v 
 
@@ -1780,7 +1789,7 @@ class GIG_html():
                 plot_string += '<img class=yearplot src="%s">' % year_plot_path
 
             # Set the index page to the date of the next future gig:
-            if y == self.gig_data.first_unseen().date.year:
+            if y == datetime.now().year: # self.gig_data.first_unseen().date.year:
                 index_string = gigs_string
                 years_string_i = years_string_h
                 plot_string_i = plot_string
