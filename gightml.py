@@ -855,7 +855,8 @@ class GIG_html():
                     if gig.country != "UK":
                         venue_str = "&lt;" + gig.country + "&gt; " + venue_str
                     
-                    _acount = self.gig_data.gig_artist_times(gig, gig.sets[0].artists[0].name)
+                    _artist = force_artist if force_artist else gig.sets[0].artists[0].name
+                    _acount = self.gig_data.gig_artist_times(gig, _artist)
                     if _acount[0] == 0:
                         name_str += ' ' + self.make_flag_note("first_time")
                     else:
