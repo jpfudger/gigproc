@@ -1,10 +1,247 @@
 import os
 import time
+import networkx as nx
 from datetime import datetime  
 from gigproc.gigplot import GIG_plot
 
 def convert_unicode_to_html(string):
     return string.encode('ascii', 'xmlcharrefreplace').decode('ascii')
+
+class SupportChain:
+    def __init__(self, gig_data):
+        self.all_artists = set()
+        self.edge_event_map = {}
+        self.graph = nx.MultiDiGraph()
+        self.only_consider_immediate_support = True
+        print("Only consider immediate support?", self.only_consider_immediate_support)
+
+        self.populate(gig_data)
+
+    def populate(self, gig_data):
+        headliners = {}
+
+        for g in gig_data.gigs:
+            headliner = g.headliner()
+            support = []
+
+            only_consider_immediate_support = True
+
+
+            if only_consider_immediate_support:
+                for s in g.sets[1:]:
+                    if s.band_only or s.guest_only:
+                        continue
+                    support.append(s.artists[0].name)
+                    if self.only_consider_immediate_support:
+                        break
+
+            if not support: continue
+
+            # if headliner == "Bonny Light Horseman":
+            #     print(f"{headliner}: {support}")
+
+            for a in (support + [headliner]):
+                self.all_artists.add(a)
+
+            if headliner not in headliners:
+                headliners[headliner] = {}
+
+            for s in support:
+                if s not in headliners[headliner]:
+                    headliners[headliner][s] = []
+                headliners[headliner][s].append(g)
+
+        print(f"Found {len(gig_data.gigs)} events")
+        print(f"Made {len(headliners)} artist nodes")
+
+        for a in self.all_artists:
+            self.graph.add_node(a)
+
+        n_edges = 0
+
+        for h, data in headliners.items():
+            #print(f"{h:32} : {','.join(data.keys())}")
+            for s, gigs in data.items():
+                for g in gigs:
+                    n_edges += 1
+                    self.graph.add_edge(s, h)
+                    edge_tuple = (s,h)
+                    if edge_tuple not in self.edge_event_map:
+                        self.edge_event_map[edge_tuple] = []
+                    self.edge_event_map[edge_tuple].append(g)
+
+        print(f"Made {n_edges} support edges between nodes")
+
+    @staticmethod
+    def is_sublist(a, b):
+        seq = iter(b)
+        is_sub = all(i in seq for i in a)
+        #if is_sub:
+            #print(f"is subset:\n    {a}\n    {b}")
+        return is_sub
+
+    def find_paths(self, remove_duplicate_paths=True):
+        all_paths = []
+
+        for a1 in self.all_artists:
+            for a2 in self.all_artists:
+                if a1 == a2: continue
+
+                for path in nx.all_simple_paths(self.graph, a1, a2):
+                    all_paths.append(path)
+
+        #for (x,y) in itertools.combinations(DAG.nodes,2):
+             #for path in nx.all_simple_paths(DAG,x,y):
+                 #all_paths.append(path)
+
+        print(f"{len(all_paths)} paths")
+
+        if remove_duplicate_paths:
+            all_paths = [list(x) for x in dict.fromkeys(map(tuple, all_paths))]
+            print(f"{len(all_paths)} unique paths")
+
+        return all_paths
+
+    def group_paths_by_length(self, paths, extra=0, remove_subpaths=True):
+        path_lists_by_length = {}
+
+        longest_path = max(len(p) for p in paths)
+        print(f"Longest chain of support acts: {longest_path}")
+        shortest_path_to_show = longest_path-extra
+
+        paths.sort(key=len,reverse=True)
+        for i, p in enumerate(paths):
+            if len(p) < shortest_path_to_show: 
+                continue
+
+            if remove_subpaths:
+                is_subpath = False
+                for lp in paths[:i]:
+                    if self.is_sublist(p, lp):
+                        is_subpath = True
+                        break
+
+                if is_subpath:
+                    continue
+
+            if len(p) not in path_lists_by_length:
+                path_lists_by_length[len(p)] = []
+
+            path_lists_by_length[len(p)].append(p)
+
+        return path_lists_by_length
+
+    def print_path(self, path):
+        edges = []
+        strings = []
+
+        a_prev = None
+        for a_curr in path:
+            if a_prev:
+                edge_tuple = (a_prev,a_curr)
+                gigs = self.edge_event_map[edge_tuple]
+                edges.append(gigs)
+
+                joiner = ""
+                for gig in gigs:
+                    if gig.future:
+                        #joiner += "="
+                        joiner += "\033[31;1m=\033[0m"
+                    else:
+                        joiner += "-"
+
+                strings.append(joiner + ">")
+            strings.append(a_curr)
+            a_prev = a_curr
+
+        #print()
+        #print(path)
+        #print(edges)
+        print("  " + (" ".join(strings)))
+
+    def path_html(self, path):
+        edges = []
+        strings = []
+        htmls = []
+
+        future = False
+
+        a_prev = None
+        for a_curr in path:
+            if a_prev:
+                edge_tuple = (a_prev,a_curr)
+                gigs = self.edge_event_map[edge_tuple]
+                edges.append(gigs)
+
+                joiner = ""
+                for gig in gigs:
+                    if gig.future:
+                        future = True
+                        #joiner += "="
+                        joiner += "\033[31;1m=\033[0m" # highlight red
+                    else:
+                        joiner += "-"
+
+                    joiner += ">"
+                    arrow = "&rarr;"
+                    hover = gig.venue + " " + str(gig.date.year)
+
+                    link = f" <a href={gig.link}.html title=\"{hover}\">{arrow}</a> "
+
+                    htmls.append(link)
+
+                strings.append(joiner)
+
+            strings.append(a_curr)
+            htmls.append(a_curr)
+            a_prev = a_curr
+
+        if future:
+            print("Future path: " + (" ".join(strings)))
+            htmls = []
+
+        return "".join(htmls)
+
+    def print_longest_paths(self, extra=0):
+        paths = self.find_paths(remove_duplicate_paths=True)
+
+        path_lists_by_length = self.group_paths_by_length(paths, extra)
+
+        lengths = list(path_lists_by_length.keys())
+        lengths.sort()
+        lengths.reverse()
+        for l in lengths:
+            pathlist = path_lists_by_length[l]
+            print()
+            print(f"Paths of length {l} ({len(pathlist)}):")
+            for p in pathlist:
+                self.print_path(p)
+
+    def longest_paths_html(self, extra=0):
+        paths = self.find_paths(remove_duplicate_paths=True)
+        lines = []
+
+        path_lists_by_length = self.group_paths_by_length(paths, extra)
+
+        lengths = list(path_lists_by_length.keys())
+        lengths.sort()
+        lengths.reverse()
+        for l in lengths:
+            pathlist = path_lists_by_length[l]
+            #lines.append(f"Paths of length {l} ({len(pathlist)}):")
+            #lines.append(("&nbsp;" * 5) + f"Length {l}:")
+            #lines.append("")
+            for p in pathlist:
+                html_line = self.path_html(p)
+                if html_line:
+                    line = ("&nbsp;" * 5) + f"[Length: {l}]" + ("&nbsp;" * 5) + html_line
+                    #line = ("&nbsp;" * 10) + html_line
+                    lines.append(line)
+            #lines.append("")
+
+        lines.append("")
+
+        return lines
 
 class GIG_html():
     def __init__(self, gig_data, head, playlists=False, plots=True):
@@ -1948,6 +2185,12 @@ class GIG_html():
         longest_venue_gap, longest_gap_venues, longest_gap_v_events = self.gig_data.longest_gap_between_venue_events()
 
         lines = []
+
+        sc = SupportChain(self.gig_data)
+        lp_lines = sc.longest_paths_html(extra=1)
+
+        lines += [ "Longest support chains:", "" ]
+        lines += lp_lines
 
         # lines = [ "Current gap is %d days (since %s)." % \
         #         ( cur_gap[0], cur_gap[1].date.strftime("%d-%b-%Y") ) ] 
