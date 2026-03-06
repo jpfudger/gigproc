@@ -863,7 +863,7 @@ class GIG_html():
                         afname = 'a' + self.id_of_artist(name_str) + ".html"
 
                         title = "Artistcount: %d/%d" % ( _acount[0], _acount[1] )
-                        name_str = f"<div class=greyflag title={title}>{name_str}</div>"
+                        name_str = f"<div class=greyflag title=\"{title}\">{name_str}</div>"
 
                         name_str = f"<a class=hidden-link href={afname}>{name_str}</a>"
 
