@@ -2026,6 +2026,10 @@ class GIG_html():
             if self.plotter and self.plotter.total_progress_by_year('html/' + year_plot_path,y):
                 plot_string += '<img class=yearplot src="%s">' % year_plot_path
 
+                if int(y) == datetime.now().year:
+                    year_plot_path = 'img/plot_%s_target.jpg' % str(y)
+                    self.plotter.total_progress_by_year('html/' + year_plot_path,y,show_target=True)
+
             # Set the index page to the date of the next future gig:
             if y == datetime.now().year: # self.gig_data.first_unseen().date.year:
                 index_string = gigs_string

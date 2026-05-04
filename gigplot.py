@@ -875,7 +875,7 @@ class GIG_plot():
             plt.show(block=False)
             plt.show()
         pass
-    def total_progress_by_year(self,dest,year):
+    def total_progress_by_year(self,dest,year,show_target=False):
         gigs = None
 
         for (y,c) in self.gig_data.get_unique_years(True):
@@ -949,8 +949,8 @@ class GIG_plot():
         line_unconfirmed = None
         line_ideal = None
 
-        if len(ideal_dates) > 1:
-            line_ideal = plt.plot(ideal_dates, ideal_totals, ls='dotted', color='lightgreen')
+        if len(ideal_dates) > 1 and show_target:
+            line_ideal = plt.plot(ideal_dates, ideal_totals, ls='dotted', color='lightgreen', zorder=-1)
 
         if len(dates) > 1:
             line_past = plt.plot(dates,totals,color=self.colour1) #,linewidth=2.0)
@@ -1001,7 +1001,6 @@ class GIG_plot():
             legend_lines.append(line_ideal[0])
             name = 'Target: 1 event/week'
             legend_names.append(name)
-
 
         plt.legend(legend_lines, legend_names, loc='upper left')
 
