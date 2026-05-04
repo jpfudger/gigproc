@@ -29,6 +29,7 @@ Cambridge Clare Hall College        |       |       | 52.2043109157,  0.10450671
 Cambridge Corn Exchange             | 1849  |       | 52.2044050471,  0.1196875402
 Cambridge Folk Festival             | 14000 |       | 52.1871908647,  0.1666740400
 Cambridge Footlight Cellars         | 120   |       | 52.2087037907,  0.1195825129
+Cambridge Gonville and Caius College | 96   |       | 52.205720567278135, 0.11667213229914292
 Cambridge Great St. Mary's          |       |       | 52.2053022219,  0.1182398267
 Cambridge Haymakers                 |       |       | 52.2174424255,  0.1393715267
 Cambridge Junction J1               | 850   |       | 52.1908880918,  0.1365063402
@@ -42,7 +43,7 @@ Cambridge Portland Arms             | 200   |       | 52.2145578973,  0.12476904
 Cambridge Six Six Bar               |       |       | 52.2054442786,  0.1339318997
 Cambridge St. Paul's                | 200   |       | 52.1975589852,  0.1292539929
 Cambridge St. Philip's              | 180   |       | 52.1974383702,  0.1459267524
-Cambridge Storey's Field            | 180   |       | 52.2190468124,  0.0887058975
+Cambridge Storey's Field Centre     | 270   | 180   | 52.2190468124,  0.0887058975
 Cambridge Unitarian Church          | 90    |       | 52.2051307191,  0.1260509619
 Cambridge West Road Concert Hall    | 499   |       | 52.2023094611,  0.1075557435
 Cork Marquee                        | 4000  |       | 51.8989022707, -8.4413590020
@@ -77,6 +78,7 @@ London Borderline                   | 300   |       | 51.5148475693, -0.13040412
 London Bridge Theatre               | 900   |       | 51.5040907445, -0.0773921180
 London Brixton Academy              | 4921  |       | 51.4652104163, -0.1149271395
 London Brixton Electric             | 1500  |       | 51.4601501080, -0.1167082460
+London Brixton Hootanany            |               | 51.45538205979684, -0.11322510028682477
 London Brooklyn Bowl                | 800   |       | 51.5037847931,  0.0029142189
 London Bush Hall                    | 400   |       | 51.5063989718, -0.2316831199
 London Cadogan Hall                 | 953   |       | 51.4937841374, -0.1572333166
